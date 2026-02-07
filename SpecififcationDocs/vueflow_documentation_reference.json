@@ -1,0 +1,310 @@
+{
+  "vue_flow_guide_sections": [
+    {
+      "section_title": "Welcome to Vue Flow!",
+      "section_title_citation": "https://vue-flow-docs.netlify.app/guide/",
+      "content": "Vue Flow is a bridge to the world of interactive flowcharts and graphs, empowering you to bring dynamism and interactivity to flowcharts and graphic representations. It makes it effortless to customize and extend basic functionalities by allowing the integration of your own bespoke nodes and edges. Additional components such as Background, Minimap, and Controls further enrich the interface.",
+      "content_citation": "https://vue-flow-docs.netlify.app/guide/"
+    },
+    {
+      "section_title": "Getting Started",
+      "section_title_citation": "https://vue-flow-docs.netlify.app/guide/getting-started.html",
+      "content": "Basics of setting up and using Vue Flow. Requires Node.js v20+ and Vue 3.3+. Install via npm add @vue-flow/core. Includes styles from @vue-flow/core/dist/style.css and @vue-flow/core/dist/theme-default.css.",
+      "content_citation": "https://vue-flow-docs.netlify.app/guide/getting-started.html",
+      "code_examples": [
+        {
+          "value": "npm add @vue-flow/core",
+          "value_citation": "https://vue-flow-docs.netlify.app/guide/getting-started.html"
+        },
+        {
+          "value": "@import '@vue-flow/core/dist/style.css';",
+          "value_citation": "https://vue-flow-docs.netlify.app/guide/getting-started.html"
+        }
+      ]
+    },
+    {
+      "section_title": "Introduction to Nodes",
+      "section_title_citation": "https://vue-flow-docs.netlify.app/guide/node.html",
+      "content": "Nodes are the underlying components of your graph. Every node is unique and requires a unique id and an XY-position. Predefined types: default, input, output.",
+      "content_citation": "https://vue-flow-docs.netlify.app/guide/node.html",
+      "code_examples": [
+        {
+          "value": "const nodes = ref([{ id: '1', position: { x: 50, y: 50 }, data: { label: 'Node 1' } }])",
+          "value_citation": "https://vue-flow-docs.netlify.app/guide/node.html"
+        }
+      ]
+    },
+    {
+      "section_title": "Introduction to Edges",
+      "section_title_citation": "https://vue-flow-docs.netlify.app/guide/edge.html",
+      "content": "Edges are the links connecting your nodes. Requires unique id, source and target node id. Predefined types: default (bezier), step, smoothstep, straight.",
+      "content_citation": "https://vue-flow-docs.netlify.app/guide/edge.html",
+      "code_examples": [
+        {
+          "value": "const edges = ref([{ id: 'e1-2', source: '1', target: '2' }])",
+          "value_citation": "https://vue-flow-docs.netlify.app/guide/edge.html"
+        }
+      ]
+    },
+    {
+      "section_title": "Introduction to Handles",
+      "section_title_citation": "https://vue-flow-docs.netlify.app/guide/handle.html",
+      "content": "Handles are the connection points on nodes. Used to calculate source and target points for edges. Positions: Top, Right, Bottom, Left. Can be hidden or have limited connections.",
+      "content_citation": "https://vue-flow-docs.netlify.app/guide/handle.html",
+      "code_examples": [
+        {
+          "value": "<Handle type=\"source\" :position=\"sourcePosition\" />",
+          "value_citation": "https://vue-flow-docs.netlify.app/guide/handle.html"
+        }
+      ]
+    },
+    {
+      "section_title": "Configuration",
+      "section_title_citation": "https://vue-flow-docs.netlify.app/guide/vue-flow/config.html",
+      "content": "Options for zoom, graph, and flow behavior. Can be passed as props or options to useVueFlow. Key options include nodes, edges, node-types, edge-types, connection-mode, and viewport settings.",
+      "content_citation": "https://vue-flow-docs.netlify.app/guide/vue-flow/config.html",
+      "code_examples": [
+        {
+          "value": "<VueFlow :max-zoom=\"4\" :min-zoom=\"0.1\" />",
+          "value_citation": "https://vue-flow-docs.netlify.app/guide/vue-flow/config.html"
+        }
+      ]
+    },
+    {
+      "section_title": "State",
+      "section_title_citation": "https://vue-flow-docs.netlify.app/guide/vue-flow/state.html",
+      "content": "Uses Provide/Inject to pass state between components. Access via useVueFlow. Reactive state changes update the graph.",
+      "content_citation": "https://vue-flow-docs.netlify.app/guide/vue-flow/state.html",
+      "code_examples": [
+        {
+          "value": "const { getNodes, onPaneReady } = useVueFlow()",
+          "value_citation": "https://vue-flow-docs.netlify.app/guide/vue-flow/state.html"
+        }
+      ]
+    },
+    {
+      "section_title": "Events",
+      "section_title_citation": "https://vue-flow-docs.netlify.app/guide/vue-flow/events.html",
+      "content": "Listen to events on VueFlow component or via useVueFlow hooks. Events include node-click, edge-click, pane-ready, etc.",
+      "content_citation": "https://vue-flow-docs.netlify.app/guide/vue-flow/events.html",
+      "code_examples": [
+        {
+          "value": "@node-click=\"onNodeClick\"",
+          "value_citation": "https://vue-flow-docs.netlify.app/guide/vue-flow/events.html"
+        },
+        {
+          "value": "onNodeClick(({ event, node }) => { ... })",
+          "value_citation": "https://vue-flow-docs.netlify.app/guide/vue-flow/events.html"
+        }
+      ]
+    },
+    {
+      "section_title": "Controlled Flow",
+      "section_title_citation": "https://vue-flow-docs.netlify.app/guide/controlled-flow.html",
+      "content": "Manually handle state updates by setting applyDefault to false. Listen to onNodesChange and onEdgesChange to validate and apply changes.",
+      "content_citation": "https://vue-flow-docs.netlify.app/guide/controlled-flow.html",
+      "code_examples": [
+        {
+          "value": "<VueFlow :apply-default=\"false\" @nodes-change=\"onNodesChange\" />",
+          "value_citation": "https://vue-flow-docs.netlify.app/guide/controlled-flow.html"
+        }
+      ]
+    },
+    {
+      "section_title": "Composables",
+      "section_title_citation": "https://vue-flow-docs.netlify.app/guide/composables.html",
+      "content": "Hooks for interacting with the graph: useVueFlow, useHandleConnections, useNodeConnections, useNodesData, useNodeId, useHandle.",
+      "content_citation": "https://vue-flow-docs.netlify.app/guide/composables.html",
+      "code_examples": [
+        {
+          "value": "const { nodes, edges } = useVueFlow()",
+          "value_citation": "https://vue-flow-docs.netlify.app/guide/composables.html"
+        }
+      ]
+    },
+    {
+      "section_title": "Theming",
+      "section_title_citation": "https://vue-flow-docs.netlify.app/guide/theming.html",
+      "content": "Customize styles using CSS classes, style props, or CSS variables. Key variables: --vf-node-bg, --vf-node-text, --vf-handle, --vf-connection-path.",
+      "content_citation": "https://vue-flow-docs.netlify.app/guide/theming.html",
+      "code_examples": [
+        {
+          "value": ":root { --vf-node-bg: #fff; }",
+          "value_citation": "https://vue-flow-docs.netlify.app/guide/theming.html"
+        }
+      ]
+    }
+  ],
+  "vue_flow_api_references": [
+    {
+      "api_name": "useVueFlow",
+      "api_name_citation": "https://vue-flow-docs.netlify.app/guide/composables.html",
+      "description": "Primary composable to access and control the flow state.",
+      "description_citation": "https://vue-flow-docs.netlify.app/guide/composables.html",
+      "parameters": [
+        {
+          "parameter_name": "options",
+          "parameter_name_citation": "https://vue-flow-docs.netlify.app/guide/composables.html",
+          "parameter_type": "object",
+          "parameter_type_citation": "https://vue-flow-docs.netlify.app/guide/composables.html",
+          "parameter_description": "Optional: { id?: string }",
+          "parameter_description_citation": "https://vue-flow-docs.netlify.app/guide/composables.html"
+        }
+      ],
+      "return_value": "Reactive store object with nodes, edges, addNodes, fitView, etc.",
+      "return_value_citation": "https://vue-flow-docs.netlify.app/guide/composables.html",
+      "code_examples": [
+        {
+          "value": "const { fitView } = useVueFlow()",
+          "value_citation": "https://vue-flow-docs.netlify.app/guide/composables.html"
+        }
+      ]
+    },
+    {
+      "api_name": "useNode",
+      "api_name_citation": "https://vue-flow-docs.netlify.app/guide/node.html",
+      "description": "Composable to access the current node state inside a custom node component.",
+      "description_citation": "https://vue-flow-docs.netlify.app/guide/node.html",
+      "return_value": "{ node: Reactive<Node> }",
+      "return_value_citation": "https://vue-flow-docs.netlify.app/guide/node.html",
+      "code_examples": [
+        {
+          "value": "const { node } = useNode()",
+          "value_citation": "https://vue-flow-docs.netlify.app/guide/node.html"
+        }
+      ]
+    },
+    {
+      "api_name": "Handle (component)",
+      "api_name_citation": "https://vue-flow-docs.netlify.app/guide/handle.html",
+      "description": "Component for creating connection points on nodes.",
+      "description_citation": "https://vue-flow-docs.netlify.app/guide/handle.html",
+      "parameters": [
+        {
+          "parameter_name": "type",
+          "parameter_name_citation": "https://vue-flow-docs.netlify.app/guide/handle.html",
+          "parameter_type": "'source' | 'target'",
+          "parameter_type_citation": "https://vue-flow-docs.netlify.app/guide/handle.html",
+          "parameter_description": "Type of handle",
+          "parameter_description_citation": "https://vue-flow-docs.netlify.app/guide/handle.html"
+        },
+        {
+          "parameter_name": "position",
+          "parameter_name_citation": "https://vue-flow-docs.netlify.app/guide/handle.html",
+          "parameter_type": "Position",
+          "parameter_type_citation": "https://vue-flow-docs.netlify.app/guide/handle.html",
+          "parameter_description": "Top, Right, Bottom, or Left",
+          "parameter_description_citation": "https://vue-flow-docs.netlify.app/guide/handle.html"
+        },
+        {
+          "parameter_name": "connectable",
+          "parameter_name_citation": "https://vue-flow-docs.netlify.app/guide/handle.html",
+          "parameter_type": "boolean | number | func",
+          "parameter_type_citation": "https://vue-flow-docs.netlify.app/guide/handle.html",
+          "parameter_description": "Connection limits",
+          "parameter_description_citation": "https://vue-flow-docs.netlify.app/guide/handle.html"
+        }
+      ],
+      "code_examples": [
+        {
+          "value": "<Handle type=\"target\" :position=\"Position.Top\" />",
+          "value_citation": "https://vue-flow-docs.netlify.app/guide/handle.html"
+        }
+      ]
+    },
+    {
+      "api_name": "fitView",
+      "api_name_citation": "https://vue-flow-docs.netlify.app/guide/utils/instance.html",
+      "description": "Fits the viewport so that all nodes are visible.",
+      "description_citation": "https://vue-flow-docs.netlify.app/guide/utils/instance.html",
+      "parameters": [
+        {
+          "parameter_name": "options",
+          "parameter_name_citation": "https://vue-flow-docs.netlify.app/guide/utils/instance.html",
+          "parameter_type": "FitViewParams",
+          "parameter_type_citation": "https://vue-flow-docs.netlify.app/guide/utils/instance.html",
+          "parameter_description": "{ padding?: number, includeHiddenNodes?: boolean }",
+          "parameter_description_citation": "https://vue-flow-docs.netlify.app/guide/utils/instance.html"
+        }
+      ],
+      "code_examples": [
+        {
+          "value": "instance.fitView({ padding: 0.2 })",
+          "value_citation": "https://vue-flow-docs.netlify.app/guide/utils/instance.html"
+        }
+      ]
+    },
+    {
+      "api_name": "getBezierPath",
+      "api_name_citation": "https://vue-flow-docs.netlify.app/guide/utils/edge.html",
+      "description": "Calculates a bezier path string.",
+      "description_citation": "https://vue-flow-docs.netlify.app/guide/utils/edge.html",
+      "parameters": [
+        {
+          "parameter_name": "params",
+          "parameter_name_citation": "https://vue-flow-docs.netlify.app/guide/utils/edge.html",
+          "parameter_type": "GetBezierPathParams",
+          "parameter_type_citation": "https://vue-flow-docs.netlify.app/guide/utils/edge.html",
+          "parameter_description": "Source/target coordinates and positions",
+          "parameter_description_citation": "https://vue-flow-docs.netlify.app/guide/utils/edge.html"
+        }
+      ],
+      "return_value": "[path: string, labelX: number, labelY: number, ...]",
+      "return_value_citation": "https://vue-flow-docs.netlify.app/guide/utils/edge.html",
+      "code_examples": [
+        {
+          "value": "const [path] = getBezierPath(props)",
+          "value_citation": "https://vue-flow-docs.netlify.app/guide/utils/edge.html"
+        }
+      ]
+    },
+    {
+      "api_name": "Background",
+      "api_name_citation": "https://vue-flow-docs.netlify.app/guide/components/background.html",
+      "description": "Supplementary component for background patterns.",
+      "description_citation": "https://vue-flow-docs.netlify.app/guide/components/background.html",
+      "parameters": [
+        {
+          "parameter_name": "variant",
+          "parameter_name_citation": "https://vue-flow-docs.netlify.app/guide/components/background.html",
+          "parameter_type": "BackgroundVariant",
+          "parameter_type_citation": "https://vue-flow-docs.netlify.app/guide/components/background.html",
+          "parameter_description": "'dots' | 'lines'",
+          "parameter_description_citation": "https://vue-flow-docs.netlify.app/guide/components/background.html"
+        },
+        {
+          "parameter_name": "gap",
+          "parameter_name_citation": "https://vue-flow-docs.netlify.app/guide/components/background.html",
+          "parameter_type": "number",
+          "parameter_type_citation": "https://vue-flow-docs.netlify.app/guide/components/background.html",
+          "parameter_description": "Pattern gap",
+          "parameter_description_citation": "https://vue-flow-docs.netlify.app/guide/components/background.html"
+        }
+      ]
+    },
+    {
+      "api_name": "MiniMap",
+      "api_name_citation": "https://vue-flow-docs.netlify.app/guide/components/minimap.html",
+      "description": "Supplementary component for a birds-eye view.",
+      "description_citation": "https://vue-flow-docs.netlify.app/guide/components/minimap.html",
+      "parameters": [
+        {
+          "parameter_name": "pannable",
+          "parameter_name_citation": "https://vue-flow-docs.netlify.app/guide/components/minimap.html",
+          "parameter_type": "boolean",
+          "parameter_type_citation": "https://vue-flow-docs.netlify.app/guide/components/minimap.html",
+          "parameter_description": "Allow panning via minimap",
+          "parameter_description_citation": "https://vue-flow-docs.netlify.app/guide/components/minimap.html"
+        },
+        {
+          "parameter_name": "zoomable",
+          "parameter_name_citation": "https://vue-flow-docs.netlify.app/guide/components/minimap.html",
+          "parameter_type": "boolean",
+          "parameter_type_citation": "https://vue-flow-docs.netlify.app/guide/components/minimap.html",
+          "parameter_description": "Allow zooming via minimap",
+          "parameter_description_citation": "https://vue-flow-docs.netlify.app/guide/components/minimap.html"
+        }
+      ]
+    }
+  ]
+}

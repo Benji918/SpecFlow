@@ -1,0 +1,178 @@
+{
+  "branding": {
+    "colorScheme": "dark",
+    "fonts": [
+      {
+        "family": "Inter",
+        "role": "body"
+      }
+    ],
+    "colors": {
+      "primary": "#BFF549",
+      "accent": "#BFF549",
+      "background": "#000000",
+      "textPrimary": "#000000",
+      "link": "#99A1AF"
+    },
+    "typography": {
+      "fontFamilies": {
+        "primary": "Inter",
+        "heading": "Inter"
+      },
+      "fontStacks": {
+        "heading": [
+          "Inter",
+          "system-ui",
+          "Helvetica Neue",
+          "Helvetica",
+          "Arial"
+        ],
+        "body": [
+          "Inter",
+          "system-ui",
+          "Helvetica Neue",
+          "Helvetica",
+          "Arial"
+        ],
+        "paragraph": [
+          "Inter",
+          "system-ui",
+          "Helvetica Neue",
+          "Helvetica",
+          "Arial"
+        ]
+      },
+      "fontSizes": {
+        "h1": "96px",
+        "h2": "48px",
+        "body": "24px"
+      }
+    },
+    "spacing": {
+      "baseUnit": 8,
+      "borderRadius": "0px"
+    },
+    "components": {
+      "buttonPrimary": {
+        "background": "#BFF549",
+        "textColor": "#000000",
+        "borderRadius": "33554400px",
+        "borderRadiusCorners": {
+          "topLeft": "33554400px",
+          "topRight": "33554400px",
+          "bottomRight": "33554400px",
+          "bottomLeft": "33554400px"
+        },
+        "shadow": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(191, 245, 73, 0.6) 0px 0px 60px -15px"
+      },
+      "buttonSecondary": {
+        "background": "#282828",
+        "textColor": "#FFFFFF",
+        "borderRadius": "33554400px",
+        "borderRadiusCorners": {
+          "topLeft": "33554400px",
+          "topRight": "33554400px",
+          "bottomRight": "33554400px",
+          "bottomLeft": "33554400px"
+        },
+        "shadow": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.1) 0px 10px 15px -3px, rgba(0, 0, 0, 0.1) 0px 4px 6px -4px"
+      }
+    },
+    "images": {
+      "logo": "https://www.glaido.com/images/glaido-main-white.svg",
+      "favicon": "https://www.glaido.com/images/favicon/favicon.svg",
+      "ogImage": "https://www.glaido.com/og-image.png",
+      "logoHref": "/",
+      "logoAlt": "Glaido"
+    },
+    "__framework_hints": [],
+    "__llm_logo_reasoning": {
+      "selectedIndex": 0,
+      "reasoning": "Selected #0 because it is visible, located in the header, links to the homepage, and matches the brand name 'Glaido'.",
+      "confidence": 0.95,
+      "source": "llm"
+    },
+    "__llm_button_reasoning": {
+      "primary": {
+        "index": 2,
+        "text": "Try Glaido free",
+        "reasoning": "Button #2 'Try Glaido free' uses the vibrant brand color #BFF549 and has action-oriented text, making it the primary CTA."
+      },
+      "secondary": {
+        "index": 0,
+        "text": "Get Started",
+        "reasoning": "Button #0 'Get Started' has a different background color (#282828) and serves as a secondary action."
+      },
+      "confidence": 0.95
+    },
+    "personality": {
+      "tone": "modern",
+      "energy": "high",
+      "targetAudience": "tech-savvy professionals"
+    },
+    "designSystem": {
+      "framework": "tailwind",
+      "componentLibrary": ""
+    },
+    "confidence": {
+      "buttons": 0.95,
+      "colors": 0.9,
+      "overall": 0.925
+    },
+    "__llm_metadata": {
+      "logoSelection": {
+        "llmCalled": true,
+        "llmSucceeded": true,
+        "finalSource": "llm",
+        "rawLogoSelection": {
+          "selectedLogoIndex": 0,
+          "selectedLogoReasoning": "Selected #0 because it is visible, located in the header, links to the homepage, and matches the brand name 'Glaido'.",
+          "confidence": 0.95
+        }
+      },
+      "buttonClassification": {
+        "llmCalled": true,
+        "llmSucceeded": true
+      }
+    }
+  },
+  "metadata": {
+    "og:image:height": "630",
+    "og:type": "website",
+    "twitter:card": "summary_large_image",
+    "twitter:title": "Type with your voice (World's fastest dictation)",
+    "twitter:image": "https://www.glaido.com/og-image.png",
+    "og:image:alt": "Type with your voice (World's fastest dictation)",
+    "next-size-adjust": "",
+    "ogSiteName": "Glaido",
+    "application-name": "Glaido",
+    "twitter:description": "Glaido turns your speech into text instantly, saving you 20+ hours a month across any app. Break up with your keyboard and join the future of voice.",
+    "ogTitle": "Type with your voice (World's fastest dictation)",
+    "description": "Glaido turns your speech into text instantly, saving you 20+ hours a month across any app. Break up with your keyboard and join the future of voice.",
+    "og:title": "Type with your voice (World's fastest dictation)",
+    "ogImage": "https://www.glaido.com/og-image.png",
+    "language": "en",
+    "og:site_name": "Glaido",
+    "ogDescription": "Glaido turns your speech into text instantly, saving you 20+ hours a month across any app. Break up with your keyboard and join the future of voice.",
+    "og:description": "Glaido turns your speech into text instantly, saving you 20+ hours a month across any app. Break up with your keyboard and join the future of voice.",
+    "og:image": "https://www.glaido.com/og-image.png",
+    "viewport": "width=device-width, initial-scale=1",
+    "og:image:width": "1200",
+    "ogUrl": "https://www.glaido.com",
+    "csrf-token": "AAiSErRALtahLSzpgEKzJ4FtKlA9luxf0jpYEVoL",
+    "og:url": "https://www.glaido.com",
+    "title": "Type with your voice (World's fastest dictation)",
+    "favicon": "https://www.glaido.com/images/favicon/favicon.svg",
+    "scrapeId": "019c36d0-dd65-715e-ad36-b93271a619bd",
+    "sourceURL": "https://www.glaido.com/",
+    "url": "https://www.glaido.com/",
+    "statusCode": 200,
+    "contentType": "text/html; charset=utf-8",
+    "timezone": "America/New_York",
+    "proxyUsed": "stealth",
+    "indexId": "96d9b489-8e1c-4436-bd55-7a217b548ca9",
+    "creditsUsed": 1,
+    "concurrencyLimited": false
+  },
+  "summary": "Glaido is a voice dictation tool that significantly increases typing speed, allowing users to write five times faster than typing. It captures spoken words in real-time with perfect grammar, saving approximately 20+ hours each month by reducing the time spent on typing. Glaido works seamlessly across various applications, including Gmail, Slack, and ChatGPT, making it universally compatible. It is GDPR compliant, supports over 100 languages, and features a free plan with a limited word count, as well as a Pro plan for unlimited use. Users have reported substantial time savings in their daily workflows, affirming Glaido's effectiveness in both personal and professional settings."
+}
