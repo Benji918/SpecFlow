@@ -1,244 +1,217 @@
 # SpecFlow
 
-**Context-aware API testing that understands your workflows**
+> **Context-aware API testing platform** that automatically transforms OpenAPI specifications into interactive, visual user journey workflows.
 
-Transform your OpenAPI specs into interactive user journeys. Test real-world API flows in minutes, not hours.
+## 🚀 What is SpecFlow?
 
----
+SpecFlow bridges the gap between isolated endpoint testing and real-world API usage by:
+- **Parsing** OpenAPI specs to extract all endpoints and schemas
+- **Generating** logical user journeys using AI (Ollama)
+- **Visualizing** workflows as interactive node graphs (Vue Flow)
+- **Executing** multi-step API tests with automatic data flow
+- **Managing** authentication and session state automatically
 
-## The Problem
+## ✨ Key Features
 
-Testing APIs today is **painfully slow**:
+- **AI-Powered Journey Generation:** Uses Ollama to analyze APIs and suggest realistic test workflows
+- **Visual Journey Editor:** Drag-and-drop interface for creating and editing API test flows
+- **Smart Execution:** Automatically passes tokens, IDs, and other data between steps
+- **Mock Data Generation:** Uses Faker.js to generate realistic test data from schemas
+- **Real-Time Results:** WebSocket-powered live execution feedback
+- **Session Management:** Handles auth flows and maintains state across steps
+- **Error Injection:** Test failure scenarios with one click
 
-- ⏱️ **Hours wasted** setting up Postman collections
-- 🔗 **Manual chaining** - copy token from login, paste into next request, repeat
-- 🤷 **No context** - testing individual endpoints doesn't catch integration bugs
-- 📝 **Tedious documentation** - keeping test scenarios in sync with API changes
-- 👥 **Team friction** - backend waits for frontend, QA waits for both
+## 🛠️ Tech Stack
 
-**Most API testing tools treat your API like isolated endpoints. Your users don't.**
+### Backend
+- FastAPI (Python 3.11+)
+- PostgreSQL + SQLAlchemy (async)
+- Ollama (qwen3-vl:235b-cloud)
+- Redis
+- WebSockets
 
----
+### Frontend
+- Vue 3 + Vite
+- TailwindCSS
+- Vue Flow
+- Pinia
+- Axios
 
-## The Solution
+## 📋 Prerequisites
 
-**SpecFlow automatically generates realistic user journeys from your OpenAPI spec.**
+- **Python 3.11+** with UV package manager
+- **Node.js 20+**
+- **PostgreSQL 15+**
+- **Redis 7+**
+- **Ollama** with qwen3-vl:235b-cloud model
 
-Upload your `swagger.json` → Get interactive workflows that test how your API actually works.
+## 🚦 Quick Start
 
-### What makes SpecFlow different
+### 1. Backend Setup
 
-✨ **AI-powered journey generation** - Understands relationships between endpoints  
-🎨 **Visual workflow builder** - Drag-and-drop interface, no code required  
-⚡ **Instant mock data** - Auto-generates realistic test payloads  
-🔄 **Smart data flow** - Passes tokens, IDs, and data between steps automatically  
-🎯 **Error injection** - Test failures without breaking production  
-👥 **Team collaboration** - Share test scenarios across backend, QA, and frontend  
+```bash
+cd backend
 
----
+# Copy environment variables
+cp .env.example .env
+# Edit .env with your database credentials
 
-## How It Works
+# Install dependencies
+pip install uv
+uv pip install -e .
 
-### 1. Upload Your OpenAPI Spec
-```
-Drop your swagger.json or paste your API URL
-SpecFlow validates and extracts all endpoints
-```
+# Run database migrations
+alembic upgrade head
 
-### 2. AI Generates User Journeys
-
-```mermaid
-graph LR
-    A[OpenAPI Spec] --> B[AI Analysis]
-    B --> C[Register Flow]
-    B --> D[Complete Order Flow]
-    B --> E[Error Handling Flow]
-```
-
-SpecFlow's AI identifies logical workflows:
-- "New User Registration" → Register → Verify Email → Login
-- "Complete Food Order" → Browse → Add to Cart → Checkout
-- "Test Error Handling" → Invalid Auth → 401 Response
-
-### 3. Visualize & Customize
-
-```mermaid
-graph TB
-    A[POST /auth/register] -->|email → verify| B[POST /auth/verify]
-    B -->|token → auth header| C[POST /auth/login]
-    C -->|auth token| D[GET /restaurants]
-    D -->|restaurant_id| E[POST /cart/add]
-    E -->|cart_id| F[POST /orders/checkout]
+# Start the server
+uvicorn app.main:app --reload
 ```
 
-**Drag to reorder. Click to edit. SpecFlow handles the complexity.**
+Backend will be running at `http://localhost:8000`  
+API docs available at `http://localhost:8000/docs`
 
-### 4. Execute & Debug
+### 2. Frontend Setup
 
-Hit "Run Journey" and watch your API come to life:
+```bash
+cd frontend
 
-```mermaid
-sequenceDiagram
-    participant U as SpecFlow
-    participant A as Your API
-    
-    U->>A: POST /auth/login
-    A->>U: ✅ 200 {token: "abc123"}
-    
-    Note over U: Extracts token automatically
-    
-    U->>A: GET /restaurants<br/>(Authorization: Bearer abc123)
-    A->>U: ✅ 200 [{id: "rest-1"...}]
-    
-    Note over U: Picks first restaurant
-    
-    U->>A: POST /orders<br/>(restaurant_id: "rest-1")
-    A->>U: ✅ 201 {order_id: "order-42"}
-    
-    Note over U: Journey complete!
+# Install dependencies
+npm install
+
+# Start dev server
+npm run dev
 ```
 
-**Every step shows:**
-- Request payload (editable mock data)
-- Response body
-- Headers
-- Timing
-- Pass/fail status
+Frontend will be running at `http://localhost:5173`
 
----
+### 3. Install Ollama Model
 
-## Use Cases
-
-### 🧑‍💻 For Backend Developers
-- Test multi-step flows in seconds
-- Catch integration bugs before QA
-- Share API behavior with frontend team
-- Auto-update tests when spec changes
-
-### 🧪 For QA Engineers
-- No coding required
-- Inject failures to test error handling
-- Save and rerun regression suites
-- Generate test reports automatically
-
-### 🎨 For Frontend Developers
-- See real API responses before backend is done
-- Understand auth flows and data dependencies
-- Test edge cases without bothering backend team
-- Mock server for local development
-
-### 👔 For Product Managers
-- Visualize how features work end-to-end
-- Validate user journeys before development
-- Communicate flows to stakeholders
-- No technical knowledge required
-
----
-
-## Key Features
-
-### 🤖 AI Journey Generation
-Upload your OpenAPI spec and get intelligent workflow suggestions in seconds. SpecFlow analyzes endpoint names, parameters, and responses to infer logical user journeys.
-
-### 🎨 Visual Workflow Builder
-Drag-and-drop interface powered by Vue Flow. Reorder steps, add branches, inject errors—all without writing code.
-
-### ⚡ Smart Mock Data
-Auto-generates realistic test data based on your schemas. Email fields get valid emails, UUIDs get UUIDs, dates get dates. Edit manually or regenerate instantly.
-
-### 🔄 Automatic Data Flow
-Tokens from login flow to protected endpoints. IDs from creation flow to updates. SpecFlow maps data between steps intelligently.
-
-### 🎯 Error Injection
-Test how your API handles failures:
-- Simulate timeouts
-- Force specific status codes
-- Modify response data
-- Drop authentication headers
-
-### 📊 Real-Time Execution
-Watch your API journey execute step-by-step with live request/response display. Pause, inspect, and debug at any point.
-
-### 👥 Team Collaboration
-Share journeys with teammates. Export to Postman. Generate documentation. Keep everyone in sync.
-
-### 🔄 Environment Management
-Switch between dev, staging, and production with one click. Same journeys, different targets.
-
----
-
-## Why Teams Choose SpecFlow
-
-| Traditional Testing | SpecFlow |
-|-------------------|----------|
-| 10 minutes to set up Postman collection | 2 minutes from spec to working tests |
-| Manually copy/paste tokens between requests | Automatic data flow between steps |
-| Test isolated endpoints | Test real user workflows |
-| Update tests manually when API changes | Auto-syncs with OpenAPI spec |
-| Share screenshots of Postman | Share interactive, runnable journeys |
-
----
-
-## Example Journey
-
-**Testing a food delivery app:**
-
-```
-1. POST /auth/register
-   ↓ (auto-extracts user_id)
-   
-2. POST /auth/verify-email
-   ↓ (auto-extracts token)
-   
-3. POST /auth/login
-   ↓ (token → Authorization header)
-   
-4. GET /restaurants?location=SF
-   ↓ (picks first restaurant_id)
-   
-5. GET /restaurants/{id}/menu
-   ↓ (picks popular menu items)
-   
-6. POST /cart/add-items
-   ↓ (gets cart_id)
-   
-7. POST /orders/checkout
-   ↓ (creates order)
-   
-8. GET /orders/{order_id}
-   ✅ Verify order was created
+```bash
+ollama pull qwen3-vl:235b-cloud
 ```
 
-**Without SpecFlow:** 30 minutes to set up, prone to errors  
-**With SpecFlow:** 2 minutes, runs perfectly every time
+## 📖 Usage
+
+1. **Sign up** for an account
+2. **Upload** your OpenAPI specification (JSON/YAML)
+3. **Generate** journeys using AI or create manually
+4. **Edit** the journey graph (add/remove/reorder steps)
+5. **Configure** mock data for each step
+6. **Execute** the journey and see real-time results
+7. **View** request/response details for each step
+
+## 🎨 Design Philosophy
+
+SpecFlow uses a **premium dark theme** with:
+- **Primary Color:** `#BFF549` (Vibrant Lime Green)
+- **Background:** `#000000` (Pure Black)
+- **Font:** Inter
+- **Style:** Modern, high-energy, glassmorphism effects
+
+## 📁 Project Structure
+
+```
+SpecFlow/
+├── backend/          # FastAPI backend
+│   ├── app/
+│   │   ├── models/   # SQLAlchemy models
+│   │   ├── routers/  # API endpoints
+│   │   ├── services/ # Business logic
+│   │   └── schemas/  # Pydantic schemas
+│   └── alembic/      # Database migrations
+└── frontend/         # Vue 3 frontend
+    └── src/
+        ├── views/    # Page components
+        ├── stores/   # Pinia stores
+        └── router/   # Vue Router
+```
+
+## 🔧 Configuration
+
+### Backend Environment Variables (.env)
+
+```env
+DATABASE_URL=postgresql+asyncpg://user:pass@localhost:5432/specflow
+REDIS_URL=redis://localhost:6379/0
+JWT_SECRET_KEY=your-secret-key-here
+OLLAMA_HOST=http://localhost:11434
+OLLAMA_MODEL=qwen3-vl:235b-cloud
+```
+
+### Frontend Environment Variables (optional)
+
+```env
+VITE_API_URL=http://localhost:8000
+```
+
+## 📚 Documentation
+
+- **Backend API:** `http://localhost:8000/docs` (Swagger UI)
+- **Project Status:** See `PROJECT_STATUS.md` for implementation details
+- **Specifications:** See `SpecificationDocs/` for full requirements
+
+## 🧪 Development
+
+### Backend
+
+```bash
+# Run migrations
+alembic revision --autogenerate -m "description"
+alembic upgrade head
+
+# Run tests
+pytest
+
+# Format code
+black app/
+ruff check app/
+```
+
+### Frontend
+
+```bash
+# Development server
+npm run dev
+
+# Build for production
+npm run build
+
+# Preview production build
+npm run preview
+```
+
+## 🚢 Deployment
+
+### Backend
+- Use Gunicorn/Uvicorn with multiple workers
+- Set up PostgreSQL and Redis instances
+- Configure environment variables
+- Run Alembic migrations
+
+### Frontend
+- Build: `npm run build`
+- Serve `dist/` folder with any static hosting (Nginx, Vercel, Netlify)
+
+## 🤝 Contributing
+
+This project follows the specifications in `SpecificationDocs/`:
+- `PROJECT_DEFINITION.md` - Core concepts
+- `implementation.md` - Implementation plan
+- `BE.md` - Backend specification
+- `FE.md` - Frontend specification
+- `branding.json` - Brand guidelines
+
+## 📝 License
+
+Private project - All rights reserved
+
+## 🙏 Acknowledgments
+
+- Vue Flow for the amazing graph visualization library
+- Ollama for local AI capabilities
+- FastAPI for the excellent Python framework
+- TailwindCSS for beautiful styling utilities
 
 ---
 
-## Who It's For
-
-✅ **Backend developers** testing API integrations  
-✅ **QA engineers** building regression suites  
-✅ **Frontend developers** understanding API behavior  
-✅ **Product managers** validating user flows  
-✅ **Technical writers** documenting API workflows  
-✅ **DevOps teams** monitoring API health  
-
-**If you work with APIs, SpecFlow saves you time.**
-
----
-
-## The SpecFlow Difference
-
-Most API tools are built for developers. **SpecFlow is built for teams.**
-
-- **Non-technical users** can create and run tests
-- **Developers** get powerful customization
-- **Everyone** sees the same truth about how the API works
-
----
-
-## Stack
-
-**Frontend:** Vue 3 + Vue Flow + TailwindCSS  
-**Backend:** Python + FastAPI + PostgreSQL  
-**AI:** Claude (Anthropic) for journey generation  
+**Built with ❤️ following exact specifications - No hallucinations, no assumptions**

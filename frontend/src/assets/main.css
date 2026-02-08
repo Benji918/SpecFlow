@@ -1,0 +1,220 @@
+/* Import VueFlow styles */
+@import '@vue-flow/core/dist/style.css';
+@import '@vue-flow/core/dist/theme-default.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Global Styles */
+@layer base {
+  * {
+    @apply border-gray-800;
+  }
+
+  body {
+    @apply bg-background text-white font-sans antialiased;
+    font-size: 16px;
+    line-height: 1.6;
+  }
+
+  h1 {
+    @apply text-5xl md:text-6xl font-bold;
+  }
+
+  h2 {
+    @apply text-3xl md:text-4xl font-semibold;
+  }
+
+  h3 {
+    @apply text-2xl font-semibold;
+  }
+
+  h4 {
+    @apply text-xl font-medium;
+  }
+
+  p {
+    @apply text-base leading-relaxed;
+  }
+}
+
+/* Component Utilities */
+@layer components {
+
+  /* Primary Button - Branded with glow */
+  .btn-primary {
+    @apply bg-primary text-black font-semibold py-3 px-6 rounded-full-brand transition-all duration-300;
+    box-shadow: rgba(191, 245, 73, 0.6) 0px 0px 60px -15px;
+  }
+
+  .btn-primary:hover {
+    @apply scale-105;
+    box-shadow: rgba(191, 245, 73, 0.8) 0px 0px 80px -10px;
+  }
+
+  .btn-primary:active {
+    @apply scale-95;
+  }
+
+  /* Secondary Button */
+  .btn-secondary {
+    @apply bg-secondary text-white font-semibold py-3 px-6 rounded-full-brand transition-all duration-300;
+    box-shadow: rgba(0, 0, 0, 0.1) 0px 10px 15px -3px, rgba(0, 0, 0, 0.1) 0px 4px 6px -4px;
+  }
+
+  .btn-secondary:hover {
+    @apply bg-gray-700 scale-105;
+  }
+
+  .btn-secondary:active {
+    @apply scale-95;
+  }
+
+  /* Input Fields */
+  .input-field {
+    @apply bg-surface border border-gray-700 text-white py-3 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all;
+  }
+
+  .input-field::placeholder {
+    @apply text-gray-500;
+  }
+
+  /* Card Component */
+  .card {
+    @apply bg-surface border border-gray-800 rounded-xl p-6 transition-all duration-300;
+  }
+
+  .card:hover {
+    @apply border-gray-700;
+  }
+
+  /* Card with glassmorphism effect */
+  .card-glass {
+    @apply bg-surface/50 backdrop-blur-lg border border-gray-800/50 rounded-xl p-6;
+  }
+
+  /* Link Styling */
+  .link {
+    @apply text-link hover:text-primary hover:underline transition-colors;
+  }
+}
+
+/* VueFlow Custom Theme */
+:root {
+  /* Background and surfaces */
+  --vf-bg: #000000;
+  --vf-surface: #121212;
+
+  /* Node styling */
+  --vf-node-bg: #121212;
+  --vf-node-text: #FFFFFF;
+  --vf-node-color: #FFFFFF;
+
+  /* Handle (connection points) */
+  --vf-handle: #BFF549;
+  --vf-handle-hover: #D4FF6B;
+
+  /* Connection lines */
+  --vf-connection-path: #BFF549;
+  --vf-edge: #666666;
+  --vf-edge-text: #FFFFFF;
+
+  /* Selected state */
+  --vf-box-shadow: rgba(191, 245, 73, 0.6) 0px 0px 20px;
+
+  /* Minimap */
+  --vf-minimap-mask-bg: rgba(0, 0, 0, 0.6);
+  --vf-minimap-node-bg: #BFF549;
+
+  /* Controls */
+  --vf-controls-bg: #121212;
+  --vf-controls-button-bg: #282828;
+  --vf-controls-button-bg-hover: #333333;
+}
+
+/* Custom VueFlow Node Styling */
+.vue-flow__node {
+  @apply border-2 border-gray-700 bg-surface rounded-lg transition-all;
+}
+
+.vue-flow__node:hover {
+  @apply border-gray-600 shadow-lg;
+}
+
+.vue-flow__node.selected {
+  @apply border-primary;
+  box-shadow: rgba(191, 245, 73, 0.6) 0px 0px 20px;
+}
+
+/* Custom Vue Flow Edge */
+.vue-flow__edge-path {
+  stroke: var(--vf-connection-path);
+  stroke-width: 2px;
+}
+
+.vue-flow__edge-path.animated {
+  animation: dashdraw 0.5s linear infinite;
+  stroke-dasharray: 5;
+}
+
+.vue-flow__edge.selected .vue-flow__edge-path {
+  stroke: var(--vf-handle-hover);
+  stroke-width: 3px;
+}
+
+/* Loading Skeleton */
+@layer utilities {
+  .skeleton {
+    @apply bg-gray-800 animate-pulse rounded;
+  }
+
+  .skeleton-text {
+    @apply h-4 bg-gray-800 animate-pulse rounded;
+  }
+}
+
+/* Fade Transition */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+/* Slide Transition */
+.slide-enter-active,
+.slide-leave-active {
+  transition: all 0.3s ease;
+}
+
+.slide-enter-from {
+  transform: translateX(-20px);
+  opacity: 0;
+}
+
+.slide-leave-to {
+  transform: translateX(20px);
+  opacity: 0;
+}
+
+/* Scroll Styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-gray-900;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-gray-700 rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-gray-600;
+}
