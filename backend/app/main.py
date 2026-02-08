@@ -1,5 +1,6 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+import time
 
 from app.config import settings
 from app.routers import auth, specs, journeys, execution
@@ -11,6 +12,19 @@ app = FastAPI(
     version="0.1.0",
     debug=settings.DEBUG,
 )
+
+@app.middleware("http")
+async def add_process_time_header(request: Request, call_next):
+    """
+    Middleware to add an X-Response-Time header to all responses.
+    """
+    start_time = time.time()
+    response = await call_next(request)  # Process the actual request
+    end_time = time.time()
+    process_time = end_time - start_time
+    # Format the time (e.g., to milliseconds or just seconds)
+    response.headers["X-Response-Time"] = f"{process_time:.4f}s"
+    return response
 
 # Configure CORS
 app.add_middleware(
