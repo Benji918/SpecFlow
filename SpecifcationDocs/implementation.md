@@ -11,7 +11,7 @@ This document outlines the step-by-step implementation plan for building SpecFlo
 
 
 ### 1.2. Backend Foundation (FastAPI)
-- [ ] Initialize FastAPI project with `uv` or `poetry`.
+- [ ] Initialize FastAPI project with `uv`.
 - [ ] Install dependencies: `fastapi`, `uvicorn`, `sqlalchemy`, `alembic`, `pydantic-settings`, `asyncpg`, `python-jose`, `passlib`.
 - [ ] Configure Environment Variables (`.env`).
 - [ ] Set up Database connection (`app/database.py`) using `SQLAlchemy` (Async).
@@ -103,7 +103,7 @@ This document outlines the step-by-step implementation plan for building SpecFlo
 ## Phase 5: Journey Generation (AI Integration)
 
 ### 5.1. Backend AI Service
-- [ ] Integrate Anthropic SDK (`claude-3-5-sonnet` or similar).
+- [ ] Integrate Ollama (`qwen3-vl:235b-cloud`).
 - [ ] Create `JourneyGenerator` service.
 - [ ] **Prompt Engineering**:
     - Input: Parsed API Endpoints.
