@@ -70,3 +70,13 @@ htmlcov/
 alembic/versions/*.pyc
 
 PROJECT_STATUS.md
+backend/.env
+backend/venv/
+backend/.venv/
+backend/app/__pycache__/
+backend/app/models/__pycache__/
+backend/app/services/__pycache__/
+backend/app/routers/__pycache__/
+backend/app/schemas/__pycache__/
+backend/app/tests/__pycache__/
+backend/app/utils/__pycache__/
