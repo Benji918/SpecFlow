@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import axios from 'axios'
+import apiClient from '@/api/client'
 
 export const useJourneyStore = defineStore('journey', () => {
     // State
@@ -18,7 +18,7 @@ export const useJourneyStore = defineStore('journey', () => {
         error.value = null
 
         try {
-            const response = await axios.get('/api/journeys')
+            const response = await apiClient.get('/api/journeys')
             journeys.value = response.data
             return { success: true }
         } catch (err) {
@@ -34,7 +34,7 @@ export const useJourneyStore = defineStore('journey', () => {
         error.value = null
 
         try {
-            const response = await axios.get(`/api/journeys/${journeyId}`)
+            const response = await apiClient.get(`/api/journeys/${journeyId}`)
             activeJourney.value = response.data
             return { success: true, data: response.data }
         } catch (err) {
@@ -50,7 +50,7 @@ export const useJourneyStore = defineStore('journey', () => {
         error.value = null
 
         try {
-            const response = await axios.post(
+            const response = await apiClient.post(
                 `/api/specs/${specId}/generate-journeys`,
                 { strategy }
             )
@@ -72,7 +72,7 @@ export const useJourneyStore = defineStore('journey', () => {
         error.value = null
 
         try {
-            const response = await axios.post('/api/journeys', journeyData)
+            const response = await apiClient.post('/api/journeys', journeyData)
 
             journeys.value.unshift(response.data)
             return { success: true, data: response.data }
@@ -89,7 +89,7 @@ export const useJourneyStore = defineStore('journey', () => {
         error.value = null
 
         try {
-            const response = await axios.put(`/api/journeys/${journeyId}`, updates)
+            const response = await apiClient.put(`/api/journeys/${journeyId}`, updates)
 
             // Update in list
             const index = journeys.value.findIndex((j) => j.id === journeyId)
@@ -116,7 +116,7 @@ export const useJourneyStore = defineStore('journey', () => {
         error.value = null
 
         try {
-            await axios.delete(`/api/journeys/${journeyId}`)
+            await apiClient.delete(`/api/journeys/${journeyId}`)
 
             // Remove from list
             journeys.value = journeys.value.filter((j) => j.id !== journeyId)

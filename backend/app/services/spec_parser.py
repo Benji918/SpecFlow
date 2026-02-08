@@ -29,8 +29,9 @@ class SpecParser:
         import json
         parser = prance.ResolvingParser(
             spec_string=json.dumps(spec_content),
-            backend='openapi-spec-validator', 
-            strict=False
+            backend='openapi-spec-validator',
+            strict=False,
+            validate=False  #skip validation
         )
         self.spec = parser.specification
 
