@@ -68,3 +68,5 @@ htmlcov/
 
 # Alembic
 alembic/versions/*.pyc
+
+PROJECT_STATUS.md

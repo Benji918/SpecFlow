@@ -214,4 +214,4 @@ Private project - All rights reserved
 
 ---
 
-**Built with ❤️ following exact specifications - No hallucinations, no assumptions**
+**Built with ❤️ by Benjamin**
