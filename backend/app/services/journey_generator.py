@@ -1,8 +1,8 @@
 import json
 from typing import List, Dict, Any
 from ollama import Client
-
 from app.config import settings
+import os
 from app.services.spec_parser import EndpointInfo
 
 
@@ -11,7 +11,10 @@ class JourneyGenerator:
 
     def __init__(self):
         """Initialize Ollama client."""
-        self.client = Client(host=settings.OLLAMA_HOST)
+        self.client = Client(
+            host="https://ollama.com",
+            headers={'Authorization': 'Bearer ' + os.environ.get('OLLAMA_API_KEY')}
+        )
         self.model = settings.OLLAMA_MODEL
 
     async def generate_journeys(
@@ -51,10 +54,14 @@ Return ONLY a JSON array, no explanation.
 """
 
         # Call Ollama API
+        print("Calling Ollama API...")
         response = self.client.chat(
             model=self.model,
             messages=[{"role": "user", "content": prompt}],
+            format="json",
         )
+        print("Response:", response)
+        print('Done calling Ollama API')
 
         # Parse response
         try:
