@@ -26,7 +26,12 @@ class SpecParser:
             spec_content: Dictionary containing the OpenAPI specification
         """
         # Resolve all $ref pointers
-        parser = prance.ResolvingParser(spec_dict=spec_content)
+        import json
+        parser = prance.ResolvingParser(
+            spec_string=json.dumps(spec_content),
+            backend='openapi-spec-validator', 
+            strict=False
+        )
         self.spec = parser.specification
 
     def extract_endpoints(self) -> List[EndpointInfo]:

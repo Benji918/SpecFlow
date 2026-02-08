@@ -13,7 +13,7 @@ export const useAuthStore = defineStore('auth', () => {
     // Actions
     async function register(email, password, name) {
         try {
-            const response = await axios.post('/api/auth/register', {
+            const response = await apiClient.post('/api/auth/register', {
                 email,
                 password,
                 name,
@@ -34,7 +34,7 @@ export const useAuthStore = defineStore('auth', () => {
 
     async function login(email, password) {
         try {
-            const response = await axios.post('/api/auth/login', {
+            const response = await apiClient.post('/api/auth/login', {
                 email,
                 password,
             })
@@ -56,7 +56,7 @@ export const useAuthStore = defineStore('auth', () => {
         if (!token.value) return
 
         try {
-            const response = await axios.get('/api/auth/me')
+            const response = await apiClient.get('/api/auth/me')
             user.value = response.data
         } catch (error) {
             // Token might be invalid, logout
@@ -74,7 +74,7 @@ export const useAuthStore = defineStore('auth', () => {
         if (!token.value) return
 
         try {
-            const response = await axios.post('/api/auth/refresh')
+            const response = await apiClient.post('/api/auth/refresh')
             token.value = response.data.token
             localStorage.setItem('token', response.data.token)
         } catch (error) {

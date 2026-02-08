@@ -51,19 +51,19 @@ const router = createRouter({
 })
 
 // Navigation guard
-// router.beforeEach((to, from, next) => {
-//     const authStore = useAuthStore()
-//     const requiresAuth = to.meta.requiresAuth
+router.beforeEach((to, from, next) => {
+    const authStore = useAuthStore()
+    const requiresAuth = to.meta.requiresAuth
 
-//     if (requiresAuth && !authStore.isAuthenticated) {
-//         // Redirect to login if route requires auth and user is not authenticated
-//         next('/login')
-//     } else if (!requiresAuth && authStore.isAuthenticated && (to.path === '/login' || to.path === '/signup')) {
-//         // Redirect to dashboard if already logged in and trying to access auth pages
-//         next('/dashboard')
-//     } else {
-//         next()
-//     }
-// })
+    if (requiresAuth && !authStore.isAuthenticated) {
+        // Redirect to login if route requires auth and user is not authenticated
+        next('/login')
+    } else if (!requiresAuth && authStore.isAuthenticated && (to.path === '/login' || to.path === '/signup')) {
+        // Redirect to dashboard if already logged in and trying to access auth pages
+        next('/dashboard')
+    } else {
+        next()
+    }
+})
 
 export default router

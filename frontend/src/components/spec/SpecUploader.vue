@@ -132,7 +132,7 @@ import { useRouter } from 'vue-router'
 import { useSpecStore } from '@/stores/spec'
 import { useToast } from 'vue-toastification'
 import { Upload, FileText, X, AlertCircle } from 'lucide-vue-next'
-import SwaggerParser from '@apidevtools/swagger-parser'
+import { load } from 'js-yaml'
 
 const router = useRouter()
 const specStore = useSpecStore()
@@ -195,8 +195,8 @@ async function handleUpload() {
       if (selectedFile.value.name.endsWith('.json')) {
         specContent = JSON.parse(content)
       } else {
-        // For YAML, we'll use SwaggerParser
-        specContent = await SwaggerParser.parse(content)
+        // For YAML, we'll use js-yaml
+        specContent = load(content)
       }
     } catch (parseError) {
       throw new Error('Invalid file format: ' + parseError.message)
@@ -204,16 +204,17 @@ async function handleUpload() {
 
     uploadProgress.value = 50
 
-    // Validate OpenAPI spec
-    try {
-      await SwaggerParser.validate(specContent)
-    } catch (validationErr) {
-      validationError.value = validationErr.message
+    // Validate OpenAPI spec (Basic check)
+    if (!specContent.openapi && !specContent.swagger) {
+      validationError.value = 'Missing openapi or swagger version'
       uploading.value = false
       uploadProgress.value = 0
       toast.error('Invalid OpenAPI specification')
       return
     }
+    
+    // Optional: You could do more checks here, but let backend handle strict validation
+    validationError.value = null
 
     uploadProgress.value = 70
 
