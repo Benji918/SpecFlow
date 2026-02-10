@@ -32,14 +32,25 @@
             <label for="password" class="block text-sm font-medium mb-2">
               Password
             </label>
-            <input
-              id="password"
-              v-model="formData.password"
-              type="password"
-              required
-              class="input-field w-full"
-              placeholder="••••••••"
-            />
+            <div class="relative">
+              <input
+                id="password"
+                v-model="formData.password"
+                :type="showPassword ? 'text' : 'password'"
+                required
+                class="input-field w-full pr-10"
+                placeholder="••••••••"
+              />
+              <button
+                type="button"
+                @click="showPassword = !showPassword"
+                class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 transition-colors"
+                tabindex="-1"
+              >
+                <Eye v-if="!showPassword" :size="18" />
+                <EyeOff v-else :size="18" />
+              </button>
+            </div>
           </div>
 
           <!-- Error Message -->
@@ -74,6 +85,7 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useToast } from 'vue-toastification'
+import { Eye, EyeOff } from 'lucide-vue-next'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -86,6 +98,7 @@ const formData = ref({
 
 const loading = ref(false)
 const error = ref(null)
+const showPassword = ref(false)
 
 async function handleLogin() {
   loading.value = true
