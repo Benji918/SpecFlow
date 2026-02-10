@@ -49,6 +49,7 @@ Rules:
 2. Map data between steps (e.g., login token → auth header)
 3. Follow logical workflows (e.g., create resource → update → delete)
 4. Include error testing journeys (e.g., "Test unauthorized access")
+5. Ensure the steps are in the correct order and follow a logical path based on the API endpoints provided
 
 Return ONLY a JSON array, no explanation.
 """

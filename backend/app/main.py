@@ -1,6 +1,11 @@
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 import time
+import logging
+
+# Disable uvicorn access logger to avoid duplicates
+logging.getLogger("uvicorn.access").disabled = True
+logger = logging.getLogger("uvicorn")
 
 from app.config import settings
 from app.routers import auth, specs, journeys, execution
@@ -19,10 +24,17 @@ async def add_process_time_header(request: Request, call_next):
     Middleware to add an X-Response-Time header to all responses.
     """
     start_time = time.time()
-    response = await call_next(request)  # Process the actual request
-    end_time = time.time()
-    process_time = end_time - start_time
-    # Format the time (e.g., to milliseconds or just seconds)
+    response = await call_next(request)
+    process_time = time.time() - start_time
+    
+    # Custom combined log (replaces default uvicorn access log)
+    host = request.client.host if request.client else "unknown"
+    port = request.client.port if request.client else "0"
+    
+    logger.info(
+        f'{host}:{port} - "{request.method} {request.url.path}" {response.status_code} - {process_time:.4f}s'
+    )
+
     response.headers["X-Response-Time"] = f"{process_time:.4f}s"
     return response
 

@@ -10,12 +10,12 @@ class Spec(Base):
     __tablename__ = "specs"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True)
     name = Column(String, nullable=False)
     version = Column(String)
     content = Column(JSON, nullable=False)  # Full OpenAPI spec
-    endpoints = Column(JSON)  # Parsed endpoint list
-    schemas = Column(JSON)  # Component schemas
+    endpoints = Column(JSON, nullable=False)  # Parsed endpoint list
+    schemas = Column(JSON, nullable=False)  # Component schemas
     uploaded_at = Column(DateTime, default=datetime.utcnow)
 
     # Relationships

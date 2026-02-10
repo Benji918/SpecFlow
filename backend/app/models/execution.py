@@ -10,7 +10,7 @@ class Execution(Base):
     __tablename__ = "executions"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    journey_id = Column(UUID(as_uuid=True), ForeignKey("journeys.id"), nullable=False)
+    journey_id = Column(UUID(as_uuid=True), ForeignKey("journeys.id"), nullable=False, index=True)
     status = Column(
         SQLEnum("running", "completed", "failed", name="execution_status"),
         default="running",

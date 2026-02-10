@@ -18,7 +18,6 @@ engine = create_async_engine(
     max_overflow=20,
     pool_timeout=30,
     pool_recycle=1800,
-    echo=settings.DEBUG,
     connect_args={
         "statement_cache_size": 0,
         "ssl": ssl_ctx,
