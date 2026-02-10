@@ -10,8 +10,15 @@ from app.models.spec import Spec
 from app.schemas.spec import SpecCreate, SpecResponse, SpecUpdate
 from app.services.auth import get_current_user
 from app.services.spec_parser import SpecParser
+from app.services.cache import cache_service
+from typing import Optional
 
 router = APIRouter(prefix="/api/specs", tags=["specs"])
+
+def get_spec_cache_key(user_id: uuid.UUID, spec_id: Optional[uuid.UUID] = None) -> str:
+    if spec_id:
+        return f"spec:{user_id}:{spec_id}"
+    return f"specs:{user_id}"
 
 
 @router.post("", response_model=SpecResponse, status_code=status.HTTP_201_CREATED)
@@ -45,6 +52,9 @@ async def create_spec(
         await db.commit()
         await db.refresh(spec)
         
+        # Invalidate list cache
+        await cache_service.delete(get_spec_cache_key(current_user.id))
+        
         return SpecResponse.model_validate(spec)
         
     except Exception as e:
@@ -60,11 +70,19 @@ async def list_specs(
     db: AsyncSession = Depends(get_db),
 ):
     """Get all specs for the current user."""
+    cache_key = get_spec_cache_key(current_user.id)
+    cached_data = await cache_service.get(cache_key)
+    if cached_data:
+        return cached_data
+
     result = await db.execute(
         select(Spec).where(Spec.user_id == current_user.id).order_by(Spec.uploaded_at.desc())
     )
     specs = result.scalars().all()
-    return [SpecResponse.model_validate(spec) for spec in specs]
+    response_data = [SpecResponse.model_validate(spec).model_dump(mode='json') for spec in specs]
+    
+    await cache_service.set(cache_key, response_data)
+    return response_data
 
 
 @router.get("/{spec_id}", response_model=SpecResponse)
@@ -74,6 +92,11 @@ async def get_spec(
     db: AsyncSession = Depends(get_db),
 ):
     """Get a specific spec by ID."""
+    cache_key = get_spec_cache_key(current_user.id, spec_id)
+    cached_data = await cache_service.get(cache_key)
+    if cached_data:
+        return cached_data
+
     result = await db.execute(
         select(Spec).where(Spec.id == spec_id, Spec.user_id == current_user.id)
     )
@@ -85,7 +108,9 @@ async def get_spec(
             detail="Spec not found",
         )
     
-    return SpecResponse.model_validate(spec)
+    response_data = SpecResponse.model_validate(spec).model_dump(mode='json')
+    await cache_service.set(cache_key, response_data)
+    return response_data
 
 
 @router.patch("/{spec_id}", response_model=SpecResponse)
@@ -114,6 +139,10 @@ async def update_spec(
     await db.commit()
     await db.refresh(spec)
     
+    # Invalidate caches
+    await cache_service.delete(get_spec_cache_key(current_user.id, spec_id))
+    await cache_service.delete(get_spec_cache_key(current_user.id))
+    
     return SpecResponse.model_validate(spec)
 
 
@@ -137,3 +166,9 @@ async def delete_spec(
     
     await db.delete(spec)
     await db.commit()
+    
+    # Invalidate caches
+    await cache_service.delete(get_spec_cache_key(current_user.id, spec_id))
+    await cache_service.delete(get_spec_cache_key(current_user.id))
+    # Also invalidate journeys list as they might be deleted cascade
+    await cache_service.delete(f"journeys:{current_user.id}")

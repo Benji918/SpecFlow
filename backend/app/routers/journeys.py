@@ -17,8 +17,15 @@ from app.schemas.journey import (
 from app.services.auth import get_current_user
 from app.services.spec_parser import SpecParser, EndpointInfo
 from app.services.journey_generator import JourneyGenerator
+from app.services.cache import cache_service
+from typing import Optional
 
 router = APIRouter(prefix="/api", tags=["journeys"])
+
+def get_journey_cache_key(user_id: uuid.UUID, journey_id: Optional[uuid.UUID] = None) -> str:
+    if journey_id:
+        return f"journey:{user_id}:{journey_id}"
+    return f"journeys:{user_id}"
 
 
 @router.post(
@@ -87,11 +94,10 @@ async def generate_journeys(
     await db.commit()
     
     # Refresh all journeys
-    for journey in created_journeys:
-        await db.refresh(journey)
+    # Invalidate list cache
+    await cache_service.delete(get_journey_cache_key(current_user.id))
     
     return [JourneyResponse.model_validate(j) for j in created_journeys]
-
 
 @router.get("/journeys", response_model=List[JourneyResponse])
 async def list_journeys(
@@ -99,14 +105,21 @@ async def list_journeys(
     db: AsyncSession = Depends(get_db),
 ):
     """Get all journeys for the current user."""
+    cache_key = get_journey_cache_key(current_user.id)
+    cached_data = await cache_service.get(cache_key)
+    if cached_data:
+        return cached_data
+
     result = await db.execute(
         select(Journey)
         .where(Journey.user_id == current_user.id)
         .order_by(Journey.created_at.desc())
     )
     journeys = result.scalars().all()
-    return [JourneyResponse.model_validate(j) for j in journeys]
-
+    response_data = [JourneyResponse.model_validate(j).model_dump(mode='json') for j in journeys]
+    
+    await cache_service.set(cache_key, response_data)
+    return response_data
 
 @router.get("/journeys/{journey_id}", response_model=JourneyResponse)
 async def get_journey(
@@ -115,6 +128,11 @@ async def get_journey(
     db: AsyncSession = Depends(get_db),
 ):
     """Get a specific journey by ID."""
+    cache_key = get_journey_cache_key(current_user.id, journey_id)
+    cached_data = await cache_service.get(cache_key)
+    if cached_data:
+        return cached_data
+
     result = await db.execute(
         select(Journey).where(
             Journey.id == journey_id, Journey.user_id == current_user.id
@@ -128,7 +146,9 @@ async def get_journey(
             detail="Journey not found",
         )
     
-    return JourneyResponse.model_validate(journey)
+    response_data = JourneyResponse.model_validate(journey).model_dump(mode='json')
+    await cache_service.set(cache_key, response_data)
+    return response_data
 
 
 @router.post("/journeys", response_model=JourneyResponse, status_code=status.HTTP_201_CREATED)
@@ -166,6 +186,9 @@ async def create_journey(
     await db.commit()
     await db.refresh(journey)
     
+    # Invalidate list cache
+    await cache_service.delete(get_journey_cache_key(current_user.id))
+    
     return JourneyResponse.model_validate(journey)
 
 
@@ -201,6 +224,10 @@ async def update_journey(
     await db.commit()
     await db.refresh(journey)
     
+    # Invalidate caches
+    await cache_service.delete(get_journey_cache_key(current_user.id, journey_id))
+    await cache_service.delete(get_journey_cache_key(current_user.id))
+    
     return JourneyResponse.model_validate(journey)
 
 
@@ -226,3 +253,7 @@ async def delete_journey(
     
     await db.delete(journey)
     await db.commit()
+    
+    # Invalidate caches
+    await cache_service.delete(get_journey_cache_key(current_user.id, journey_id))
+    await cache_service.delete(get_journey_cache_key(current_user.id))
