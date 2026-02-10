@@ -5,10 +5,10 @@ import apiClient from '@/api/client'
 export const useAuthStore = defineStore('auth', () => {
     // State
     const user = ref(null)
-    const token = ref(localStorage.getItem('token') || null)
+    const isInitialLoad = ref(true)
 
     // Getters
-    const isAuthenticated = computed(() => !!token.value && !!user.value)
+    const isAuthenticated = computed(() => !!user.value)
 
     // Actions
     async function register(email, password, name) {
@@ -19,10 +19,7 @@ export const useAuthStore = defineStore('auth', () => {
                 name,
             })
 
-            token.value = response.data.token
-            user.value = response.data.user
-            localStorage.setItem('token', response.data.token)
-
+            user.value = response.data
             return { success: true }
         } catch (error) {
             return {
@@ -39,10 +36,7 @@ export const useAuthStore = defineStore('auth', () => {
                 password,
             })
 
-            token.value = response.data.token
-            user.value = response.data.user
-            localStorage.setItem('token', response.data.token)
-
+            user.value = response.data
             return { success: true }
         } catch (error) {
             return {
@@ -53,30 +47,30 @@ export const useAuthStore = defineStore('auth', () => {
     }
 
     async function fetchCurrentUser() {
-        if (!token.value) return
-
         try {
             const response = await apiClient.get('/api/auth/me')
             user.value = response.data
         } catch (error) {
-            // Token might be invalid, logout
-            logout()
+            user.value = null
+        } finally {
+            isInitialLoad.value = false
         }
     }
 
-    function logout() {
-        user.value = null
-        token.value = null
-        localStorage.removeItem('token')
+    async function logout() {
+        try {
+            await apiClient.post('/api/auth/logout')
+        } catch (error) {
+            console.error('Logout failed', error)
+        } finally {
+            user.value = null
+            window.location.href = '/login'
+        }
     }
 
     async function refreshToken() {
-        if (!token.value) return
-
         try {
-            const response = await apiClient.post('/api/auth/refresh')
-            token.value = response.data.token
-            localStorage.setItem('token', response.data.token)
+            await apiClient.post('/api/auth/refresh')
         } catch (error) {
             logout()
         }
@@ -84,7 +78,7 @@ export const useAuthStore = defineStore('auth', () => {
 
     return {
         user,
-        token,
+        isInitialLoad,
         isAuthenticated,
         register,
         login,
