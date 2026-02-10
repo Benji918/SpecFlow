@@ -22,7 +22,7 @@
         ></span>
       </div>
       <button
-        @click.stop="$emit('delete')"
+        @click.stop="handleDelete"
         class="text-gray-400 hover:text-red-500 transition-colors"
       >
         <X :size="16" />
@@ -78,10 +78,14 @@
 
 <script setup>
 import { computed } from 'vue'
-import { Handle, Position } from '@vue-flow/core'
+import { Handle, Position, useVueFlow } from '@vue-flow/core'
 import { X } from 'lucide-vue-next'
 
 const props = defineProps({
+  id: {
+    type: String,
+    required: true,
+  },
   data: {
     type: Object,
     required: true,
@@ -104,24 +108,30 @@ const props = defineProps({
   },
 })
 
-defineEmits(['delete', 'view-result'])
+const emit = defineEmits(['view-result'])
+
+const { removeNodes } = useVueFlow()
+
+function handleDelete() {
+  removeNodes([props.id])
+}
 
 const nodeClasses = computed(() => {
   const classes = ['bg-surface']
 
   if (props.selected) {
-    classes.push('border-primary shadow-glow')
+    classes.push('border-primary shadow-glow ring-2 ring-primary/20')
   } else {
     classes.push('border-gray-700')
   }
 
   if (props.data.status) {
     if (props.data.status === 'running') {
-      classes.push('animate-pulse')
+      classes.push('animate-pulse border-yellow-500/50')
     } else if (props.data.status === 'error') {
-      classes.push('border-red-500')
+      classes.push('border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.2)]')
     } else if (props.data.status === 'success') {
-      classes.push('border-green-500')
+      classes.push('border-green-500 shadow-[0_0_15px_rgba(34,197,94,0.2)]')
     }
   }
 

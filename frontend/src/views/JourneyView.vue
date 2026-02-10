@@ -5,7 +5,7 @@
       <div class="max-w-full px-4 py-4">
         <div class="flex items-center justify-between">
           <div class="flex items-center space-x-4">
-            <button @click="router.back()" class="text-gray-400 hover:text-white">
+            <button @click="router.push('/dashboard')" class="text-gray-400 hover:text-white">
               <ArrowLeft :size="24" />
             </button>
             <div>
@@ -16,6 +16,14 @@
             </div>
           </div>
           <div class="flex items-center space-x-3">
+            <button
+              @click="prefillAllMockData"
+              class="btn-secondary text-sm py-2 px-4"
+              title="Generate mock data for all steps"
+            >
+              <Sparkles :size="16" class="inline mr-2" />
+              Prefill All
+            </button>
             <button
               @click="showRunner = !showRunner"
               :class="[
@@ -61,20 +69,23 @@
         <!-- Right Panel - Response Viewer (Slides in) -->
         <transition name="slide">
           <div
-            v-if="selectedResult"
+            v-if="selectedNode"
             class="w-96 border-l border-gray-800 bg-surface overflow-auto absolute right-0 top-0 bottom-0"
           >
-            <div class="sticky top-0 bg-surface border-b border-gray-800 p-4 flex items-center justify-between z-10">
-              <h3 class="font-semibold">Step Details</h3>
+            <div class="sticky top-0 bg-surface border-b border-gray-800 p-4 flex items-center justify-end z-10">
               <button
-                @click="selectedResult = null"
+                @click="selectedNode = null; selectedResult = null"
                 class="text-gray-400 hover:text-white"
               >
                 <X :size="20" />
               </button>
             </div>
             <div class="p-4">
-              <ResponsePanel :result="selectedResult" />
+              <ResponsePanel
+                :result="selectedResult"
+                :node="selectedNode"
+                @update-node="handleNodeUpdate"
+              />
             </div>
           </div>
         </transition>
@@ -128,10 +139,12 @@ import {
   Loader,
   AlertCircle,
   X,
+  Sparkles,
 } from 'lucide-vue-next'
 import JourneyFlow from '@/components/journey/JourneyFlow.vue'
 import JourneyRunner from '@/components/journey/JourneyRunner.vue'
 import ResponsePanel from '@/components/journey/ResponsePanel.vue'
+import { generateEndpointMock } from '@/utils/mockGenerator'
 
 const router = useRouter()
 const route = useRoute()
@@ -141,6 +154,7 @@ const toast = useToast()
 const loading = ref(true)
 const showRunner = ref(false)
 const selectedResult = ref(null)
+const selectedNode = ref(null)
 const flowRef = ref(null)
 
 const journey = computed(() => journeyStore.activeJourney)
@@ -159,11 +173,36 @@ async function fetchJourney() {
 }
 
 function handleNodeSelected(node) {
+  selectedNode.value = node
   // Find execution result for this node
   const result = journeyStore.executionResults.find(
     (r) => r.stepId === node.id
   )
   selectedResult.value = result || null
+}
+
+function handleNodeUpdate(nodeId, updates) {
+  if (journey.value) {
+    const nodeIndex = journey.value.nodes.findIndex(n => n.id === nodeId)
+    if (nodeIndex !== -1) {
+      // Deep merge updates into node.data
+      journey.value.nodes[nodeIndex].data = {
+        ...journey.value.nodes[nodeIndex].data,
+        ...updates
+      }
+      
+      // Update the flow component's nodes as well to reflect changes
+      if (flowRef.value) {
+        const flowNodeIndex = flowRef.value.nodes.findIndex(n => n.id === nodeId)
+        if (flowNodeIndex !== -1) {
+          flowRef.value.nodes[flowNodeIndex].data = {
+            ...flowRef.value.nodes[flowNodeIndex].data,
+            ...updates
+          }
+        }
+      }
+    }
+  }
 }
 
 function handleStepStart(stepId) {
@@ -204,6 +243,48 @@ function handleExecutionComplete(message) {
 function handleFlowSaved(data) {
   // Flow saved successfully
   journeyStore.activeJourney = data
+}
+
+function prefillAllMockData() {
+  if (!journey.value?.nodes) return
+  
+  let updatedCount = 0
+  journey.value.nodes.forEach(node => {
+    // Generate mock data if schema is present
+    const mock = generateEndpointMock(node.data)
+    const updates = {}
+    
+    if (mock.body && !node.data.requestBody) {
+      updates.requestBody = mock.body
+    }
+    
+    // Also prefill params if empty
+    if (mock.params && node.data.parameters) {
+      const updatedParams = node.data.parameters.map(p => {
+        if (!p.value) {
+          return { ...p, value: mock.params[p.name] || '' }
+        }
+        return p
+      })
+      
+      // Check if anything actually changed in params
+      const hasParamChanges = JSON.stringify(updatedParams) !== JSON.stringify(node.data.parameters)
+      if (hasParamChanges) {
+        updates.parameters = updatedParams
+      }
+    }
+    
+    if (Object.keys(updates).length > 0) {
+      handleNodeUpdate(node.id, updates)
+      updatedCount++
+    }
+  })
+  
+  if (updatedCount > 0) {
+    toast.success(`Prefilled ${updatedCount} steps with mock data. Don't forget to save!`)
+  } else {
+    toast.info('No steps needed prefilling.')
+  }
 }
 
 async function handleDeleteJourney() {

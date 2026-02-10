@@ -135,22 +135,20 @@
 
 /* Custom VueFlow Node Styling */
 .vue-flow__node {
-  @apply border-2 border-gray-700 bg-surface rounded-lg transition-all;
-}
-
-.vue-flow__node:hover {
-  @apply border-gray-600 shadow-lg;
+  @apply border-2 border-gray-600 bg-surface rounded-lg transition-all;
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
 }
 
 .vue-flow__node.selected {
   @apply border-primary;
-  box-shadow: rgba(191, 245, 73, 0.6) 0px 0px 20px;
+  box-shadow: 0 0 20px rgba(191, 245, 73, 0.4);
 }
 
 /* Custom Vue Flow Edge */
 .vue-flow__edge-path {
-  stroke: var(--vf-connection-path);
-  stroke-width: 2px;
+  stroke: var(--vf-connection-path) !important;
+  stroke-width: 3px !important;
+  stroke-opacity: 1 !important;
 }
 
 .vue-flow__edge-path.animated {
@@ -159,8 +157,8 @@
 }
 
 .vue-flow__edge.selected .vue-flow__edge-path {
-  stroke: var(--vf-handle-hover);
-  stroke-width: 3px;
+  stroke: var(--vf-handle-hover) !important;
+  stroke-width: 4px !important;
 }
 
 /* Loading Skeleton */

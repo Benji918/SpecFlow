@@ -50,6 +50,8 @@ import { VueFlow, useVueFlow } from '@vue-flow/core'
 import { Background } from '@vue-flow/background'
 import { Controls } from '@vue-flow/controls'
 import { MiniMap } from '@vue-flow/minimap'
+
+// Import Vue Flow styles are now in <style> block
 import { useJourneyStore } from '@/stores/journey'
 import { useToast } from 'vue-toastification'
 import { Save, GitBranch, Loader } from 'lucide-vue-next'
@@ -88,10 +90,21 @@ const hasChanges = ref(false)
 const saving = ref(false)
 const originalState = ref(JSON.stringify({ nodes: props.initialNodes, edges: props.initialEdges }))
 
-// Watch for changes
+// Watch for changes and track state
 watch([nodes, edges], () => {
-  const currentState = JSON.stringify({ nodes: nodes.value, edges: edges.value })
-  hasChanges.value = currentState !== originalState.value
+    const currentState = JSON.stringify({ nodes: nodes.value, edges: edges.value })
+    hasChanges.value = currentState !== originalState.value
+}, { deep: true })
+
+// Sync from props if they change externally
+watch(() => props.initialNodes, (newNodes) => {
+    nodes.value = [...newNodes]
+    originalState.value = JSON.stringify({ nodes: nodes.value, edges: edges.value })
+}, { deep: true })
+
+watch(() => props.initialEdges, (newEdges) => {
+    edges.value = [...newEdges]
+    originalState.value = JSON.stringify({ nodes: nodes.value, edges: edges.value })
 }, { deep: true })
 
 function onNodesChange(changes) {
@@ -117,17 +130,20 @@ function autoLayout() {
   const nodeHeight = 120
   const nodeSpacing = 100
   
-  nodes.value.forEach((node, index) => {
+  // Create new array to ensure reactivity
+  const newNodes = [...nodes.value]
+  newNodes.forEach((node, index) => {
     node.position = {
       x: 300, // Centered
       y: index * (nodeHeight + nodeSpacing),
     }
   })
+  nodes.value = newNodes
 
   // Recreate edges to ensure they're connected properly
-  edges.value = []
+  const newEdges = []
   for (let i = 0; i < nodes.value.length - 1; i++) {
-    edges.value.push({
+    newEdges.push({
       id: `e${i}-${i + 1}`,
       source: nodes.value[i].id,
       target: nodes.value[i + 1].id,
@@ -135,6 +151,7 @@ function autoLayout() {
       animated: true,
     })
   }
+  edges.value = newEdges
 
   // Fit viewport
   setTimeout(() => {
@@ -174,8 +191,25 @@ defineExpose({
 </script>
 
 <style>
-/* VueFlow custom styles are in main.css */
+/* Import Vue Flow styles */
+@import '@vue-flow/core/dist/style.css';
+@import '@vue-flow/core/dist/theme-default.css';
+@import '@vue-flow/controls/dist/style.css';
+@import '@vue-flow/minimap/dist/style.css';
+
 .vue-flow-custom {
-  background-color: #000;
+  height: 100%;
+  width: 100%;
+  background: transparent;
+}
+
+/* Ensure custom nodes are visible */
+.vue-flow__node-endpoint {
+  z-index: 10;
+}
+
+.vue-flow__edge-path {
+  stroke-width: 3px;
+  stroke: #BFF549 !important;
 }
 </style>
