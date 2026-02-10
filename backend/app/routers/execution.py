@@ -89,6 +89,17 @@ async def execute_journey_ws(websocket: WebSocket, journey_id: str):
     try:
         # Get database session
         async for db in get_db():
+            # Authenticate user via cookies/headers
+            try:
+                current_user = await get_current_user(websocket, db)
+            except HTTPException as e:
+                await websocket.send_json({
+                    "type": "error",
+                    "message": f"Authentication failed: {e.detail}"
+                })
+                await websocket.close()
+                return
+            
             # Get execution parameters from client
             data = await websocket.receive_json()
             base_url = data.get("baseUrl")
@@ -106,14 +117,17 @@ async def execute_journey_ws(websocket: WebSocket, journey_id: str):
             # Fetch journey
             journey_uuid = uuid.UUID(journey_id)
             result = await db.execute(
-                select(Journey).where(Journey.id == journey_uuid)
+                select(Journey).where(
+                    Journey.id == journey_uuid,
+                    Journey.user_id == current_user.id
+                )
             )
             journey = result.scalar_one_or_none()
             
             if not journey:
                 await websocket.send_json({
                     "type": "error",
-                    "message": "Journey not found"
+                    "message": "Journey not found or access denied"
                 })
                 await websocket.close()
                 return

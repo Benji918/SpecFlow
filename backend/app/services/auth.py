@@ -1,11 +1,12 @@
 from passlib.context import CryptContext
 from jose import JWTError, jwt
 from datetime import datetime, timedelta
-from fastapi import HTTPException, Depends, status
+from fastapi import HTTPException, Depends, status, Request, WebSocket
+from starlette.requests import HTTPConnection
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from typing import Optional
+from typing import Optional, Union
 
 from app.config import settings
 from app.database import get_db
@@ -64,11 +65,28 @@ def verify_token(token: str) -> dict:
 
 
 async def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
+    request: HTTPConnection,
     db: AsyncSession = Depends(get_db),
 ) -> User:
-    """Get the current authenticated user from JWT token."""
-    token = credentials.credentials
+    """Get the current authenticated user from JWT token (header or cookie)."""
+    token = None
+    
+    # Try to get from Authorization header
+    auth_header = request.headers.get("Authorization")
+    if auth_header and auth_header.startswith("Bearer "):
+        token = auth_header.split(" ")[1]
+    
+    # Try to get from cookie if not in header
+    if not token:
+        token = request.cookies.get("access_token")
+    
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
     payload = verify_token(token)
     
     user_id: str = payload.get("sub")

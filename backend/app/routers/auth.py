@@ -1,7 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Response, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
+from app.config import settings
 from app.database import get_db
 from app.models.user import User
 from app.schemas.user import UserCreate, UserLogin, TokenResponse, UserResponse
@@ -15,8 +16,8 @@ from app.services.auth import (
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
 
-@router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
-async def register(user_data: UserCreate, db: AsyncSession = Depends(get_db)):
+@router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+async def register(response: Response, user_data: UserCreate, db: AsyncSession = Depends(get_db)):
     """Register a new user."""
     # Check if user already exists
     result = await db.execute(select(User).where(User.email == user_data.email))
@@ -42,14 +43,22 @@ async def register(user_data: UserCreate, db: AsyncSession = Depends(get_db)):
     # Create access token
     token = create_access_token(data={"sub": str(user.id)})
     
-    return TokenResponse(
-        token=token,
-        user=UserResponse.model_validate(user),
+    # Set HttpOnly cookie
+    response.set_cookie(
+        key="access_token",
+        value=token,
+        httponly=True,
+        max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        expires=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        samesite="lax",
+        secure=False,  # Set to True in production with HTTPS
     )
+    
+    return UserResponse.model_validate(user)
 
 
-@router.post("/login", response_model=TokenResponse)
-async def login(credentials: UserLogin, db: AsyncSession = Depends(get_db)):
+@router.post("/login", response_model=UserResponse)
+async def login(response: Response, credentials: UserLogin, db: AsyncSession = Depends(get_db)):
     """Login with email and password."""
     # Find user by email
     result = await db.execute(select(User).where(User.email == credentials.email))
@@ -64,10 +73,25 @@ async def login(credentials: UserLogin, db: AsyncSession = Depends(get_db)):
     # Create access token
     token = create_access_token(data={"sub": str(user.id)})
     
-    return TokenResponse(
-        token=token,
-        user=UserResponse.model_validate(user),
+    # Set HttpOnly cookie
+    response.set_cookie(
+        key="access_token",
+        value=token,
+        httponly=True,
+        max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        expires=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        samesite="lax",
+        secure=False,  # Set to True in production with HTTPS
     )
+    
+    return UserResponse.model_validate(user)
+
+
+@router.post("/logout")
+async def logout(response: Response):
+    """Logout by clearing the access token cookie."""
+    response.delete_cookie(key="access_token")
+    return {"message": "Logged out successfully"}
 
 
 @router.get("/me", response_model=UserResponse)
@@ -76,8 +100,20 @@ async def get_me(current_user: User = Depends(get_current_user)):
     return UserResponse.model_validate(current_user)
 
 
-@router.post("/refresh", response_model=dict)
-async def refresh_token(current_user: User = Depends(get_current_user)):
+@router.post("/refresh")
+async def refresh_token(response: Response, current_user: User = Depends(get_current_user)):
     """Refresh access token."""
     token = create_access_token(data={"sub": str(current_user.id)})
-    return {"token": token}
+    
+    # Set HttpOnly cookie
+    response.set_cookie(
+        key="access_token",
+        value=token,
+        httponly=True,
+        max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        expires=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        samesite="lax",
+        secure=False,  # Set to True in production with HTTPS
+    )
+    
+    return {"message": "Token refreshed"}
