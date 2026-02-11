@@ -72,6 +72,44 @@
             </p>
           </div>
 
+          <!-- Confirm Password Field -->
+          <div>
+            <label for="confirmPassword" class="block text-sm font-medium mb-2">
+              Confirm Password
+            </label>
+            <div class="relative">
+              <input
+                id="confirmPassword"
+                v-model="formData.confirmPassword"
+                :type="showPassword ? 'text' : 'password'"
+                required
+                class="input-field w-full pr-10"
+                placeholder="••••••••"
+              />
+            </div>
+          </div>
+
+          <!-- Terms of Service -->
+          <div class="flex items-center">
+            <input
+              id="tos"
+              v-model="formData.agreeToTos"
+              type="checkbox"
+              required
+              class="h-4 w-4 bg-surface border-gray-700 rounded text-primary focus:ring-primary focus:ring-offset-background"
+            />
+            <label for="tos" class="ml-2 block text-sm text-gray-400 cursor-pointer">
+              I agree to the
+              <a href="#" class="link" @click.prevent="toast.info('ToS not implemented yet.')">
+                Terms of Service
+              </a>
+              and
+              <a href="#" class="link" @click.prevent="toast.info('Privacy Policy not implemented yet.')">
+                Privacy Policy
+              </a>
+            </label>
+          </div>
+
           <!-- Error Message -->
           <div v-if="error" class="text-red-500 text-sm">
             {{ error }}
@@ -114,6 +152,8 @@ const formData = ref({
   name: '',
   email: '',
   password: '',
+  confirmPassword: '',
+  agreeToTos: false,
 })
 
 const loading = ref(false)
@@ -121,6 +161,18 @@ const error = ref(null)
 const showPassword = ref(false)
 
 async function handleSignup() {
+  if (formData.value.password !== formData.value.confirmPassword) {
+    error.value = 'Passwords do not match'
+    toast.error('Passwords do not match')
+    return
+  }
+
+  if (!formData.value.agreeToTos) {
+    error.value = 'You must agree to the Terms of Service'
+    toast.error('You must agree to the Terms of Service')
+    return
+  }
+
   loading.value = true
   error.value = null
 

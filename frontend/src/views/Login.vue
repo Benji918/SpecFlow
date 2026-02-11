@@ -53,6 +53,26 @@
             </div>
           </div>
 
+          <!-- Remember Me & Forgot Password -->
+          <div class="flex items-center justify-between">
+            <div class="flex items-center">
+              <input
+                id="remember-me"
+                v-model="formData.rememberMe"
+                type="checkbox"
+                class="h-4 w-4 bg-surface border-gray-700 rounded text-primary focus:ring-primary focus:ring-offset-background"
+              />
+              <label for="remember-me" class="ml-2 block text-sm text-gray-400 cursor-pointer">
+                Remember me
+              </label>
+            </div>
+            <div class="text-sm">
+              <a href="#" class="link" @click.prevent="toast.info('Password reset is not implemented yet.')">
+                Forgot password?
+              </a>
+            </div>
+          </div>
+
           <!-- Error Message -->
           <div v-if="error" class="text-red-500 text-sm">
             {{ error }}
@@ -94,6 +114,7 @@ const toast = useToast()
 const formData = ref({
   email: '',
   password: '',
+  rememberMe: false,
 })
 
 const loading = ref(false)
