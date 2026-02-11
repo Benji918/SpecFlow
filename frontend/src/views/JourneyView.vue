@@ -53,7 +53,7 @@
       </div>
 
       <!-- Main Content -->
-      <div v-else-if="journey" class="flex-1 flex">
+      <div v-else-if="journey" class="flex-1 flex relative">
         <!-- Left Panel - Journey Flow -->
         <div :class="['flex-1 relative', selectedResult ? 'mr-96' : '']">
           <JourneyFlow
@@ -70,21 +70,14 @@
         <transition name="slide">
           <div
             v-if="selectedNode"
-            class="w-96 border-l border-gray-800 bg-surface overflow-auto absolute right-0 top-0 bottom-0"
+            class="w-96 border-l border-gray-800 bg-surface overflow-auto absolute right-0 top-0 bottom-0 z-20"
           >
-            <div class="sticky top-0 bg-surface border-b border-gray-800 p-4 flex items-center justify-end z-10">
-              <button
-                @click="selectedNode = null; selectedResult = null"
-                class="text-gray-400 hover:text-white"
-              >
-                <X :size="20" />
-              </button>
-            </div>
             <div class="p-4">
               <ResponsePanel
                 :result="selectedResult"
                 :node="selectedNode"
                 @update-node="handleNodeUpdate"
+                @close="selectedNode = null; selectedResult = null"
               />
             </div>
           </div>

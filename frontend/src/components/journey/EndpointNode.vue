@@ -31,14 +31,24 @@
 
     <!-- Node Content -->
     <div class="space-y-2">
-      <div class="font-mono text-sm font-semibold text-white">
+      <div class="font-mono text-sm font-semibold text-white break-all">
         {{ data.path }}
       </div>
       <div v-if="data.summary" class="text-xs text-gray-400">
         {{ data.summary }}
       </div>
-      <div v-if="data.operationId" class="text-xs text-gray-500 font-mono">
-        {{ data.operationId }}
+      
+      <!-- Mini Preview -->
+      <div class="mt-2 space-y-1">
+        <div v-if="data.responses" class="flex flex-col">
+          <span class="text-[10px] text-gray-500 uppercase font-bold">Expected Response</span>
+          <div class="flex flex-wrap gap-1 mt-0.5">
+            <span v-for="(resp, code) in data.responses" :key="code" 
+              :class="['text-[8px] px-1 rounded font-bold', parseInt(code) < 300 ? 'bg-green-500/20 text-green-500' : 'bg-red-500/20 text-red-500']">
+              {{ code }}
+            </span>
+          </div>
+        </div>
       </div>
     </div>
 

@@ -6,7 +6,7 @@
         <h3 class="text-lg font-semibold">{{ node?.data?.summary || 'Step Details' }}</h3>
         <p class="text-xs text-gray-500 font-mono">{{ node?.data?.method }} {{ node?.data?.path }}</p>
       </div>
-      <div class="flex space-x-2">
+      <div class="flex space-x-1">
         <button
           v-if="result"
           @click="copyResult"
@@ -14,6 +14,12 @@
           title="Copy Result"
         >
           <Copy :size="16" />
+        </button>
+        <button
+          @click="$emit('close')"
+          class="p-2 text-gray-400 hover:text-white rounded hover:bg-gray-800"
+        >
+          <X :size="20" />
         </button>
       </div>
     </div>
@@ -74,12 +80,31 @@
           </div>
           <div v-else class="text-xs text-gray-600 italic">No parameters defined</div>
         </div>
+
+        <!-- Response Schema Section -->
+        <div>
+          <h4 class="text-sm font-semibold text-gray-400 mb-2">Expected Responses</h4>
+          <div v-if="node?.data?.responses" class="space-y-4">
+            <div v-for="(resp, code) in node.data.responses" :key="code" class="border border-gray-800 rounded p-3">
+              <div class="flex items-center justify-between mb-2">
+                <span :class="['text-xs font-bold px-2 py-0.5 rounded', parseInt(code) < 300 ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500']">
+                  {{ code }}
+                </span>
+                <span class="text-[10px] text-gray-500 uppercase font-mono">{{ resp.description || 'No description' }}</span>
+              </div>
+              <pre v-if="resp.content?.['application/json']?.schema" class="bg-black/50 p-2 rounded font-mono text-[10px] overflow-auto border border-gray-800/50 max-h-40">
+                {{ formatJSON(resp.content['application/json'].schema) }}
+              </pre>
+            </div>
+          </div>
+          <div v-else class="text-xs text-gray-600 italic">No response schema available</div>
+        </div>
       </div>
 
       <!-- Execution Result Content -->
-      <div v-else-if="result" class="space-y-4">
-        <!-- Status & Timing -->
-        <div class="flex items-center space-x-4">
+      <div v-else-if="result || node?.data?.responses" class="space-y-4">
+        <!-- Result Header (Status & Timing) - Only if executed -->
+        <div v-if="result" class="flex items-center space-x-4">
           <div
             :class="[
               'px-3 py-1 rounded-full text-sm font-semibold',
@@ -93,32 +118,20 @@
           </div>
         </div>
 
-        <!-- Request Result -->
-        <div v-if="activeTab === 'request'" class="space-y-4">
-          <div>
-            <h4 class="text-sm font-semibold text-gray-400 mb-2">URL</h4>
-            <div class="bg-black/50 p-3 rounded font-mono text-xs break-all border border-gray-800">
-              {{ result.request?.method }} {{ result.request?.url }}
-            </div>
-          </div>
-          <div v-if="result.request?.body">
-            <h4 class="text-sm font-semibold text-gray-400 mb-2">Body Sent</h4>
-            <pre class="bg-black/50 p-3 rounded font-mono text-xs overflow-auto border border-gray-800">{{ formatJSON(result.request.body) }}</pre>
-          </div>
-          <div v-if="result.request?.headers">
-            <h4 class="text-sm font-semibold text-gray-400 mb-2">Headers Sent</h4>
-            <pre class="bg-black/50 p-3 rounded font-mono text-xs overflow-auto border border-gray-800">{{ formatJSON(result.request.headers) }}</pre>
-          </div>
+        <!-- If no result yet, show a placeholder or schema -->
+        <div v-if="!result" class="bg-blue-500/5 border border-blue-500/20 p-4 rounded text-sm text-blue-400 flex items-center mb-4">
+          <AlertCircle :size="16" class="mr-2" />
+          Execution pending. Showing default schema.
         </div>
 
-        <!-- Response Result -->
+        <!-- Response tab content -->
         <div v-if="activeTab === 'response'" class="space-y-4">
-          <div v-if="result.error">
+          <div v-if="result?.error">
             <div class="bg-red-500/10 border border-red-500 p-4 rounded text-sm text-red-500">
               {{ result.error }}
             </div>
           </div>
-          <div v-else>
+          <div v-else-if="result">
             <div v-if="result.responseBody">
               <h4 class="text-sm font-semibold text-gray-400 mb-2">Response Body</h4>
               <pre class="bg-black/50 p-3 rounded font-mono text-xs overflow-auto border border-gray-800">{{ formatJSON(result.responseBody) }}</pre>
@@ -128,6 +141,32 @@
               <pre class="bg-black/50 p-3 rounded font-mono text-xs overflow-auto border border-gray-800">{{ formatJSON(result.headers) }}</pre>
             </div>
           </div>
+          <div v-else-if="node?.data?.responses" class="space-y-2">
+            <h4 class="text-sm font-semibold text-gray-400 mb-2">Expected Response (Schema)</h4>
+            <div v-for="(resp, code) in node.data.responses" :key="code" class="border border-gray-800 rounded p-3">
+              <div class="text-xs font-bold text-gray-400 mb-1">Status: {{ code }}</div>
+              <pre v-if="resp.content?.['application/json']?.schema" class="bg-black/50 p-2 rounded font-mono text-xs overflow-auto border border-gray-800">
+                {{ formatJSON(resp.content['application/json'].schema) }}
+              </pre>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Request tab content -->
+        <div v-if="activeTab === 'request'" class="space-y-4">
+          <div v-if="result">
+            <div>
+              <h4 class="text-sm font-semibold text-gray-400 mb-2">URL</h4>
+              <div class="bg-black/50 p-3 rounded font-mono text-xs break-all border border-gray-800">
+                {{ result.request?.method }} {{ result.request?.url }}
+              </div>
+            </div>
+            <div v-if="result.request?.body">
+              <h4 class="text-sm font-semibold text-gray-400 mb-2">Body Sent</h4>
+              <pre class="bg-black/50 p-3 rounded font-mono text-xs overflow-auto border border-gray-800">{{ formatJSON(result.request.body) }}</pre>
+            </div>
+          </div>
+          <div v-else class="text-xs text-gray-600 italic">No request data available yet</div>
         </div>
       </div>
 
@@ -143,7 +182,7 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
 import { useToast } from 'vue-toastification'
-import { Copy, Sparkles, Loader, AlertCircle } from 'lucide-vue-next'
+import { Copy, Sparkles, Loader, AlertCircle, X } from 'lucide-vue-next'
 import { generateEndpointMock } from '@/utils/mockGenerator'
 
 const props = defineProps({
@@ -157,7 +196,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['update-node'])
+const emit = defineEmits(['update-node', 'close'])
 
 const toast = useToast()
 const activeTab = ref('config')
@@ -193,8 +232,11 @@ watch(() => props.node, (newNode) => {
 // Tabs toggle based on if result exists
 const availableTabs = computed(() => {
   const tabs = [{ id: 'config', label: 'Configure' }]
-  if (props.result) {
+  // Response tab is now always available if schema exists
+  if (props.result || props.node?.data?.responses) {
     tabs.push({ id: 'response', label: 'Response' })
+  }
+  if (props.result) {
     tabs.push({ id: 'request', label: 'Last Request' })
   }
   return tabs
