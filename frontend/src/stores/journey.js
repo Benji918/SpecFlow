@@ -11,6 +11,10 @@ export const useJourneyStore = defineStore('journey', () => {
     const sessionData = ref({})
     const loading = ref(false)
     const error = ref(null)
+    const runnerConfig = ref({
+        baseUrl: 'https://api.example.com',
+        initialSessionData: '',
+    })
 
     // Actions
     async function fetchJourneys() {
@@ -200,6 +204,7 @@ export const useJourneyStore = defineStore('journey', () => {
         sessionData,
         loading,
         error,
+        runnerConfig,
         fetchJourneys,
         fetchJourney,
         generateJourneys,

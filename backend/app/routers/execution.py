@@ -144,9 +144,9 @@ async def execute_journey_ws(websocket: WebSocket, journey_id: str):
             # Initialize executor
             executor = JourneyExecutor(base_url)
             
-            # Execute journey
-            nodes = journey.nodes
-            edges = journey.edges
+            # Execute journey - use nodes/edges from client if provided (for unsaved mock data)
+            nodes = data.get("nodes", journey.nodes)
+            edges = data.get("edges", journey.edges)
             results = []
             
             for node in nodes:
@@ -213,7 +213,5 @@ async def execute_journey_ws(websocket: WebSocket, journey_id: str):
         except:
             pass
     finally:
-        try:
-            await websocket.close()
-        except:
-            pass
+        await websocket.close()
+        

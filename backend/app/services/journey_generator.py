@@ -30,26 +30,34 @@ class JourneyGenerator:
         """
         endpoint_summary = self._format_endpoints(endpoints)
 
-        prompt = f"""You are an API testing expert. Given these API endpoints, identify 3-5 logical user journeys.
+        prompt = f"""You are an API testing expert. Given these API endpoints and their schemas, identify 3-5 logical user journeys.
 
 Endpoints:
 {endpoint_summary}
 
 For each journey, return JSON with:
 - name: Short descriptive name
-- description: What this journey tests
+- description: what this journey tests
 - steps: Array of {{
     operationId: string,
     name: string,
-    data_mappings: [{{ from: "response.field", to: "request.field" }}]
+    data_mappings: [{{ 
+        from: "response.field_path", 
+        to: "session_key",
+        description: "why we map this"
+    }}]
   }}
 
-Rules:
-1. Auth endpoints (login/register) should be first steps
-2. Map data between steps (e.g., login token → auth header)
-3. Follow logical workflows (e.g., create resource → update → delete)
-4. Include error testing journeys (e.g., "Test unauthorized access")
-5. Ensure the steps are in the correct order and follow a logical path based on the API endpoints provided
+Mapping Rules:
+1. AUTH: If an endpoint provides a token (e.g., login/register), map it to 'auth_token'. 
+2. PATH PARAMS: If a subsequent endpoint has a path like '/users/{{id}}', ensure you map the ID from a previous 'create' or 'list' response to 'pathParams.id'.
+3. DATA FLOW: Map IDs, UUIDs, or primary keys from 'create' responses to use in 'get', 'update', or 'delete' steps.
+4. NAMING: In 'to', use 'auth_token' for bearers, 'pathParams.{{name}}' for URL vars, or any descriptive key for body interpolation.
+
+Journey Logic:
+- Start with Auth if endpoints require it (see 'security' field).
+- Follow a CRUD pattern where possible (Create -> Get/Update -> Delete).
+- Include "Success" flows and "Business Logic" flows (e.g., Add to Cart -> Checkout).
 
 Return ONLY a JSON array, no explanation.
 """
@@ -83,20 +91,42 @@ Return ONLY a JSON array, no explanation.
         return self._convert_to_vueflow_format(journeys, endpoints)
 
     def _format_endpoints(self, endpoints: List[EndpointInfo]) -> str:
-        """Format endpoints for AI prompt.
+        """Format endpoints for AI prompt with schema details.
         
         Args:
             endpoints: List of endpoint information
             
         Returns:
-            Formatted string of endpoints
+            Formatted string of endpoints with full context
         """
-        return "\n".join(
-            [
-                f"{e.method} {e.path} - {e.operation_id} ({e.summary})"
-                for e in endpoints
-            ]
-        )
+        summary_items = []
+        for e in endpoints:
+            # Create a cleaned version to save tokens while keeping schema structure
+            item = {
+                "method": e.method,
+                "path": e.path,
+                "operationId": e.operation_id,
+                "summary": e.summary,
+                "security": e.security,
+                "requestBody": self._clean_schema(e.request_body),
+                "responses": {code: self._clean_schema(res) for code, res in e.responses.items()},
+                "parameters": [self._clean_schema(p) for p in e.parameters]
+            }
+            summary_items.append(json.dumps(item))
+            
+        return "\n---\n".join(summary_items)
+
+    def _clean_schema(self, schema: Any) -> Any:
+        """Recursively remove descriptions and examples to save tokens."""
+        if isinstance(schema, dict):
+            return {
+                k: self._clean_schema(v) 
+                for k, v in schema.items() 
+                if k not in ["description", "example", "examples", "x-enumNames"]
+            }
+        elif isinstance(schema, list):
+            return [self._clean_schema(i) for i in schema]
+        return schema
 
     def _create_fallback_journey(
         self, endpoints: List[EndpointInfo]
@@ -184,13 +214,22 @@ Return ONLY a JSON array, no explanation.
                         mapping = data_mappings[0]
                         edge_label = f"{mapping.get('from', '')} → {mapping.get('to', '')}"
 
+                    # Accumulate all mappings into edge data
+                    all_mappings = []
+                    for sm in data_mappings:
+                        all_mappings.append({
+                            "from": sm.get("from", ""),
+                            "to": sm.get("to", "")
+                        })
+
                     edges.append(
                         {
                             "id": f"e{idx-1}-{idx}",
                             "source": f"step-{idx-1}",
                             "target": f"step-{idx}",
                             "label": edge_label,
-                            "data": {"dataMapping": data_mappings},
+                            "animated": True,
+                            "data": {"dataMapping": all_mappings},
                         }
                     )
 

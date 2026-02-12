@@ -54,6 +54,22 @@
       </div>
     </div>
 
+    <!-- Live Session Context -->
+    <div v-if="Object.keys(journeyStore.sessionData).length > 0" class="mb-6">
+      <h4 class="text-xs font-bold text-gray-500 uppercase mb-2 flex items-center">
+        <Database :size="12" class="mr-1" />
+        Session Context
+      </h4>
+      <div class="bg-black/40 border border-gray-800 rounded p-3 space-y-1 max-h-48 overflow-auto">
+        <div v-for="(value, key) in journeyStore.sessionData" :key="key" class="flex items-start justify-between text-xs font-mono">
+          <span class="text-gray-500 mr-2">{{ key }}:</span>
+          <span :class="['break-all text-right', key.includes('token') ? 'text-primary' : 'text-blue-400']">
+            {{ formatSessionValue(value) }}
+          </span>
+        </div>
+      </div>
+    </div>
+
     <!-- Status Messages -->
     <div v-if="statusMessages.length > 0" class="mb-6 space-y-2 max-h-32 overflow-auto">
       <div
@@ -107,7 +123,7 @@
 import { ref, computed } from 'vue'
 import { useJourneyStore } from '@/stores/journey'
 import { useToast } from 'vue-toastification'
-import { Play, Square, RotateCcw, Loader } from 'lucide-vue-next'
+import { Play, Square, RotateCcw, Loader, Database } from 'lucide-vue-next'
 
 const props = defineProps({
   journeyId: {
@@ -129,12 +145,20 @@ const emit = defineEmits(['step-start', 'step-complete', 'execution-complete'])
 const journeyStore = useJourneyStore()
 const toast = useToast()
 
-const baseUrl = ref('https://api.example.com')
-const sessionDataInput = ref('')
+const baseUrl = computed({
+  get: () => journeyStore.runnerConfig.baseUrl,
+  set: (val) => journeyStore.runnerConfig.baseUrl = val
+})
+
+const sessionDataInput = computed({
+  get: () => journeyStore.runnerConfig.initialSessionData,
+  set: (val) => journeyStore.runnerConfig.initialSessionData = val
+})
+
 const isRunning = ref(false)
 const executionState = ref('idle')
 const completedSteps = ref(0)
-const totalSteps = ref(props.nodes.length)
+const totalSteps = computed(() => props.nodes.length)
 const statusMessages = ref([])
 const ws = ref(null)
 
@@ -177,11 +201,13 @@ async function startExecution() {
     ws.value.onopen = () => {
       addStatusMessage('Connected to server', 'info')
       
-      // Send execution parameters
+      // Send execution parameters including latest FE nodes/edges
       ws.value.send(
         JSON.stringify({
           baseUrl: baseUrl.value,
           sessionData: sessionData,
+          nodes: props.nodes,
+          edges: props.edges,
           errorInjections: {}, // Can be extended for error injection UI
         })
       )
@@ -211,6 +237,13 @@ async function startExecution() {
     isRunning.value = false
     executionState.value = 'failed'
   }
+}
+
+function formatSessionValue(val) {
+  if (typeof val === 'string' && val.length > 30) {
+    return val.substring(0, 27) + '...'
+  }
+  return val
 }
 
 function handleWebSocketMessage(message) {

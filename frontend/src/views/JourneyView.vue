@@ -76,6 +76,7 @@
               <ResponsePanel
                 :result="selectedResult"
                 :node="selectedNode"
+                :edges="journey.edges"
                 @update-node="handleNodeUpdate"
                 @close="selectedNode = null; selectedResult = null"
               />

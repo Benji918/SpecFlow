@@ -81,6 +81,39 @@
           <div v-else class="text-xs text-gray-600 italic">No parameters defined</div>
         </div>
 
+        <!-- Data Mappings Section -->
+        <div v-if="incomingMappings.length || outgoingMappings.length" class="space-y-4">
+          <h4 class="text-sm font-semibold text-gray-400">Data Links</h4>
+          
+          <!-- Incoming Mappings -->
+          <div v-if="incomingMappings.length">
+            <div class="text-[10px] text-gray-500 uppercase font-bold mb-2">Incoming (Context)</div>
+            <div class="space-y-2">
+              <div v-for="(m, i) in incomingMappings" :key="i" class="bg-black/30 border border-gray-800 rounded p-2 text-[10px] font-mono">
+                <div class="flex items-center justify-between">
+                  <span class="text-blue-400">{{ m.from }}</span>
+                  <span class="text-gray-600 mx-1">→</span>
+                  <span class="text-primary">{{ m.to }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Outgoing Mappings -->
+          <div v-if="outgoingMappings.length">
+            <div class="text-[10px] text-gray-500 uppercase font-bold mb-2">Outgoing (Context)</div>
+            <div class="space-y-2">
+              <div v-for="(m, i) in outgoingMappings" :key="i" class="bg-black/30 border border-gray-800 rounded p-2 text-[10px] font-mono">
+                <div class="flex items-center justify-between">
+                  <span class="text-primary">{{ m.from }}</span>
+                  <span class="text-gray-600 mx-1">→</span>
+                  <span class="text-blue-400">{{ m.to }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- Response Schema Section -->
         <div>
           <h4 class="text-sm font-semibold text-gray-400 mb-2">Expected Responses</h4>
@@ -165,6 +198,10 @@
               <h4 class="text-sm font-semibold text-gray-400 mb-2">Body Sent</h4>
               <pre class="bg-black/50 p-3 rounded font-mono text-xs overflow-auto border border-gray-800">{{ formatJSON(result.request.body) }}</pre>
             </div>
+            <div v-if="result.request?.headers" class="mt-4">
+              <h4 class="text-sm font-semibold text-gray-400 mb-2">Request Headers</h4>
+              <pre class="bg-black/50 p-3 rounded font-mono text-xs overflow-auto border border-gray-800">{{ formatJSON(result.request.headers) }}</pre>
+            </div>
           </div>
           <div v-else class="text-xs text-gray-600 italic">No request data available yet</div>
         </div>
@@ -193,6 +230,10 @@ const props = defineProps({
   node: {
     type: Object,
     default: null,
+  },
+  edges: {
+    type: Array,
+    default: () => [],
   }
 })
 
@@ -229,7 +270,21 @@ watch(() => props.node, (newNode) => {
   }
 }, { immediate: true })
 
-// Tabs toggle based on if result exists
+// Data Mappings Computing
+const incomingMappings = computed(() => {
+  if (!props.node || !props.edges) return []
+  return props.edges
+    .filter(e => e.target === props.node.id)
+    .flatMap(e => e.data?.dataMapping || [])
+})
+
+const outgoingMappings = computed(() => {
+  if (!props.node || !props.edges) return []
+  return props.edges
+    .filter(e => e.source === props.node.id)
+    .flatMap(e => e.data?.dataMapping || [])
+})
+
 const availableTabs = computed(() => {
   const tabs = [{ id: 'config', label: 'Configure' }]
   // Response tab is now always available if schema exists

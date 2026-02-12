@@ -6,26 +6,38 @@
     ]"
   >
     <!-- Node Header -->
-    <div class="flex items-center justify-between mb-3">
+    <div class="flex items-center justify-between mb-3 pb-2 border-b border-gray-800/50">
       <div class="flex items-center space-x-2">
         <span
           :class="[
-            'px-2 py-1 rounded font-mono text-xs font-bold',
+            'px-2 py-0.5 rounded font-mono text-[10px] font-bold uppercase tracking-wider',
             methodColor,
           ]"
         >
           {{ data.method }}
         </span>
-        <span
-          v-if="data.status"
-          :class="['w-2 h-2 rounded-full', statusColor]"
-        ></span>
+        
+        <!-- Status Indicator -->
+        <div class="flex items-center">
+          <div v-if="data.status === 'running'" class="flex space-x-1 ml-1">
+            <div class="w-1.5 h-1.5 bg-primary rounded-full animate-bounce"></div>
+            <div class="w-1.5 h-1.5 bg-primary rounded-full animate-bounce [animation-delay:0.2s]"></div>
+            <div class="w-1.5 h-1.5 bg-primary rounded-full animate-bounce [animation-delay:0.4s]"></div>
+          </div>
+          <div v-else-if="data.status === 'success'" class="text-green-500 ml-1">
+            <CheckCircle :size="14" />
+          </div>
+          <div v-else-if="data.status === 'error'" class="text-red-500 ml-1">
+            <AlertCircle :size="14" />
+          </div>
+          <div v-else :class="['w-2 h-2 rounded-full ml-1', statusColor]"></div>
+        </div>
       </div>
       <button
         @click.stop="handleDelete"
-        class="text-gray-400 hover:text-red-500 transition-colors"
+        class="text-gray-500 hover:text-red-500 transition-colors p-1"
       >
-        <X :size="16" />
+        <X :size="14" />
       </button>
     </div>
 
@@ -89,7 +101,7 @@
 <script setup>
 import { computed } from 'vue'
 import { Handle, Position, useVueFlow } from '@vue-flow/core'
-import { X } from 'lucide-vue-next'
+import { X, CheckCircle, AlertCircle } from 'lucide-vue-next'
 
 const props = defineProps({
   id: {
@@ -127,25 +139,13 @@ function handleDelete() {
 }
 
 const nodeClasses = computed(() => {
-  const classes = ['bg-surface']
-
-  if (props.selected) {
-    classes.push('border-primary shadow-glow ring-2 ring-primary/20')
-  } else {
-    classes.push('border-gray-700')
-  }
-
-  if (props.data.status) {
-    if (props.data.status === 'running') {
-      classes.push('animate-pulse border-yellow-500/50')
-    } else if (props.data.status === 'error') {
-      classes.push('border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.2)]')
-    } else if (props.data.status === 'success') {
-      classes.push('border-green-500 shadow-[0_0_15px_rgba(34,197,94,0.2)]')
-    }
-  }
-
-  return classes.join(' ')
+  return [
+    props.selected ? 'border-primary ring-2 ring-primary/20 scale-[1.02]' : 'border-gray-800',
+    props.data.status === 'running' ? 'shadow-[0_0_20px_rgba(191,245,73,0.3)] border-primary/50' : '',
+    props.data.status === 'success' ? 'shadow-[0_0_20px_rgba(34,197,94,0.2)] border-green-500/40' : '',
+    props.data.status === 'error' ? 'shadow-[0_0_20px_rgba(239,68,68,0.2)] border-red-500/40' : '',
+    'bg-surface/80 backdrop-blur-sm'
+  ].join(' ')
 })
 
 const methodColor = computed(() => {

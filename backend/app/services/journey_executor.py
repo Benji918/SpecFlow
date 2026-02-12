@@ -77,6 +77,7 @@ class JourneyExecutor:
             Step execution result with status, response, timing
         """
         data = node.get("data", {})
+        # print(data)
         step_id = node["id"]
 
         # Build URL
@@ -88,9 +89,11 @@ class JourneyExecutor:
 
         # Build request body
         body = self._build_body(data, session_data)
+        # print(body)
 
         # Execute request
         method = data.get("method", "GET")
+        # print(method)
         
         try:
             start_time = datetime.utcnow()
@@ -176,6 +179,53 @@ class JourneyExecutor:
                     to_path = mapping.get("to", "")
                     session_data[to_path] = value
 
+        # SMART EXTRACTION: Automatically look for tokens/IDs if they aren't explicitly mapped
+        response_body = result.get("responseBody")
+        if isinstance(response_body, dict):
+            # 1. Look for Auth Tokens
+            token_keys = ["access", "token", "jwt", "access_token", "authToken", "id_token"]
+            
+            # Check top level
+            found_token = None
+            for tk in token_keys:
+                if tk in response_body and isinstance(response_body[tk], str):
+                    found_token = response_body[tk]
+                    break
+            
+            # Check nested "tokens" object (common logic for many APIs)
+            if not found_token and "tokens" in response_body and isinstance(response_body["tokens"], dict):
+                for tk in token_keys:
+                    if tk in response_body["tokens"] and isinstance(response_body["tokens"][tk], str):
+                        found_token = response_body["tokens"][tk]
+                        break
+            
+            if found_token and "auth_token" not in session_data:
+                session_data["auth_token"] = found_token
+
+            # 2. Look for IDs to pass forward
+            id_keys = ["id", "uuid", "pk", "restaurant_id", "order_id", "user_id"]
+            
+            def extract_ids(obj):
+                if not isinstance(obj, dict):
+                    return
+                for k, v in obj.items():
+                    if k in id_keys and (isinstance(v, str) or isinstance(v, int)):
+                        session_data[k] = v
+                        if f"pathParams.{k}" not in session_data:
+                            session_data[f"pathParams.{k}"] = v
+                    # Check one level deeper if it's 'detail' or 'data'
+                    if k in ["detail", "data"] and isinstance(v, dict):
+                        extract_ids(v)
+
+            extract_ids(response_body)
+
+        # Scan headers if auth_token still not found
+        if "auth_token" not in session_data:
+            resp_headers = result.get("headers", {})
+            auth_header = resp_headers.get("Authorization") or resp_headers.get("authorization")
+            if auth_header:
+                session_data["auth_token"] = auth_header
+
     def _interpolate_path_params(
         self, url: str, session_data: Dict[str, Any]
     ) -> str:
@@ -213,8 +263,14 @@ class JourneyExecutor:
         auth_header = session_data.get("headers.Authorization")
         if auth_header:
             headers["Authorization"] = auth_header
-        elif "auth_token" in session_data:
-            headers["Authorization"] = f"Bearer {session_data['auth_token']}"
+        else:
+            # Check various common token keys
+            token = session_data.get("auth_token") or session_data.get("token") or session_data.get("access")
+            if token:
+                if not str(token).startswith(("Bearer", "Token", "JWT")):
+                    headers["Authorization"] = f"Bearer {token}"
+                else:
+                    headers["Authorization"] = str(token)
 
         return headers
 
@@ -286,10 +342,18 @@ class JourneyExecutor:
         elif isinstance(template, list):
             return [self._interpolate_dict(item, session_data) for item in template]
         elif isinstance(template, str):
-            # Replace {{sessionKey}} with session value
+            # Check if the entire string is exactly a placeholder like "{{key}}"
+            # to preserve the original data type (e.g., int, bool, object)
+            match = re.fullmatch(r"\{\{(\S+)\}\}", template)
+            if match:
+                key = match.group(1)
+                return session_data.get(key, template)
+
+            # Otherwise do string interpolation for partial matches
             def replacer(match):
                 key = match.group(1)
-                return str(session_data.get(key, match.group(0)))
+                value = session_data.get(key, match.group(0))
+                return str(value)
             
             return re.sub(r"\{\{(\S+)\}\}", replacer, template)
         else:
