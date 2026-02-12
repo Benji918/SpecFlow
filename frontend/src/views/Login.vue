@@ -106,6 +106,7 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useToast } from 'vue-toastification'
 import { Eye, EyeOff } from 'lucide-vue-next'
+import MailChecker from 'mailchecker'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -121,11 +122,43 @@ const loading = ref(false)
 const error = ref(null)
 const showPassword = ref(false)
 
+// Simple sanitization: strip HTML tags
+function sanitize(str) {
+  if (typeof str !== 'string') return str
+  return str.replace(/<[^>]*>?/gm, '').trim()
+}
+
+// Email validation using MailChecker
+function isValidEmail(email) {
+  return MailChecker.isValid(email)
+}
+
 async function handleLogin() {
-  loading.value = true
+  // Reset error
   error.value = null
 
-  const result = await authStore.login(formData.value.email, formData.value.password)
+  // Sanitize
+  const email = sanitize(formData.value.email)
+  const password = formData.value.password // Don't sanitize passwords
+
+  // Basic validation
+  if (!isValidEmail(email)) {
+    error.value = 'Please enter a valid email address'
+    toast.error(error.value)
+    return
+  }
+
+  // Check for common SQL injection characters in email
+  const sqlPattern = /['";\\]/
+  if (sqlPattern.test(email)) {
+    error.value = 'Invalid characters detected in email'
+    toast.error(error.value)
+    return
+  }
+
+  loading.value = true
+
+  const result = await authStore.login(email, password)
 
   if (result.success) {
     toast.success('Logged in successfully!')

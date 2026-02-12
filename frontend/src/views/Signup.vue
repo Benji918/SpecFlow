@@ -81,34 +81,37 @@
               <input
                 id="confirmPassword"
                 v-model="formData.confirmPassword"
-                :type="showPassword ? 'text' : 'password'"
+                :type="showConfirmPassword ? 'text' : 'password'"
                 required
                 class="input-field w-full pr-10"
                 placeholder="••••••••"
               />
+              <button
+                type="button"
+                @click="showConfirmPassword = !showConfirmPassword"
+                class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 transition-colors"
+                tabindex="-1"
+              >
+                <Eye v-if="!showConfirmPassword" :size="18" />
+                <EyeOff v-else :size="18" />
+              </button>
             </div>
           </div>
 
-          <!-- Terms of Service -->
+          <!-- Agree to TOS -->
           <div class="flex items-center">
             <input
-              id="tos"
+              id="agreeToTos"
               v-model="formData.agreeToTos"
               type="checkbox"
               required
               class="h-4 w-4 bg-surface border-gray-700 rounded text-primary focus:ring-primary focus:ring-offset-background"
             />
-            <label for="tos" class="ml-2 block text-sm text-gray-400 cursor-pointer">
-              I agree to the
-              <a href="#" class="link" @click.prevent="toast.info('ToS not implemented yet.')">
-                Terms of Service
-              </a>
-              and
-              <a href="#" class="link" @click.prevent="toast.info('Privacy Policy not implemented yet.')">
-                Privacy Policy
-              </a>
+            <label for="agreeToTos" class="ml-2 block text-sm text-gray-400 cursor-pointer">
+              I agree to the <a href="#" class="link" @click.prevent="">Terms of Service</a>
             </label>
           </div>
+
 
           <!-- Error Message -->
           <div v-if="error" class="text-red-500 text-sm">
@@ -143,6 +146,7 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useToast } from 'vue-toastification'
 import { Eye, EyeOff } from 'lucide-vue-next'
+import MailChecker from 'mailchecker'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -159,27 +163,74 @@ const formData = ref({
 const loading = ref(false)
 const error = ref(null)
 const showPassword = ref(false)
+const showConfirmPassword = ref(false)
+
+// Simple sanitization: strip HTML tags
+function sanitize(str) {
+  if (typeof str !== 'string') return str
+  return str.replace(/<[^>]*>?/gm, '').trim()
+}
+
+// Email validation using MailChecker
+function isValidEmail(email) {
+  return MailChecker.isValid(email)
+}
 
 async function handleSignup() {
-  if (formData.value.password !== formData.value.confirmPassword) {
+  // Reset error
+  error.value = null
+
+  // Sanitize
+  const name = sanitize(formData.value.name)
+  const email = sanitize(formData.value.email)
+  const password = formData.value.password // Don't sanitize passwords as they can contain symbols
+  const confirmPassword = formData.value.confirmPassword
+
+  // Basic validation
+  if (!name || name.length < 2) {
+    error.value = 'Name must be at least 2 characters'
+    toast.error(error.value)
+    return
+  }
+
+  if (!isValidEmail(email)) {
+    error.value = 'Please enter a valid email address with a valid domain'
+    toast.error(error.value)
+    return
+  }
+
+  if (password.length < 8) {
+    error.value = 'Password must be at least 8 characters'
+    toast.error(error.value)
+    return
+  }
+
+  if (password !== confirmPassword) {
     error.value = 'Passwords do not match'
-    toast.error('Passwords do not match')
+    toast.error(error.value)
+    return
+  }
+
+  // Check for common SQL injection characters in name/email
+  const sqlPattern = /['";\\]/
+  if (sqlPattern.test(name) || sqlPattern.test(email)) {
+    error.value = 'Invalid characters detected in name or email'
+    toast.error(error.value)
     return
   }
 
   if (!formData.value.agreeToTos) {
     error.value = 'You must agree to the Terms of Service'
-    toast.error('You must agree to the Terms of Service')
+    toast.error(error.value)
     return
   }
 
   loading.value = true
-  error.value = null
 
   const result = await authStore.register(
-    formData.value.email,
-    formData.value.password,
-    formData.value.name
+    email,
+    password,
+    name
   )
 
   if (result.success) {
