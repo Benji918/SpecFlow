@@ -198,8 +198,10 @@ Return ONLY a JSON array, no explanation.
                             "path": endpoint.path,
                             "operationId": endpoint.operation_id,
                             "summary": endpoint.summary,
-                            "requestBody": endpoint.request_body,
+                            "requestBody": {}, # This will hold the actual data/mock
+                            "requestBodySpec": endpoint.request_body, # This holds the OpenAPI spec
                             "responses": endpoint.responses,
+                            "parameters": endpoint.parameters,
                             "status": "pending",
                         },
                     }

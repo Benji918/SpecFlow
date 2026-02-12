@@ -98,11 +98,61 @@ class JourneyExecutor:
         try:
             start_time = datetime.utcnow()
 
+            # Determine how to send the body
+            req_kwargs = {}
+            if method in ["POST", "PUT", "PATCH"] and body:
+                content_spec = data.get("requestBodySpec", data.get("requestBody", {})).get("content", {})
+                if "multipart/form-data" in content_spec:
+                    # Handle binary fields (uploads)
+                    schema = content_spec["multipart/form-data"].get("schema", {})
+                    properties = schema.get("properties", {}) or {}
+                    
+                    files = {}
+                    form_data = {}
+                    
+                    # Iterate through body fields to separate files and regular data
+                    for field_name, value in body.items():
+                        prop = properties.get(field_name, {})
+                        if prop.get("format") == "binary" and isinstance(value, str) and value.startswith("http"):
+                            try:
+                                # Fetch the actual binary content from the URL
+                                img_resp = await self.client.get(value)
+                                if img_resp.status_code == 200:
+                                    ext = "jpg"
+                                    if "png" in value.lower(): ext = "png"
+                                    elif "webp" in value.lower(): ext = "webp"
+                                    
+                                    # Create a file tuple for httpx: (filename, content, content-type)
+                                    files[field_name] = (
+                                        f"upload.{ext}", 
+                                        img_resp.content, 
+                                        img_resp.headers.get("Content-Type", "image/jpeg")
+                                    )
+                                else:
+                                    form_data[field_name] = value
+                            except Exception:
+                                form_data[field_name] = value
+                        else:
+                            form_data[field_name] = value
+
+                    if files:
+                        req_kwargs["data"] = form_data
+                        req_kwargs["files"] = files
+                        # Remove default JSON content-type to let httpx set boundary
+                        if "Content-Type" in headers:
+                            del headers["Content-Type"]
+                    else:
+                        req_kwargs["data"] = body
+                elif "application/x-www-form-urlencoded" in content_spec:
+                    req_kwargs["data"] = body
+                else:
+                    req_kwargs["json"] = body
+
             response = await self.client.request(
                 method=method,
                 url=url,
                 headers=headers,
-                json=body if method in ["POST", "PUT", "PATCH"] and body else None,
+                **req_kwargs
             )
 
             duration = (datetime.utcnow() - start_time).total_seconds() * 1000
@@ -257,7 +307,18 @@ class JourneyExecutor:
         Returns:
             Headers dictionary
         """
-        headers = {"Content-Type": "application/json"}
+        # Determine Content-Type from spec
+        content_spec = step_data.get("requestBodySpec", step_data.get("requestBody", {})).get("content", {})
+        
+        content_type = "application/json"
+        if "application/x-www-form-urlencoded" in content_spec:
+            content_type = "application/x-www-form-urlencoded"
+        elif "multipart/form-data" in content_spec:
+            # Note: For multipart with files, we'll actually delete this header later 
+            # to let httpx set the boundary automatically
+            content_type = "multipart/form-data"
+
+        headers = {"Content-Type": content_type}
 
         # Add authorization if token exists in session
         auth_header = session_data.get("headers.Authorization")

@@ -58,10 +58,34 @@
           </div>
           <textarea
             v-model="editableBody"
-            class="w-full h-64 bg-black border border-gray-800 rounded p-3 font-mono text-xs focus:border-primary outline-none transition-all"
+            class="w-full h-48 bg-black border border-gray-800 rounded p-3 font-mono text-xs focus:border-primary outline-none transition-all"
             placeholder="{ ... }"
             @input="handleBodyInput"
           ></textarea>
+
+          <!-- Binary Field Notice -->
+          <div v-if="hasBinaryField" class="mt-2 p-3 bg-blue-500/5 border border-blue-500/20 rounded-lg flex items-start shadow-sm">
+            <AlertCircle :size="16" class="text-blue-400 mr-2 shrink-0 mt-0.5" />
+            <div class="space-y-1">
+              <p class="text-[11px] font-bold text-blue-300 uppercase tracking-wider">File Upload Information</p>
+              <p class="text-[10px] text-blue-200/70 leading-relaxed">
+                This endpoint requires a file. Provide a public image URL in the binary property, and our executor will automatically fetch it and perform an actual multipart file upload.
+              </p>
+            </div>
+          </div>
+          
+          <!-- Request Schema Preview -->
+          <div v-if="node?.data?.requestBodySpec" class="mt-2">
+            <details class="group">
+              <summary class="text-[10px] text-gray-500 cursor-pointer hover:text-gray-300 list-none flex items-center">
+                <ChevronRight :size="10" class="mr-1 group-open:rotate-90 transition-transform" />
+                View Request Schema
+              </summary>
+              <pre class="mt-2 bg-black/30 p-2 rounded text-[10px] text-gray-400 font-mono overflow-auto max-h-40 border border-gray-800/50">
+                {{ formatJSON(node.data.requestBodySpec) }}
+              </pre>
+            </details>
+          </div>
         </div>
 
         <div>
@@ -219,7 +243,7 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
 import { useToast } from 'vue-toastification'
-import { Copy, Sparkles, Loader, AlertCircle, X } from 'lucide-vue-next'
+import { Copy, Sparkles, Loader, AlertCircle, X, ChevronRight } from 'lucide-vue-next'
 import { generateEndpointMock } from '@/utils/mockGenerator'
 
 const props = defineProps({
@@ -283,6 +307,16 @@ const outgoingMappings = computed(() => {
   return props.edges
     .filter(e => e.source === props.node.id)
     .flatMap(e => e.data?.dataMapping || [])
+})
+
+const hasBinaryField = computed(() => {
+  const spec = props.node?.data?.requestBodySpec?.content
+  if (!spec) return false
+  
+  const multipart = spec['multipart/form-data']
+  if (!multipart || !multipart.schema || !multipart.schema.properties) return false
+  
+  return Object.values(multipart.schema.properties).some(prop => prop.format === 'binary')
 })
 
 const availableTabs = computed(() => {

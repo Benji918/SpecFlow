@@ -98,26 +98,32 @@
     </main>
 
     <!-- Bottom Panel - Runner (Slides up) -->
-    <transition name="slide-up">
-      <div
-        v-if="showRunner && journey"
-        class="fixed bottom-0 left-0 right-0 bg-surface border-t border-gray-800 shadow-2xl"
-        style="height: 400px; z-index: 20;"
-      >
-        <div class="h-full overflow-auto p-4">
-          <div class="max-w-4xl mx-auto">
-            <JourneyRunner
-              :journey-id="journey.id"
-              :nodes="journey.nodes || []"
-              :edges="journey.edges || []"
-              @step-start="handleStepStart"
-              @step-complete="handleStepComplete"
-              @execution-complete="handleExecutionComplete"
-            />
+    <div v-if="journey">
+      <div v-show="showRunner" class="fixed inset-0 z-[15]" @click="showRunner = false"></div>
+      
+      <transition name="slide-up">
+        <div
+          v-show="showRunner"
+          class="fixed bottom-0 left-0 right-0 bg-surface border-t border-gray-800 shadow-[0_-10px_40px_rgba(0,0,0,0.5)] z-20"
+          style="height: 320px;"
+          @click.stop
+        >
+          <div class="h-full p-4">
+            <div class="max-w-[1400px] mx-auto h-full">
+              <JourneyRunner
+                :journey-id="journey.id"
+                :nodes="journey.nodes || []"
+                :edges="journey.edges || []"
+                @step-start="handleStepStart"
+                @step-complete="handleStepComplete"
+                @execution-complete="handleExecutionComplete"
+                @close="showRunner = false"
+              />
+            </div>
           </div>
         </div>
-      </div>
-    </transition>
+      </transition>
+    </div>
   </div>
 </template>
 

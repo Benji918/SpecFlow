@@ -8,20 +8,49 @@ import { faker } from '@faker-js/faker'
 export function generateMockFromSchema(schema) {
     if (!schema) return null
 
-    // Handle references (simplified, assuming they are resolved or not used for now)
+    // Handle references
     if (schema.$ref) {
         return { message: 'Reference not supported in simplified generator' }
+    }
+
+    // NEW: Handle top-level enum immediately regardless of type
+    if (schema.enum && Array.isArray(schema.enum)) {
+        return faker.helpers.arrayElement(schema.enum)
+    }
+
+    // NEW: Handle composition patterns (allOf, anyOf, oneOf)
+    // Common in OpenAPI when combining a base type with an enum or extra validation
+    if (schema.allOf && Array.isArray(schema.allOf)) {
+        // Find a sub-schema that has the actual type or enum
+        for (const sub of schema.allOf) {
+            const mock = generateMockFromSchema(sub)
+            if (mock !== null) return mock
+        }
+    }
+
+    if ((schema.anyOf || schema.oneOf) && Array.isArray(schema.anyOf || schema.oneOf)) {
+        const options = schema.anyOf || schema.oneOf
+        return generateMockFromSchema(faker.helpers.arrayElement(options))
     }
 
     const type = schema.type || (schema.properties ? 'object' : 'string')
 
     switch (type) {
         case 'string':
+            if (schema.format === 'binary') {
+                // If it's binary, it's likely a file upload.
+                // Return a placeholder image URL that the executor can fetch.
+                const name = (schema.title || schema.name || '').toLowerCase()
+                if (name.includes('image') || name.includes('photo') || name.includes('avatar') || schema.pattern?.includes('jpg|jpeg|png')) {
+                    // Use a specific high-quality image placeholder
+                    return `https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=500&h=500&fit=crop`
+                }
+                return 'https://via.placeholder.com/500'
+            }
             if (schema.format === 'date-time') return faker.date.recent().toISOString()
             if (schema.format === 'date') return faker.date.recent().toISOString().split('T')[0]
             if (schema.format === 'email') return faker.internet.email()
             if (schema.format === 'uuid') return faker.string.uuid()
-            if (schema.enum) return faker.helpers.arrayElement(schema.enum)
 
             // Try to guess by name
             const name = schema.title || schema.name || ''
@@ -29,6 +58,7 @@ export function generateMockFromSchema(schema) {
             if (name.toLowerCase().includes('company')) return faker.company.name()
             if (name.toLowerCase().includes('phone')) return faker.phone.number()
             if (name.toLowerCase().includes('address')) return faker.location.streetAddress()
+            if (name.toLowerCase().includes('id')) return faker.string.uuid()
 
             return faker.lorem.words(3)
 
@@ -56,8 +86,8 @@ export function generateMockFromSchema(schema) {
             if (schema.properties) {
                 for (const [key, prop] of Object.entries(schema.properties)) {
                     // Pass key as Hint
-                    prop.name = key
-                    obj[key] = generateMockFromSchema(prop)
+                    const subSchema = { ...prop, name: key }
+                    obj[key] = generateMockFromSchema(subSchema)
                 }
             }
             return obj
@@ -78,8 +108,16 @@ export function generateEndpointMock(endpoint) {
         params: {}
     }
 
-    if (endpoint.requestBody?.content?.['application/json']?.schema) {
-        mock.body = generateMockFromSchema(endpoint.requestBody.content['application/json'].schema)
+    const content = (endpoint.requestBodySpec || endpoint.requestBody)?.content
+    if (content) {
+        // Try to find a schema in common content types
+        const types = ['application/json', 'multipart/form-data', 'application/x-www-form-urlencoded']
+        for (const type of types) {
+            if (content[type]?.schema) {
+                mock.body = generateMockFromSchema(content[type].schema)
+                break
+            }
+        }
     }
 
     if (endpoint.parameters) {

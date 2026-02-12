@@ -1,129 +1,204 @@
 <template>
-  <div class="card">
-    <h3 class="text-lg font-semibold mb-4">Journey Execution</h3>
-
-    <!-- Configuration -->
-    <div class="space-y-4 mb-6">
-      <!-- Base URL -->
-      <div>
-        <label for="base-url" class="block text-sm font-medium mb-2">
-          Base URL
-        </label>
-        <input
-          id="base-url"
-          v-model="baseUrl"
-          type="url"
-          required
-          :disabled="isRunning"
-          class="input-field w-full"
-          placeholder="https://api.example.com"
-        />
+  <div class="h-full flex flex-col">
+    <!-- Header with Close button -->
+    <div class="flex items-center justify-between mb-4">
+      <div class="flex items-center space-x-2">
+        <PlayCircle :size="18" class="text-primary" />
+        <h3 class="text-sm font-bold uppercase tracking-wider text-gray-400">Journey Runner</h3>
       </div>
-
-      <!-- Initial Session Data (Optional) -->
-      <div>
-        <label class="block text-sm font-medium mb-2">
-          Initial Session Data (Optional)
-        </label>
-        <textarea
-          v-model="sessionDataInput"
-          :disabled="isRunning"
-          class="input-field w-full font-mono text-sm"
-          rows="4"
-          placeholder='{"auth_token": "...", "user_id": "..."}'
-        ></textarea>
-        <p class="text-xs text-gray-500 mt-1">
-          JSON object with initial session values
-        </p>
-      </div>
+      <button 
+        @click="$emit('close')" 
+        class="p-1 hover:bg-white/10 rounded transition-colors text-gray-400 hover:text-white"
+        title="Close Runner"
+      >
+        <X :size="18" />
+      </button>
     </div>
 
-    <!-- Progress -->
-    <div v-if="isRunning || executionState === 'completed'" class="mb-6">
-      <div class="flex items-center justify-between mb-2">
-        <span class="text-sm font-medium">Progress</span>
-        <span class="text-sm text-gray-400">
-          {{ completedSteps }} / {{ totalSteps }} steps
-        </span>
-      </div>
-      <div class="w-full h-2 bg-gray-800 rounded-full overflow-hidden">
-        <div
-          class="h-full bg-primary transition-all duration-300"
-          :style="{ width: progress + '%' }"
-        ></div>
-      </div>
-    </div>
+    <!-- Horizontal Layout Sections -->
+    <div class="flex flex-1 gap-6 min-h-0">
+      <!-- Section 1: Config & Context -->
+      <div class="flex-[1.2] flex flex-col space-y-4 min-h-0">
+        <div>
+          <label for="base-url" class="block text-[10px] font-bold uppercase text-gray-500 mb-1">
+            Base URL
+          </label>
+          <div class="relative group">
+            <Globe :size="14" class="absolute left-3 top-[50%] -translate-y-1/2 text-gray-500 group-focus-within:text-primary transition-colors" />
+            <input
+              id="base-url"
+              v-model="baseUrl"
+              type="url"
+              required
+              :disabled="isRunning"
+              style="padding-left: 2.25rem !important;"
+              class="input-field w-full py-2 text-xs"
+              placeholder="https://api.example.com"
+            />
+          </div>
+        </div>
 
-    <!-- Live Session Context -->
-    <div v-if="Object.keys(journeyStore.sessionData).length > 0" class="mb-6">
-      <h4 class="text-xs font-bold text-gray-500 uppercase mb-2 flex items-center">
-        <Database :size="12" class="mr-1" />
-        Session Context
-      </h4>
-      <div class="bg-black/40 border border-gray-800 rounded p-3 space-y-1 max-h-48 overflow-auto">
-        <div v-for="(value, key) in journeyStore.sessionData" :key="key" class="flex items-start justify-between text-xs font-mono">
-          <span class="text-gray-500 mr-2">{{ key }}:</span>
-          <span :class="['break-all text-right', key.includes('token') ? 'text-primary' : 'text-blue-400']">
-            {{ formatSessionValue(value) }}
-          </span>
+        <!-- Live Session Context (Moved here) -->
+        <div class="flex-1 flex flex-col min-h-0">
+          <h4 class="text-[10px] font-bold text-gray-500 uppercase mb-2 flex items-center">
+            <Database :size="10" class="mr-1" />
+            Live Context
+          </h4>
+          <div class="flex-1 bg-black/30 border border-gray-800/50 rounded p-2 overflow-auto custom-scrollbar">
+            <div v-if="Object.keys(journeyStore.sessionData).length > 0" class="space-y-1">
+              <div v-for="(value, key) in journeyStore.sessionData" :key="key" class="flex items-start justify-between text-[10px] font-mono border-b border-white/5 pb-1">
+                <span class="text-gray-600 mr-2">{{ key }}:</span>
+                <span :class="['break-all text-right max-w-[200px]', key.includes('token') ? 'text-primary' : 'text-blue-400']">
+                  {{ formatSessionValue(value) }}
+                </span>
+              </div>
+            </div>
+            <div v-else class="h-full flex items-center justify-center text-[10px] text-gray-600 italic">
+              Waiting for data...
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 2: Progress & Status -->
+      <div class="flex-[1.8] flex flex-col justify-center space-y-6">
+        <!-- BOLD LIVE STATUS -->
+        <div :class="[
+          'flex items-center justify-center py-8 rounded-2xl border transition-all duration-500',
+          isRunning 
+            ? 'bg-red-500/20 border-red-500 shadow-[0_0_50px_rgba(239,68,68,0.2)]' 
+            : 'bg-white/5 border-white/10'
+        ]">
+          <div class="text-center">
+            <p :class="[
+              'text-[12px] uppercase font-black tracking-[0.4em] mb-2',
+              isRunning ? 'text-red-400' : 'text-gray-500'
+            ]">System Status</p>
+            <p :class="[
+              'text-5xl font-black uppercase tracking-tighter transition-all duration-300',
+              isRunning ? 'text-red-500 drop-shadow-[0_0_15px_rgba(239,68,68,0.5)]' : 'text-gray-700'
+            ]">
+              {{ isRunning ? 'Executing' : (executionState === 'completed' ? 'Success' : (executionState === 'failed' ? 'Error' : 'Ready')) }}
+            </p>
+          </div>
+        </div>
+
+        <!-- Progress Bar -->
+        <div v-if="isRunning || executionState !== 'idle'" class="px-4">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-[11px] font-bold uppercase text-gray-500 tracking-wider">Execution Progress</span>
+            <span class="text-[11px] font-mono text-primary font-bold">
+              {{ completedSteps }} / {{ totalSteps }} Steps
+            </span>
+          </div>
+          <div class="w-full h-3 bg-gray-800 rounded-full overflow-hidden border border-gray-700/50 p-0.5">
+            <div
+              class="h-full bg-gradient-to-r from-primary via-primary-light to-primary transition-all duration-500 ease-out shadow-[0_0_15px_rgba(var(--primary-rgb),0.6)] rounded-full"
+              :style="{ width: progress + '%' }"
+            ></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 3: Status Console & Actions -->
+      <div class="flex-[1.5] flex flex-col space-y-4 min-h-0">
+        <!-- Status Messages -->
+        <div class="flex-1 bg-black/40 border border-gray-800 rounded overflow-hidden flex flex-col min-h-0">
+          <div class="px-2 py-1 border-b border-gray-800 bg-white/5 text-[9px] uppercase font-bold text-gray-500">Console Log</div>
+          <div class="flex-1 p-2 overflow-auto font-mono text-[10px] space-y-1 custom-scrollbar">
+            <div
+              v-for="(msg, index) in statusMessages"
+              :key="index"
+              class="flex border-l-2 pl-2 mb-1"
+              :class="{
+                'border-primary/50': msg.type === 'info',
+                'border-green-500/50': msg.type === 'success',
+                'border-red-500/50': msg.type === 'error',
+              }"
+            >
+              <span class="text-gray-600 mr-2 tabular-nums">{{ new Date(msg.time).toLocaleTimeString([], {hour12:false, hour:'2-digit', minute:'2-digit', second:'2-digit'}) }}</span>
+              <span :class="{
+                'text-primary': msg.type === 'info',
+                'text-green-400': msg.type === 'success',
+                'text-red-400': msg.type === 'error',
+              }">{{ msg.text }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex flex-col space-y-2">
+          <button
+            @click="startExecution"
+            :disabled="!canStart"
+            class="w-full py-3 rounded-lg bg-primary hover:bg-primary-dark disabled:opacity-30 disabled:grayscale text-black font-black text-xs uppercase tracking-widest flex items-center justify-center transition-all shadow-[0_4px_20px_rgba(191,245,73,0.2)] hover:shadow-[0_4px_25px_rgba(191,245,73,0.4)] active:scale-95"
+          >
+            <Play v-if="!isRunning" :size="16" class="mr-2 fill-current" />
+            <Loader v-else :size="16" class="mr-2 animate-spin" />
+            {{ isRunning ? 'Processing...' : 'Execute Journey' }}
+          </button>
+
+          <div class="flex gap-2">
+            <button
+              v-if="isRunning"
+              @click="stopExecution"
+              class="flex-1 py-1.5 rounded-lg border border-red-500/50 hover:bg-red-500/10 text-red-500 text-[10px] font-bold uppercase transition-all"
+            >
+              <Square :size="12" class="inline mr-1 fill-current" />
+              Emergency Stop
+            </button>
+
+            <button
+              v-if="!isRunning"
+              @click="resetExecution"
+              class="flex-1 py-1.5 rounded-lg border border-gray-700 hover:bg-white/5 text-gray-400 text-[10px] font-bold uppercase transition-all flex items-center justify-center"
+            >
+              <RotateCcw :size="12" class="mr-1" />
+              Reset Runner
+            </button>
+          </div>
         </div>
       </div>
     </div>
-
-    <!-- Status Messages -->
-    <div v-if="statusMessages.length > 0" class="mb-6 space-y-2 max-h-32 overflow-auto">
-      <div
-        v-for="(msg, index) in statusMessages"
-        :key="index"
-        class="text-sm p-2 bg-surface rounded"
-        :class="{
-          'text-primary': msg.type === 'info',
-          'text-green-400': msg.type === 'success',
-          'text-red-400': msg.type === 'error',
-        }"
-      >
-        {{ msg.text }}
-      </div>
-    </div>
-
-    <!-- Actions -->
-    <div class="flex space-x-3">
-      <button
-        @click="startExecution"
-        :disabled="!canStart"
-        class="btn-primary flex-1"
-      >
-        <Play v-if="!isRunning" :size="20" class="inline mr-2" />
-        <Loader v-else :size="20" class="inline mr-2 animate-spin" />
-        {{ isRunning ? 'Running...' : 'Run Journey' }}
-      </button>
-
-      <button
-        v-if="isRunning"
-        @click="stopExecution"
-        class="btn-secondary"
-      >
-        <Square :size="20" class="inline mr-2" />
-        Stop
-      </button>
-
-      <button
-        v-if="executionState === 'completed' || executionState === 'failed'"
-        @click="resetExecution"
-        class="btn-secondary"
-      >
-        <RotateCcw :size="20" class="inline mr-2" />
-        Reset
-      </button>
-    </div>
   </div>
 </template>
+
+<style scoped>
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+:deep(.input-field) {
+  padding-top: 0.375rem;
+  padding-bottom: 0.375rem;
+}
+
+/* Local primary variables as fallbacks */
+:root {
+  --primary-rgb: 191, 245, 73;
+  --primary-light: #D4FF6B;
+}
+</style>
 
 <script setup>
 import { ref, computed } from 'vue'
 import { useJourneyStore } from '@/stores/journey'
 import { useToast } from 'vue-toastification'
-import { Play, Square, RotateCcw, Loader, Database } from 'lucide-vue-next'
+import { Play, Square, RotateCcw, Loader, Database, Globe, X, PlayCircle } from 'lucide-vue-next'
 
 const props = defineProps({
   journeyId: {
@@ -150,11 +225,6 @@ const baseUrl = computed({
   set: (val) => journeyStore.runnerConfig.baseUrl = val
 })
 
-const sessionDataInput = computed({
-  get: () => journeyStore.runnerConfig.initialSessionData,
-  set: (val) => journeyStore.runnerConfig.initialSessionData = val
-})
-
 const isRunning = ref(false)
 const executionState = ref('idle')
 const completedSteps = ref(0)
@@ -172,17 +242,6 @@ const progress = computed(() => {
 })
 
 async function startExecution() {
-  // Validate session data if provided
-  let sessionData = {}
-  if (sessionDataInput.value.trim()) {
-    try {
-      sessionData = JSON.parse(sessionDataInput.value)
-    } catch (error) {
-      toast.error('Invalid JSON in session data')
-      return
-    }
-  }
-
   // Reset state
   isRunning.value = true
   executionState.value = 'running'
@@ -205,7 +264,7 @@ async function startExecution() {
       ws.value.send(
         JSON.stringify({
           baseUrl: baseUrl.value,
-          sessionData: sessionData,
+          sessionData: {},
           nodes: props.nodes,
           edges: props.edges,
           errorInjections: {}, // Can be extended for error injection UI
