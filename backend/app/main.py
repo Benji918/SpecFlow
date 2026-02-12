@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import time
 import logging
 
-# Disable uvicorn access logger to avoid duplicates
+# Disable uvicorn access logger
 logging.getLogger("uvicorn.access").disabled = True
 logger = logging.getLogger("uvicorn")
 

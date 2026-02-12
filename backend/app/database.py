@@ -13,11 +13,11 @@ ssl_ctx.verify_mode = ssl.CERT_NONE
 # Create async engine
 engine = create_async_engine(
     settings.DATABASE_URL,
-    pool_size=5,
+    pool_size=2,
     pool_pre_ping=True,
-    max_overflow=5,
-    pool_timeout=15,
-    pool_recycle=600,
+    max_overflow=1,
+    pool_timeout=60,
+    pool_recycle=300,
     connect_args={
         "statement_cache_size": 0,
         "ssl": ssl_ctx,

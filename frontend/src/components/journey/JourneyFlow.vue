@@ -13,6 +13,7 @@
       @edge-click="onEdgeClick"
       class="vue-flow-custom"
       :node-types="nodeTypes"
+      :edge-types="edgeTypes"
     >
       <Background pattern-color="#333" :gap="16" />
       <Controls />
@@ -56,6 +57,9 @@ import { useJourneyStore } from '@/stores/journey'
 import { useToast } from 'vue-toastification'
 import { Save, GitBranch, Loader } from 'lucide-vue-next'
 import EndpointNode from './EndpointNode.vue'
+import MappingEdge from './MappingEdge.vue'
+
+import { detectMappings } from '@/utils/mappingUtils'
 
 const props = defineProps({
   journeyId: {
@@ -72,20 +76,49 @@ const props = defineProps({
   },
 })
 
-const emit = defineEmits(['node-selected', 'save'])
+const emit = defineEmits(['node-selected', 'save', 'edge-selected'])
 
 const journeyStore = useJourneyStore()
 const toast = useToast()
-const { fitView } = useVueFlow()
+const { fitView, onConnect, addEdges } = useVueFlow()
 
-// Register custom node type
+// Handle new connections
+onConnect((params) => {
+  const sourceNode = nodes.value.find(n => n.id === params.source)
+  const targetNode = nodes.value.find(n => n.id === params.target)
+  
+  const detectedMappings = detectMappings(sourceNode, targetNode)
+  
+  const edge = {
+    ...params,
+    id: `e-${params.source}-${params.target}-${Date.now()}`,
+    type: 'mapping',
+    animated: true,
+    data: {
+      dataMapping: detectedMappings
+    }
+  }
+  
+  addEdges([edge])
+  
+  if (detectedMappings.length > 0) {
+    toast.success(`Auto-mapped ${detectedMappings.length} parameters!`)
+  }
+})
+
+// Register custom node and edge types
 const nodeTypes = {
   endpoint: markRaw(EndpointNode),
+}
+
+const edgeTypes = {
+  mapping: markRaw(MappingEdge),
 }
 
 const nodes = ref([...props.initialNodes])
 const edges = ref([...props.initialEdges])
 const selectedNode = ref(null)
+const selectedEdge = ref(null)
 const hasChanges = ref(false)
 const saving = ref(false)
 const originalState = ref(JSON.stringify({ nodes: props.initialNodes, edges: props.initialEdges }))
@@ -117,18 +150,20 @@ function onEdgesChange(changes) {
 
 function onNodeClick(event) {
   selectedNode.value = event.node
+  selectedEdge.value = null
   emit('node-selected', event.node)
 }
 
 function onEdgeClick(event) {
-  // Can implement edge editing here
-  console.log('Edge clicked:', event.edge)
+  selectedEdge.value = event.edge
+  selectedNode.value = null
+  emit('edge-selected', event.edge)
 }
 
 function autoLayout() {
   // Vertical layout with fixed spacing
   const nodeHeight = 120
-  const nodeSpacing = 100
+  const nodeSpacing = 120
   
   // Create new array to ensure reactivity
   const newNodes = [...nodes.value]
@@ -140,15 +175,22 @@ function autoLayout() {
   })
   nodes.value = newNodes
 
-  // Recreate edges to ensure they're connected properly
+  // Recreate edges to ensure they're connected properly with automatic mapping
   const newEdges = []
   for (let i = 0; i < nodes.value.length - 1; i++) {
+    const sourceNode = nodes.value[i]
+    const targetNode = nodes.value[i + 1]
+    const detectedMappings = detectMappings(sourceNode, targetNode)
+    
     newEdges.push({
       id: `e${i}-${i + 1}`,
-      source: nodes.value[i].id,
-      target: nodes.value[i + 1].id,
-      type: 'smoothstep',
+      source: sourceNode.id,
+      target: targetNode.id,
+      type: 'mapping',
       animated: true,
+      data: {
+        dataMapping: detectedMappings
+      }
     })
   }
   edges.value = newEdges
@@ -158,7 +200,49 @@ function autoLayout() {
     fitView({ padding: 0.2, duration: 300 })
   }, 100)
 
-  toast.success('Layout updated')
+  toast.success('Layout updated with auto-mapping')
+}
+
+function clearAllMappings() {
+  // 1. Clear edges data mapping
+  // We map the array and ensure each edge gets a fresh reference with empty dataMapping
+  edges.value = edges.value.map(edge => {
+    return {
+      ...edge,
+      data: {
+        ...edge.data,
+        dataMapping: []
+      }
+    }
+  })
+
+  // 2. Clear nodes data (parameters values)
+  // We carefully preserve data.requestBody while clearing parameter values
+  nodes.value = nodes.value.map(node => {
+     if (!node.data) return node
+     
+     const newData = { ...node.data }
+     
+     // Clear parameters if they exist
+     if (newData.parameters) {
+       newData.parameters = newData.parameters.map(p => ({
+         ...p,
+         value: ''
+       }))
+     }
+     
+     // Reset status for a fresh visual state
+     newData.status = 'pending'
+     
+     // CRITICAL: We do NOT touch newData.requestBody here
+     
+     return {
+       ...node,
+       data: newData
+     }
+  })
+
+  toast.success('All data links and node mappings cleared')
 }
 
 async function saveJourney() {
@@ -184,6 +268,7 @@ async function saveJourney() {
 // Expose methods to parent
 defineExpose({
   autoLayout,
+  clearAllMappings,
   saveJourney,
   nodes,
   edges,

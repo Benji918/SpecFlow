@@ -290,8 +290,12 @@ class JourneyExecutor:
         """
         def replacer(match):
             param_name = match.group(1)
-            key = f"pathParams.{param_name}"
-            return str(session_data.get(key, match.group(0)))
+            # Try specific pathParams key first, then fallback to direct key
+            value = session_data.get(f"pathParams.{param_name}")
+            if value is None:
+                value = session_data.get(param_name)
+                
+            return str(value) if value is not None else match.group(0)
 
         return re.sub(r"\{(\w+)\}", replacer, url)
 

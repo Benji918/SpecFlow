@@ -17,8 +17,8 @@ class CacheService:
             print(f"Cache get error: {e}")
         return None
 
-    async def set(self, key: str, value: Any, expire: int = 3600):
-        """Set a value in cache with expiration (default 1 hour)."""
+    async def set(self, key: str, value: Any, expire: int = 600):
+        """Set a value in cache with expiration (default 5 mins)."""
         try:
             await self.redis.set(key, json.dumps(value), ex=expire)
         except Exception as e:

@@ -25,6 +25,14 @@
               Prefill All
             </button>
             <button
+              @click="clearAllMappings"
+              class="btn-secondary text-sm py-2 px-4 hover:bg-red-500/10 hover:text-red-400"
+              title="Clear all mappings and prefilled data"
+            >
+              <Link2Off :size="16" class="inline mr-2" />
+              Clear Mappings
+            </button>
+            <button
               @click="showRunner = !showRunner"
               :class="[
                 'btn-secondary text-sm py-2 px-4',
@@ -55,30 +63,43 @@
       <!-- Main Content -->
       <div v-else-if="journey" class="flex-1 flex relative">
         <!-- Left Panel - Journey Flow -->
-        <div :class="['flex-1 relative', selectedResult ? 'mr-96' : '']">
+        <div :class="['flex-1 relative', (selectedNode || selectedEdge) ? 'mr-96' : '']">
           <JourneyFlow
             ref="flowRef"
             :journey-id="journey.id"
             :initial-nodes="journey.nodes || []"
             :initial-edges="journey.edges || []"
             @node-selected="handleNodeSelected"
+            @edge-selected="handleEdgeSelected"
             @save="handleFlowSaved"
           />
         </div>
 
-        <!-- Right Panel - Response Viewer (Slides in) -->
+        <!-- Right Panel - Slide in -->
         <transition name="slide">
           <div
-            v-if="selectedNode"
+            v-if="selectedNode || selectedEdge"
             class="w-96 border-l border-gray-800 bg-surface overflow-auto absolute right-0 top-0 bottom-0 z-20"
           >
             <div class="p-4">
+              <!-- Node Info -->
               <ResponsePanel
+                v-if="selectedNode"
                 :result="selectedResult"
                 :node="selectedNode"
                 :edges="journey.edges"
                 @update-node="handleNodeUpdate"
                 @close="selectedNode = null; selectedResult = null"
+              />
+
+              <!-- Edge Info -->
+              <MappingPanel
+                v-if="selectedEdge"
+                :edge="selectedEdge"
+                :source-node="journey.nodes.find(n => n.id === selectedEdge.source)"
+                :target-node="journey.nodes.find(n => n.id === selectedEdge.target)"
+                @update-edge="handleEdgeUpdate"
+                @close="selectedEdge = null"
               />
             </div>
           </div>
@@ -140,10 +161,12 @@ import {
   AlertCircle,
   X,
   Sparkles,
+  Link2Off,
 } from 'lucide-vue-next'
 import JourneyFlow from '@/components/journey/JourneyFlow.vue'
 import JourneyRunner from '@/components/journey/JourneyRunner.vue'
 import ResponsePanel from '@/components/journey/ResponsePanel.vue'
+import MappingPanel from '@/components/journey/MappingPanel.vue'
 import { generateEndpointMock } from '@/utils/mockGenerator'
 
 const router = useRouter()
@@ -155,6 +178,7 @@ const loading = ref(true)
 const showRunner = ref(false)
 const selectedResult = ref(null)
 const selectedNode = ref(null)
+const selectedEdge = ref(null)
 const flowRef = ref(null)
 
 const journey = computed(() => journeyStore.activeJourney)
@@ -174,11 +198,18 @@ async function fetchJourney() {
 
 function handleNodeSelected(node) {
   selectedNode.value = node
+  selectedEdge.value = null
   // Find execution result for this node
   const result = journeyStore.executionResults.find(
     (r) => r.stepId === node.id
   )
   selectedResult.value = result || null
+}
+
+function handleEdgeSelected(edge) {
+  selectedEdge.value = edge
+  selectedNode.value = null
+  selectedResult.value = null
 }
 
 function handleNodeUpdate(nodeId, updates) {
@@ -191,14 +222,31 @@ function handleNodeUpdate(nodeId, updates) {
         ...updates
       }
       
-      // Update the flow component's nodes as well to reflect changes
+      // Sync with flow component
       if (flowRef.value) {
-        const flowNodeIndex = flowRef.value.nodes.findIndex(n => n.id === nodeId)
-        if (flowNodeIndex !== -1) {
-          flowRef.value.nodes[flowNodeIndex].data = {
-            ...flowRef.value.nodes[flowNodeIndex].data,
-            ...updates
-          }
+        const flowNode = flowRef.value.nodes.find(n => n.id === nodeId)
+        if (flowNode) {
+          flowNode.data = { ...flowNode.data, ...updates }
+        }
+      }
+    }
+  }
+}
+
+function handleEdgeUpdate(edgeId, updates) {
+  if (journey.value) {
+    const edgeIndex = journey.value.edges.findIndex(e => e.id === edgeId)
+    if (edgeIndex !== -1) {
+      journey.value.edges[edgeIndex] = {
+        ...journey.value.edges[edgeIndex],
+        ...updates
+      }
+
+      // Sync with flow component
+      if (flowRef.value) {
+        const flowEdge = flowRef.value.edges.find(e => e.id === edgeId)
+        if (flowEdge) {
+          Object.assign(flowEdge, updates)
         }
       }
     }
@@ -284,6 +332,30 @@ function prefillAllMockData() {
     toast.success(`Prefilled ${updatedCount} steps with mock data. Don't forget to save!`)
   } else {
     toast.info('No steps needed prefilling.')
+  }
+}
+
+async function clearAllMappings() {
+  if (!confirm('Clear all data links and node mappings? This will also save the journey.')) return
+  
+  if (flowRef.value) {
+    // 1. Call the component method to update local state
+    flowRef.value.clearAllMappings()
+    
+    // 2. Sync the cleared state back to the store immediately
+    if (journey.value) {
+      journey.value.nodes = [...flowRef.value.nodes]
+      journey.value.edges = [...flowRef.value.edges]
+    }
+    
+    // 3. Persist to backend immediately
+    await flowRef.value.saveJourney()
+    
+    // 4. Reset UI and execution state
+    selectedNode.value = null
+    selectedEdge.value = null
+    selectedResult.value = null
+    journeyStore.resetExecution()
   }
 }
 
