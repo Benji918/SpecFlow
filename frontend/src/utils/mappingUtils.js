@@ -12,30 +12,29 @@ export function detectMappings(sourceNode, targetNode) {
     if (!sourceData || !targetData) return mappings
 
     // 1. Get all potential source fields from response schemas
-    // For now, we look at the first successful response (200, 201)
     const responses = sourceData.responses || {}
     const successCode = Object.keys(responses).find(code => code.startsWith('2'))
     const sourceSchema = responses[successCode]?.content?.['application/json']?.schema
 
     if (!sourceSchema || !sourceSchema.properties) return mappings
 
-    // Flatten source properties (one level for now)
     const sourceFields = []
 
-    // Check if it's wrapped in 'detail' or 'data' (common in this codebase)
-    if (sourceSchema.properties.detail?.properties) {
-        Object.keys(sourceSchema.properties.detail.properties).forEach(key => {
-            sourceFields.push({ name: key, path: `response.detail.${key}` })
-        })
-    } else if (sourceSchema.properties.data?.properties) {
-        Object.keys(sourceSchema.properties.data.properties).forEach(key => {
-            sourceFields.push({ name: key, path: `response.data.${key}` })
-        })
-    } else {
-        Object.keys(sourceSchema.properties).forEach(key => {
-            sourceFields.push({ name: key, path: `response.${key}` })
+    // Extraction helper to find fields at the top level and inside common wrappers
+    function extractFields(schema, prefix = 'response') {
+        if (!schema || !schema.properties) return
+        Object.keys(schema.properties).forEach(key => {
+            const path = `${prefix}.${key}`
+            sourceFields.push({ name: key, path })
+
+            // Only recurse into 'detail' and 'data' to keep suggestions clean but useful
+            if ((key === 'detail' || key === 'data') && schema.properties[key].properties) {
+                extractFields(schema.properties[key], path)
+            }
         })
     }
+
+    extractFields(sourceSchema)
 
     // 2. Get all required target fields (path parameters, query parameters, body properties)
     const targetParams = targetData.parameters || []

@@ -172,19 +172,18 @@ const availableSourceFields = computed(() => {
   
   if (!schema || !schema.properties) return fields
 
-  if (schema.properties.detail?.properties) {
-    Object.keys(schema.properties.detail.properties).forEach(key => {
-      fields.push({ name: key, path: `response.detail.${key}` })
-    })
-  } else if (schema.properties.data?.properties) {
-    Object.keys(schema.properties.data.properties).forEach(key => {
-      fields.push({ name: key, path: `response.data.${key}` })
-    })
-  } else {
-    Object.keys(schema.properties).forEach(key => {
-      fields.push({ name: key, path: `response.${key}` })
+  function extractFields(s, prefix = 'response') {
+    if (!s || !s.properties) return
+    Object.keys(s.properties).forEach(key => {
+      const path = `${prefix}.${key}`
+      fields.push({ name: key, path })
+      if ((key === 'detail' || key === 'data') && s.properties[key].properties) {
+        extractFields(s.properties[key], path)
+      }
     })
   }
+
+  extractFields(schema)
   return fields
 })
 
@@ -235,10 +234,26 @@ function updateEdge() {
 
 function getLiveValue(path) {
   if (!path) return null
-  // In a real scenario, we would parse the path against the last result of the source node
-  // For now, let's check global sessionData as a fallback
   const cleanPath = path.replace('response.', '')
-  return journeyStore.sessionData[cleanPath] || journeyStore.sessionData[`pathParams.${cleanPath}`]
+  
+  // Try direct path first
+  let val = journeyStore.sessionData[cleanPath] || journeyStore.sessionData[`pathParams.${cleanPath}`]
+  
+  // If no value, try looking inside common wrappers if it's a simple key
+  if (val === undefined || val === null) {
+     const wrappers = ['detail', 'data']
+     for (const w of wrappers) {
+       val = journeyStore.sessionData[`${w}.${cleanPath}`] || journeyStore.sessionData[`pathParams.${w}.${cleanPath}`]
+       if (val !== undefined && val !== null) break
+     }
+  }
+
+  // Fallback to generic 'id' if looking for a specific ID
+  if ((val === undefined || val === null) && cleanPath.endsWith('_id')) {
+    val = journeyStore.sessionData['id'] || journeyStore.sessionData['pathParams.id']
+  }
+
+  return val
 }
 
 function isValidTarget(key) {
