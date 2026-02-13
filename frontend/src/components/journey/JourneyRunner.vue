@@ -38,24 +38,14 @@
           </div>
         </div>
 
-        <!-- Live Session Context (Moved here) -->
+        <!-- SpecFlow Branding -->
         <div class="flex-1 flex flex-col min-h-0">
-          <h4 class="text-[10px] font-bold text-gray-500 uppercase mb-2 flex items-center">
-            <Database :size="10" class="mr-1" />
-            Live Context
-          </h4>
-          <div class="flex-1 bg-black/30 border border-gray-800/50 rounded p-2 overflow-auto custom-scrollbar">
-            <div v-if="Object.keys(journeyStore.sessionData).length > 0" class="space-y-1">
-              <div v-for="(value, key) in journeyStore.sessionData" :key="key" class="flex items-start justify-between text-[10px] font-mono border-b border-white/5 pb-1">
-                <span class="text-gray-600 mr-2">{{ key }}:</span>
-                <span :class="['break-all text-right max-w-[200px]', key.includes('token') ? 'text-primary' : 'text-blue-400']">
-                  {{ formatSessionValue(value) }}
-                </span>
-              </div>
-            </div>
-            <div v-else class="h-full flex items-center justify-center text-[10px] text-gray-600 italic">
-              Waiting for data...
-            </div>
+          <div class="h-full flex flex-col items-center justify-center bg-black/20 border border-gray-800/50 rounded-xl p-6 transition-all hover:border-primary/20 group">
+            <h1 class="text-5xl font-black uppercase tracking-tighter transition-transform duration-500 group-hover:scale-105">
+              Spec<span class="text-primary">Flow</span>
+            </h1>
+            <div class="h-1 w-12 bg-primary/30 mt-2 rounded-full transition-all duration-500 group-hover:w-24"></div>
+            <p class="text-[10px] text-gray-600 font-bold uppercase tracking-[0.4em] mt-4 opacity-50">Intelligence Suite</p>
           </div>
         </div>
       </div>
@@ -198,7 +188,7 @@
 import { ref, computed } from 'vue'
 import { useJourneyStore } from '@/stores/journey'
 import { useToast } from 'vue-toastification'
-import { Play, Square, RotateCcw, Loader, Database, Globe, X, PlayCircle } from 'lucide-vue-next'
+import { Play, Square, RotateCcw, Loader, Globe, X, PlayCircle } from 'lucide-vue-next'
 
 const props = defineProps({
   journeyId: {
@@ -298,12 +288,7 @@ async function startExecution() {
   }
 }
 
-function formatSessionValue(val) {
-  if (typeof val === 'string' && val.length > 30) {
-    return val.substring(0, 27) + '...'
-  }
-  return val
-}
+
 
 function handleWebSocketMessage(message) {
   switch (message.type) {
