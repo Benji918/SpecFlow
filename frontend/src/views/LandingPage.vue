@@ -40,13 +40,19 @@
             <span>Next-Gen API Testing</span>
           </div>
           <h1 class="text-6xl lg:text-8xl font-black leading-[0.9] tracking-tighter">
-            Stop Testing <br/>
-            <span class="text-transparent bg-clip-text bg-gradient-to-r from-white via-primary to-primary-dark">
-              Start Flowing.
+            Test Smarter. <br/>
+            <span class="relative inline-block mt-2">
+              <span class="text-transparent bg-clip-text bg-gradient-to-r from-white via-primary to-primary-dark">
+                Flow Faster.
+              </span>
+              <!-- Hand-drawn Underline -->
+              <svg class="absolute -bottom-4 left-0 w-full h-4 text-primary opacity-80" viewBox="0 0 300 20" fill="none" preserveAspectRatio="none">
+                <path d="M5 15C50 5 150 5 295 15" stroke="currentColor" stroke-width="4" stroke-linecap="round" class="underline-path" />
+              </svg>
             </span>
           </h1>
           <p class="text-xl text-gray-400 max-w-xl leading-relaxed">
-            SpecFlow automatically transforms your OpenAPI specs into visual, context-aware user journeys. No more manual chaining. No more copy-paste madness.
+            Turn OpenAPI specs into interactive user journeys. Automate data chaining and gain total visibility into your API flows.
           </p>
           <div class="flex flex-col sm:flex-row items-center gap-4">
             <RouterLink to="/signup" class="w-full sm:w-auto px-8 py-4 bg-primary text-black rounded-2xl text-lg font-black hover:bg-white transition-all shadow-xl hover:shadow-primary/20 flex items-center justify-center group">
@@ -594,6 +600,18 @@ function handleDragEnd() {
   background-color: rgba(255, 255, 255, 0.08);
   border-color: rgba(255, 255, 255, 0.2);
   transform: translateY(-0.25rem);
+}
+
+@keyframes drawUnderline {
+  from { stroke-dashoffset: 350; }
+  to { stroke-dashoffset: 0; }
+}
+
+.underline-path {
+  stroke-dasharray: 350;
+  stroke-dashoffset: 350;
+  animation: drawUnderline 1.2s cubic-bezier(0.65, 0, 0.35, 1) forwards;
+  animation-delay: 0.5s;
 }
 
 @keyframes float {

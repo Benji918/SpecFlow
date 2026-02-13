@@ -3,11 +3,14 @@
     <!-- Header -->
     <header class="border-b border-gray-800 bg-surface/50 backdrop-blur-lg sticky top-0 z-10">
       <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-        <div>
-          <h1 class="text-3xl font-bold">
+        <RouterLink to="/" class="flex items-center space-x-2 group">
+          <div class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center transform rotate-12 group-hover:rotate-0 transition-transform">
+            <Zap :size="20" class="text-black fill-current" />
+          </div>
+          <span class="text-2xl font-black tracking-tighter text-white">
             Spec<span class="text-primary">Flow</span>
-          </h1>
-        </div>
+          </span>
+        </RouterLink>
         <div class="flex items-center space-x-4">
           <span class="text-sm text-gray-400">{{ authStore.user?.email }}</span>
           <button @click="handleLogout" class="btn-secondary text-sm py-2 px-4">
@@ -131,6 +134,7 @@ import {
   FileCode2,
   ChevronRight,
   Trash2,
+  Zap,
 } from 'lucide-vue-next'
 import SpecUploader from '@/components/spec/SpecUploader.vue'
 
