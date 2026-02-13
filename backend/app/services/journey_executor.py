@@ -77,7 +77,6 @@ class JourneyExecutor:
             Step execution result with status, response, timing
         """
         data = node.get("data", {})
-        # print(data)
         step_id = node["id"]
 
         # Build URL
@@ -89,11 +88,10 @@ class JourneyExecutor:
 
         # Build request body
         body = self._build_body(data, session_data)
-        # print(body)
 
         # Execute request
         method = data.get("method", "GET")
-        # print(method)
+
         
         try:
             start_time = datetime.utcnow()
@@ -101,10 +99,16 @@ class JourneyExecutor:
             # Determine how to send the body
             req_kwargs = {}
             if method in ["POST", "PUT", "PATCH"] and body:
-                content_spec = data.get("requestBodySpec", data.get("requestBody", {})).get("content", {})
-                if "multipart/form-data" in content_spec:
-                    # Handle binary fields (uploads)
-                    schema = content_spec["multipart/form-data"].get("schema", {})
+                content_type = self._determine_content_type(data, body)
+                
+                is_multipart = content_type == "multipart/form-data"
+                is_form = content_type == "application/x-www-form-urlencoded"
+                
+                if is_multipart:
+                    # Extract spec for schema checking
+                    spec_source = data.get("requestBodySpec") or data.get("requestBody", {})
+                    content_spec = spec_source.get("content", {}) if isinstance(spec_source, dict) else {}
+                    schema = content_spec.get("multipart/form-data", {}).get("schema", {})
                     properties = schema.get("properties", {}) or {}
                     
                     files = {}
@@ -113,39 +117,48 @@ class JourneyExecutor:
                     # Iterate through body fields to separate files and regular data
                     for field_name, value in body.items():
                         prop = properties.get(field_name, {})
-                        if prop.get("format") == "binary" and isinstance(value, str) and value.startswith("http"):
-                            try:
-                                # Fetch the actual binary content from the URL
-                                img_resp = await self.client.get(value)
-                                if img_resp.status_code == 200:
-                                    ext = "jpg"
-                                    if "png" in value.lower(): ext = "png"
-                                    elif "webp" in value.lower(): ext = "webp"
-                                    
-                                    # Create a file tuple for httpx: (filename, content, content-type)
-                                    files[field_name] = (
-                                        f"upload.{ext}", 
-                                        img_resp.content, 
-                                        img_resp.headers.get("Content-Type", "image/jpeg")
-                                    )
-                                else:
+                        
+                        # SMART FILE DETECTION: If it's a binary field OR it's a known image field name
+                        is_binary_field = prop.get("format") == "binary" or field_name.endswith(('_image', '_file', '_logo', '_avatar'))
+                        
+                        if is_binary_field and isinstance(value, str):
+                            if value.startswith("http"):
+                                try:
+                                    # Fetch the actual binary content from the URL
+                                    img_resp = await self.client.get(value)
+                                    if img_resp.status_code == 200:
+                                        ext = "jpg"
+                                        if "png" in value.lower(): ext = "png"
+                                        elif "webp" in value.lower(): ext = "webp"
+                                        
+                                        files[field_name] = (
+                                            f"upload.{ext}", 
+                                            img_resp.content, 
+                                            img_resp.headers.get("Content-Type", "image/jpeg")
+                                        )
+                                    else:
+                                        form_data[field_name] = value
+                                except Exception:
                                     form_data[field_name] = value
-                            except Exception:
+                            else:
+                                # If it's not a URL but it's a binary field, we might want to send it as empty or mock
+                                # For now, just keep it in form_data if we can't fetch it
                                 form_data[field_name] = value
                         else:
                             form_data[field_name] = value
 
-                    if files:
-                        req_kwargs["data"] = form_data
-                        req_kwargs["files"] = files
-                        # Remove default JSON content-type to let httpx set boundary
-                        if "Content-Type" in headers:
-                            del headers["Content-Type"]
-                    else:
-                        req_kwargs["data"] = body
-                elif "application/x-www-form-urlencoded" in content_spec:
+                    # IMPORTANT: For httpx to use multipart, we MUST pass 'files' (even if empty)
+                    # and we MUST let it set the Content-Type header with boundaries.
+                    req_kwargs["data"] = form_data
+                    req_kwargs["files"] = files or None
+                    
+                    if "Content-Type" in headers:
+                        del headers["Content-Type"]
+                        
+                elif is_form:
                     req_kwargs["data"] = body
                 else:
+                    # Default to JSON only if no other form type is specified
                     req_kwargs["json"] = body
 
             response = await self.client.request(
@@ -259,11 +272,11 @@ class JourneyExecutor:
                 if not isinstance(obj, dict):
                     return
                 for k, v in obj.items():
-                    if k in id_keys and (isinstance(v, str) or isinstance(v, int)):
+                    if k in id_keys and (isinstance(v, (str, int))):
+                        # Store both as raw key and with pathParams prefix for maximum compatibility
                         session_data[k] = v
-                        if f"pathParams.{k}" not in session_data:
-                            session_data[f"pathParams.{k}"] = v
-                    # Check one level deeper if it's 'detail' or 'data'
+                        session_data[f"pathParams.{k}"] = v
+                    # Check deeper if it's 'detail' or 'data'
                     if k in ["detail", "data"] and isinstance(v, dict):
                         extract_ids(v)
 
@@ -294,10 +307,16 @@ class JourneyExecutor:
             value = session_data.get(f"pathParams.{param_name}")
             if value is None:
                 value = session_data.get(param_name)
+            
+            # Robust fallback: if restaurant_id is missing, look for generic 'id'
+            if value is None and param_name.endswith("_id"):
+                value = session_data.get("pathParams.id") or session_data.get("id")
                 
             return str(value) if value is not None else match.group(0)
 
-        return re.sub(r"\{(\w+)\}", replacer, url)
+        # Match both standard {param} and encoded %7Bparam%7D
+        url = re.sub(r"\{(\w+)\}", replacer, url)
+        return re.sub(r"%7B(\w+)%7D", replacer, url)
 
     def _build_headers(
         self, step_data: Dict[str, Any], session_data: Dict[str, Any]
@@ -311,17 +330,8 @@ class JourneyExecutor:
         Returns:
             Headers dictionary
         """
-        # Determine Content-Type from spec
-        content_spec = step_data.get("requestBodySpec", step_data.get("requestBody", {})).get("content", {})
-        
-        content_type = "application/json"
-        if "application/x-www-form-urlencoded" in content_spec:
-            content_type = "application/x-www-form-urlencoded"
-        elif "multipart/form-data" in content_spec:
-            # Note: For multipart with files, we'll actually delete this header later 
-            # to let httpx set the boundary automatically
-            content_type = "multipart/form-data"
-
+        body = self._build_body(step_data, session_data)
+        content_type = self._determine_content_type(step_data, body)
         headers = {"Content-Type": content_type}
 
         # Add authorization if token exists in session
@@ -338,6 +348,34 @@ class JourneyExecutor:
                     headers["Authorization"] = str(token)
 
         return headers
+
+    def _determine_content_type(self, step_data: Dict[str, Any], body: Any) -> str:
+        """Robustly determine the correct Content-Type for the request."""
+        # 1. Check spec
+        spec_source = step_data.get("requestBodySpec")
+        if not spec_source or not isinstance(spec_source, dict) or "content" not in spec_source:
+             if isinstance(step_data.get("requestBody"), dict) and "content" in step_data.get("requestBody"):
+                spec_source = step_data.get("requestBody")
+
+        content_spec = spec_source.get("content", {}) if isinstance(spec_source, dict) else {}
+        
+        if "multipart/form-data" in content_spec:
+            return "multipart/form-data"
+        if "application/x-www-form-urlencoded" in content_spec:
+            return "application/x-www-form-urlencoded"
+            
+        # 2. Force inference from body content
+        # If the spec is missing but the body has binary indicators, force multipart
+        if isinstance(body, dict):
+            # Known file/binary field patterns
+            file_indicators = (
+                '_image', '_file', '_logo', '_avatar', '_photo', 
+                'restaurant_image', 'restaurant_logo', 'upload', 'attachment'
+            )
+            if any(k.lower().endswith(file_indicators) or k.lower() in file_indicators for k in body.keys()):
+                return "multipart/form-data"
+
+        return "application/json"
 
     def _build_body(
         self, step_data: Dict[str, Any], session_data: Dict[str, Any]
@@ -376,7 +414,19 @@ class JourneyExecutor:
 
         for key in keys:
             if isinstance(value, dict):
-                value = value.get(key)
+                # Direct lookup
+                found_value = value.get(key)
+                
+                # If direct lookup fails, and it's the first key, try common wrappers
+                if found_value is None and value == obj:
+                    for wrapper in ["detail", "data"]:
+                        wrapped = value.get(wrapper)
+                        if isinstance(wrapped, dict):
+                            found_value = wrapped.get(key)
+                            if found_value is not None:
+                                break
+                
+                value = found_value
             elif isinstance(value, list) and key.isdigit():
                 try:
                     value = value[int(key)]

@@ -97,21 +97,19 @@ async def execute_journey_ws(websocket: WebSocket, journey_id: str):
                     "type": "error",
                     "message": f"Authentication failed: {e.detail}"
                 })
-                await websocket.close()
                 return
             
             # Get execution parameters from client
             data = await websocket.receive_json()
             base_url = data.get("baseUrl")
             session_data = data.get("sessionData", {})
-            error_injections = data.get("error Injections", {})
+            error_injections = data.get("errorInjections", {})
             
             if not base_url:
                 await websocket.send_json({
                     "type": "error",
                     "message": "baseUrl is required"
                 })
-                await websocket.close()
                 return
             
             # Fetch journey
@@ -129,7 +127,6 @@ async def execute_journey_ws(websocket: WebSocket, journey_id: str):
                     "type": "error",
                     "message": "Journey not found or access denied"
                 })
-                await websocket.close()
                 return
             
             # Create execution record
@@ -143,63 +140,62 @@ async def execute_journey_ws(websocket: WebSocket, journey_id: str):
             
             # Initialize executor
             executor = JourneyExecutor(base_url)
-            
-            # Execute journey - use nodes/edges from client if provided (for unsaved mock data)
-            nodes = data.get("nodes", journey.nodes)
-            edges = data.get("edges", journey.edges)
-            results = []
-            
-            for node in nodes:
-                # Send step start event
-                await websocket.send_json({
-                    "type": "step_start",
-                    "stepId": node["id"]
-                })
+            try:
+                # Execute journey - use nodes/edges from client if provided (for unsaved mock data)
+                nodes = data.get("nodes", journey.nodes)
+                edges = data.get("edges", journey.edges)
+                results = []
                 
-                # Execute step
-                step_id = node["id"]
-                if step_id in error_injections:
-                    result = executor._inject_error(node, error_injections[step_id])
-                else:
-                    result = await executor._execute_step(node, session_data)
+                for node in nodes:
+                    # Send step start event
+                    await websocket.send_json({
+                        "type": "step_start",
+                        "stepId": node["id"]
+                    })
+                    
+                    # Execute step
+                    step_id = node["id"]
+                    if step_id in error_injections:
+                        result = executor._inject_error(node, error_injections[step_id])
+                    else:
+                        result = await executor._execute_step(node, session_data)
+                    
+                    # Send step result
+                    await websocket.send_json({
+                        "type": "step_result",
+                        "result": result
+                    })
+                    
+                    # Update session for next steps
+                    executor._update_session_data(session_data, result, edges)
+                    
+                    # Store result
+                    results.append(result)
+                    execution.results = results
+                    await db.commit()
+                    
+                    # Stop on error if needed
+                    status_code = result.get("statusCode", 0)
+                    continue_on_error = node.get("data", {}).get("continueOnError", False)
+                    
+                    if status_code >= 400 and not continue_on_error:
+                        execution.status = "failed"
+                        break
                 
-                # Send step result
-                await websocket.send_json({
-                    "type": "step_result",
-                    "result": result
-                })
-                
-                # Update session for next steps
-                executor._update_session_data(session_data, result, edges)
-                
-                # Store result
-                results.append(result)
-                execution.results = results
+                # Mark execution complete
+                if execution.status == "running":
+                    execution.status = "completed"
+                execution.completed_at = datetime.utcnow()
                 await db.commit()
                 
-                # Stop on error if needed
-                status_code = result.get("statusCode", 0)
-                continue_on_error = node.get("data", {}).get("continueOnError", False)
-                
-                if status_code >= 400 and not continue_on_error:
-                    execution.status = "failed"
-                    break
-            
-            # Mark execution complete
-            if execution.status == "running":
-                execution.status = "completed"
-            execution.completed_at = datetime.utcnow()
-            await db.commit()
-            
-            # Send completion event
-            await websocket.send_json({
-                "type": "execution_complete",
-                "executionId": str(execution.id),
-                "status": execution.status
-            })
-            
-            # Close executor
-            await executor.close()
+                # Send completion event
+                await websocket.send_json({
+                    "type": "execution_complete",
+                    "executionId": str(execution.id),
+                    "status": execution.status
+                })
+            finally:
+                await executor.close()
             
     except WebSocketDisconnect:
         print(f"WebSocket disconnected for journey {journey_id}")
@@ -213,5 +209,11 @@ async def execute_journey_ws(websocket: WebSocket, journey_id: str):
         except:
             pass
     finally:
-        await websocket.close()
+        try:
+            # Only close if the client is still connected and we haven't closed it
+            from starlette.websockets import WebSocketState
+            if websocket.client_state != WebSocketState.DISCONNECTED:
+                await websocket.close()
+        except Exception:
+            pass
         

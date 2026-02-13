@@ -195,8 +195,11 @@ const loadingJourneys = ref(true)
 const generatingJourneys = ref(false)
 
 const spec = computed(() => specStore.currentSpec)
+const deletingJourneyIds = ref(new Set())
 const journeys = computed(() =>
-  journeyStore.journeys.filter((j) => j.spec_id === route.params.id)
+  journeyStore.journeys.filter(
+    (j) => j.spec_id === route.params.id && !deletingJourneyIds.value.has(j.id)
+  )
 )
 
 const methodStats = computed(() => {
@@ -263,12 +266,19 @@ async function handleDeleteJourney(journeyId) {
     return
   }
 
-  const result = await journeyStore.deleteJourney(journeyId)
-  if (result.success) {
-    toast.success('Journey deleted')
-  } else {
-    toast.error(result.error)
-  }
+  // Optimistic update: hide immediately
+  deletingJourneyIds.value.add(journeyId)
+
+  // Background request without blocking the UI
+  journeyStore.deleteJourney(journeyId).then((result) => {
+    if (result.success) {
+      toast.success('Journey deleted')
+    } else {
+      toast.error(result.error || 'Failed to delete journey')
+      // Rollback on failure
+      deletingJourneyIds.value.delete(journeyId)
+    }
+  })
 }
 
 function navigateToJourney(journeyId) {
