@@ -45,7 +45,7 @@
               Spec<span class="text-primary">Flow</span>
             </h1>
             <div class="h-1 w-12 bg-primary/30 mt-2 rounded-full transition-all duration-500 group-hover:w-24"></div>
-            <p class="text-[10px] text-gray-600 font-bold uppercase tracking-[0.4em] mt-4 opacity-50">Intelligence Suite</p>
+            <p class="text-[10px] text-gray-600 font-bold uppercase tracking-[0.4em] mt-4 opacity-50">Context-Aware API Testing</p>
           </div>
         </div>
       </div>

@@ -74,6 +74,7 @@ Traditional API testing tools (Postman, Insomnia, Swagger UI) force developers t
    - Handles authentication flows (JWT, OAuth, API keys)
    - Maintains session state across all steps in a journey
    - Supports error injection for testing failure scenarios
+   - Chaining response params to be used for requests for param endpoints
 
 6. **Real-Time Result Display**
    - Shows request payload, headers, and method for each step
@@ -82,16 +83,16 @@ Traditional API testing tools (Postman, Insomnia, Swagger UI) force developers t
    - Provides request/response diff viewer
    - Exports results as JSON or generates reports
 
-7. **Environment Management**
+<!-- 7. **Environment Management**
    - Switch between different API base URLs (dev, staging, production)
    - Stores environment-specific configurations
-   - Applies different auth credentials per environment
+   - Applies different auth credentials per environment -->
 
-8. **Team Collaboration**
+<!-- 8. **Team Collaboration**
    - Save and share journeys with team members
    - Export journeys to Postman collections
    - Generate shareable links for view-only access
-   - Track journey execution history
+   - Track journey execution history -->
 
 ---
 

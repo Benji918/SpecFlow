@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 
 // Lazy-loaded route components
+const LandingPage = () => import('@/views/LandingPage.vue')
 const Login = () => import('@/views/Login.vue')
 const Signup = () => import('@/views/Signup.vue')
 const Dashboard = () => import('@/views/Dashboard.vue')
@@ -11,7 +12,9 @@ const JourneyView = () => import('@/views/JourneyView.vue')
 const routes = [
     {
         path: '/',
-        redirect: '/dashboard',
+        name: 'Landing',
+        component: LandingPage,
+        meta: { requiresAuth: false },
     },
     {
         path: '/login',
