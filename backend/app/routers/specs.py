@@ -92,10 +92,10 @@ async def get_spec(
     db: AsyncSession = Depends(get_db),
 ):
     """Get a specific spec by ID."""
-    # cache_key = get_spec_cache_key(current_user.id, spec_id)
-    # cached_data = await cache_service.get(cache_key)
-    # if cached_data:
-    #     return cached_data
+    cache_key = get_spec_cache_key(current_user.id, spec_id)
+    cached_data = await cache_service.get(cache_key)
+    if cached_data:
+        return cached_data
 
     result = await db.execute(
         select(Spec).where(Spec.id == spec_id, Spec.user_id == current_user.id)
@@ -109,7 +109,7 @@ async def get_spec(
         )
     
     response_data = SpecResponse.model_validate(spec).model_dump(mode='json')
-    # await cache_service.set(cache_key, response_data)
+    await cache_service.set(cache_key, response_data)
     return response_data
 
 
