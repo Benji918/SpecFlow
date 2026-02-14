@@ -159,7 +159,76 @@ export const useJourneyStore = defineStore('journey', () => {
             executionResults.value.push(result)
         }
 
+        // --- SYNC SESSION DATA FOR LIVE PREVIEWS ---
+        if (activeJourney.value && result.responseBody) {
+            const edges = activeJourney.value.edges || []
+            const relevantEdges = edges.filter(e => e.source === stepId)
+
+            const newSessionUpdates = {}
+
+            // 1. Process explicit mappings
+            relevantEdges.forEach(edge => {
+                const mappings = edge.data?.dataMapping || []
+                mappings.forEach(m => {
+                    let value = null
+                    if (m.from?.startsWith('request.params.')) {
+                        const key = m.from.replace('request.params.', '')
+                        value = result.request?.params?.[key]
+                    } else if (m.from?.startsWith('response.')) {
+                        const path = m.from.replace('response.', '')
+                        value = getNestedValue(result.responseBody, path)
+                    }
+
+                    if (value !== null && value !== undefined) {
+                        newSessionUpdates[m.to] = value
+                    }
+                })
+            })
+
+            // 2. Smart extraction (IDs and common fields) - help fallback logic
+            if (typeof result.responseBody === 'object' && result.responseBody !== null) {
+                const idKeys = ['id', 'uuid', 'pk', 'restaurant_id', 'order_id', 'user_id']
+
+                const extractIds = (obj) => {
+                    if (!obj || typeof obj !== 'object') return
+                    Object.entries(obj).forEach(([k, v]) => {
+                        if (idKeys.includes(k) && (typeof v === 'string' || typeof v === 'number')) {
+                            newSessionUpdates[k] = v
+                            newSessionUpdates[`pathParams.${k}`] = v
+                        }
+                        if (['detail', 'data'].includes(k) && typeof v === 'object') {
+                            extractIds(v)
+                        }
+                    })
+                }
+                extractIds(result.responseBody)
+            }
+
+            if (Object.keys(newSessionUpdates).length > 0) {
+                updateSessionData(newSessionUpdates)
+            }
+        }
+
         setStepStatus(stepId, 'success')
+    }
+
+    // Helper for store
+    function getNestedValue(obj, path) {
+        if (!path) return obj
+        const keys = path.split('.')
+        let value = obj
+        for (const key of keys) {
+            if (value && typeof value === 'object') {
+                value = value[key]
+                // Try wrappers if first lookup fails
+                if (value === undefined && keys.indexOf(key) === 0) {
+                    value = (obj.data && obj.data[key]) || (obj.detail && obj.detail[key])
+                }
+            } else {
+                return null
+            }
+        }
+        return value
     }
 
     function saveStepError(stepId, error) {
