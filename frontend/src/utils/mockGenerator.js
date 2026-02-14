@@ -42,8 +42,9 @@ export function generateMockFromSchema(schema) {
                 // Return a placeholder image URL that the executor can fetch.
                 const name = (schema.title || schema.name || '').toLowerCase()
                 if (name.includes('image') || name.includes('photo') || name.includes('avatar') || schema.pattern?.includes('jpg|jpeg|png')) {
-                    // Use a specific high-quality image placeholder
-                    return `https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=500&h=500&fit=crop`
+                    // Use a specific high-quality image placeholder with a random seed for fresh data
+                    const sig = Math.floor(Math.random() * 1000)
+                    return `https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=500&h=500&fit=crop&sig=${sig}`
                 }
                 return 'https://via.placeholder.com/500'
             }
@@ -103,12 +104,21 @@ export function generateMockFromSchema(schema) {
  * @returns {Object} Mock data including body and params
  */
 export function generateEndpointMock(endpoint) {
+    // Ensure fresh entropy for each call to avoid repeating data on sequential clicks
+    faker.seed(Math.floor(Math.random() * 1000000))
+
     const mock = {
         body: null,
         params: {}
     }
 
-    const content = (endpoint.requestBodySpec || endpoint.requestBody)?.content
+    // 1. Identify valid spec (don't use binary data/existing body as spec)
+    let spec = endpoint.requestBodySpec
+    if (!spec && endpoint.requestBody && typeof endpoint.requestBody === 'object' && endpoint.requestBody.content) {
+        spec = endpoint.requestBody
+    }
+
+    const content = spec?.content
     if (content) {
         // Try to find a schema in common content types
         const types = ['application/json', 'multipart/form-data', 'application/x-www-form-urlencoded']

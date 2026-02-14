@@ -1,9 +1,24 @@
+<script>
+export default {
+  inheritAttrs: false,
+}
+</script>
+
 <script setup>
 import { computed } from 'vue'
 import { BaseEdge, EdgeLabelRenderer, getBezierPath } from '@vue-flow/core'
+import { Database, ArrowUpRight } from 'lucide-vue-next'
 
 const props = defineProps({
   id: {
+    type: String,
+    required: true,
+  },
+  source: {
+    type: String,
+    required: true,
+  },
+  target: {
     type: String,
     required: true,
   },
@@ -39,6 +54,30 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  sourceNode: {
+    type: Object,
+    required: false,
+  },
+  targetNode: {
+    type: Object,
+    required: false,
+  },
+  type: String,
+  updatable: Boolean,
+  animated: Boolean,
+  label: [String, Object],
+  labelStyle: Object,
+  labelShowBg: Boolean,
+  labelBgStyle: Object,
+  labelBgPadding: Array,
+  labelBgBorderRadius: Number,
+  markerStart: String,
+  markerEnd: String,
+  sourceHandleId: String,
+  targetHandleId: String,
+  interactionWidth: Number,
+  events: Object,
+  style: Object,
 })
 
 const path = computed(() => getBezierPath(props))
@@ -51,14 +90,24 @@ const labelText = computed(() => {
   if (!mappings.value || mappings.value.length === 0) return null
   if (mappings.value.length === 1) {
     const m = mappings.value[0]
-    return `${String(m.from || '').replace('response.', '')} → ${m.to || '?'}`
+    return {
+      text: `${String(m.from || '').split('.').pop()} → ${String(m.to || '').split('.').pop()}`,
+      type: (m.from || '').startsWith('request') ? 'request' : 'response'
+    }
   }
-  return `${mappings.value.length} mappings`
+  return {
+    text: `${mappings.value.length} LINKS`,
+    type: 'multiple'
+  }
 })
 </script>
 
 <template>
-  <BaseEdge :id="id" :path="path[0]" :style="{ strokeWidth: selected ? 4 : 3 }" />
+  <BaseEdge 
+    :id="id" 
+    :path="path[0]" 
+    :class="['mapping-edge-path', { 'is-selected': selected }]"
+  />
 
   <EdgeLabelRenderer v-if="labelText">
     <div
@@ -71,19 +120,50 @@ const labelText = computed(() => {
     >
       <div 
         :class="[
-          'px-2 py-1 rounded-md text-[10px] font-mono border transition-all cursor-pointer',
-          selected ? 'bg-primary text-black border-primary scale-110 shadow-lg' : 'bg-surface border-gray-700 text-gray-400 hover:border-primary/50'
+          'px-2 py-1 rounded-full text-[9px] font-black border transition-all cursor-pointer flex items-center space-x-1.5 backdrop-blur-md',
+          selected 
+            ? 'bg-primary text-black border-primary scale-110 shadow-[0_0_15px_rgba(191,245,73,0.4)]' 
+            : 'bg-black/60 border-gray-700 text-gray-400 hover:border-primary/50'
         ]"
         @click="$emit('edge-click', { id, data })"
       >
-        {{ labelText }}
+        <Database v-if="labelText.type === 'response'" :size="10" />
+        <ArrowUpRight v-if="labelText.type === 'request'" :size="10" />
+        <span class="tracking-widest uppercase">{{ labelText.text }}</span>
       </div>
     </div>
   </EdgeLabelRenderer>
 </template>
 
 <style scoped>
+.mapping-edge-path {
+  fill: none;
+  stroke: rgba(191, 245, 73, 0.35);
+  stroke-width: 2.5;
+  stroke-dasharray: 1, 8;
+  stroke-linecap: round;
+  animation: flow 30s linear infinite;
+  transition: stroke 0.3s, stroke-width 0.3s;
+}
+
+.mapping-edge-path.is-selected {
+  stroke: #BFF549;
+  stroke-width: 4;
+  stroke-dasharray: 2, 6;
+  animation: flow 15s linear infinite;
+}
+
+@keyframes flow {
+  from {
+    stroke-dashoffset: 1000;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
 .edge-label {
   pointer-events: all;
 }
 </style>
+

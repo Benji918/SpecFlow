@@ -107,31 +107,42 @@
 
         <!-- Data Mappings Section -->
         <div v-if="incomingMappings.length || outgoingMappings.length" class="space-y-4">
-          <h4 class="text-sm font-semibold text-gray-400">Data Links</h4>
+          <div class="flex items-center space-x-2">
+            <LinkIcon :size="14" class="text-primary" />
+            <h4 class="text-sm font-bold text-gray-400 uppercase tracking-wider">Intelligence Data Links</h4>
+          </div>
           
           <!-- Incoming Mappings -->
-          <div v-if="incomingMappings.length">
-            <div class="text-[10px] text-gray-500 uppercase font-bold mb-2">Incoming (Context)</div>
-            <div class="space-y-2">
-              <div v-for="(m, i) in incomingMappings" :key="i" class="bg-black/30 border border-gray-800 rounded p-2 text-[10px] font-mono">
-                <div class="flex items-center justify-between">
-                  <span class="text-blue-400">{{ m.from }}</span>
-                  <span class="text-gray-600 mx-1">→</span>
-                  <span class="text-primary">{{ m.to }}</span>
+          <div v-if="incomingMappings.length" class="space-y-2">
+            <div class="text-[9px] text-gray-500 uppercase font-black tracking-widest pl-1">Incoming Context</div>
+            <div class="space-y-1.5">
+              <div v-for="(m, i) in incomingMappings" :key="i" class="p-3 bg-black/40 border border-gray-800/80 rounded-xl group transition-all hover:border-primary/30">
+                <div class="flex items-center text-[10px] font-mono">
+                  <div class="px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 truncate max-w-[120px]" :title="m.from">
+                    {{ m.from.split('.').pop() }}
+                  </div>
+                  <ArrowRight :size="10" class="mx-2 text-gray-600" />
+                  <div class="px-1.5 py-0.5 rounded bg-primary/10 text-primary border border-primary/20 truncate" :title="m.to">
+                    {{ m.to.split('.').pop() }}
+                  </div>
                 </div>
               </div>
             </div>
           </div>
 
           <!-- Outgoing Mappings -->
-          <div v-if="outgoingMappings.length">
-            <div class="text-[10px] text-gray-500 uppercase font-bold mb-2">Outgoing (Context)</div>
-            <div class="space-y-2">
-              <div v-for="(m, i) in outgoingMappings" :key="i" class="bg-black/30 border border-gray-800 rounded p-2 text-[10px] font-mono">
-                <div class="flex items-center justify-between">
-                  <span class="text-primary">{{ m.from }}</span>
-                  <span class="text-gray-600 mx-1">→</span>
-                  <span class="text-blue-400">{{ m.to }}</span>
+          <div v-if="outgoingMappings.length" class="space-y-2">
+            <div class="text-[9px] text-gray-500 uppercase font-black tracking-widest pl-1">Outgoing Injection</div>
+            <div class="space-y-1.5">
+              <div v-for="(m, i) in outgoingMappings" :key="i" class="p-3 bg-black/40 border border-gray-800/80 rounded-xl group transition-all hover:border-primary/30">
+                <div class="flex items-center text-[10px] font-mono">
+                  <div class="px-1.5 py-0.5 rounded bg-primary/10 text-primary border border-primary/20 truncate max-w-[120px]" :title="m.from">
+                    {{ m.from.split('.').pop() }}
+                  </div>
+                  <ArrowRight :size="10" class="mx-2 text-gray-600" />
+                  <div class="px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 truncate" :title="m.to">
+                    {{ m.to.split('.').pop() }}
+                  </div>
                 </div>
               </div>
             </div>
@@ -243,7 +254,7 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
 import { useToast } from 'vue-toastification'
-import { Copy, Sparkles, Loader, AlertCircle, X, ChevronRight } from 'lucide-vue-next'
+import { Copy, Sparkles, Loader, AlertCircle, X, ChevronRight, Link as LinkIcon, ArrowRight } from 'lucide-vue-next'
 import { generateEndpointMock } from '@/utils/mockGenerator'
 
 const props = defineProps({
@@ -269,9 +280,11 @@ const activeTab = ref('config')
 const editableBody = ref('')
 const editableParams = ref({})
 
+const isUpdating = ref(false)
+
 // Initialize internal state from node data
 watch(() => props.node, (newNode) => {
-  if (newNode) {
+  if (newNode && !isUpdating.value) {
     editableBody.value = newNode.data.requestBody 
       ? JSON.stringify(newNode.data.requestBody, null, 2)
       : ''
@@ -292,7 +305,7 @@ watch(() => props.node, (newNode) => {
       activeTab.value = 'config'
     }
   }
-}, { immediate: true })
+}, { immediate: true, deep: true })
 
 // Data Mappings Computing
 const incomingMappings = computed(() => {
@@ -341,21 +354,30 @@ const statusClass = computed(() => {
 
 function handleBodyInput() {
   try {
+    isUpdating.value = true
     const json = JSON.parse(editableBody.value)
     emit('update-node', props.node.id, { requestBody: json })
   } catch (e) {
     // Wait for valid JSON
+  } finally {
+    // Allow reactivity to settle before enabling watch again
+    setTimeout(() => { isUpdating.value = false }, 100)
   }
 }
 
 function handleParamsInput() {
-  // Update parameter values in the node data
-  if (props.node?.data?.parameters) {
-    const updatedParameters = props.node.data.parameters.map(p => ({
-      ...p,
-      value: editableParams.value[p.name]
-    }))
-    emit('update-node', props.node.id, { parameters: updatedParameters })
+  try {
+    isUpdating.value = true
+    // Update parameter values in the node data
+    if (props.node?.data?.parameters) {
+      const updatedParameters = props.node.data.parameters.map(p => ({
+        ...p,
+        value: editableParams.value[p.name]
+      }))
+      emit('update-node', props.node.id, { parameters: updatedParameters })
+    }
+  } finally {
+    setTimeout(() => { isUpdating.value = false }, 100)
   }
 }
 

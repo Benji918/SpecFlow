@@ -11,30 +11,36 @@ export function detectMappings(sourceNode, targetNode) {
 
     if (!sourceData || !targetData) return mappings
 
-    // 1. Get all potential source fields from response schemas
+    const sourceFields = []
+
+    // 1. First, get parameters from the source request (Path/Query)
+    // This allows passing things like restaurant_id from one step's path to the next
+    const sourceParams = sourceData.parameters || []
+    sourceParams.forEach(p => {
+        sourceFields.push({ name: p.name, path: `request.params.${p.name}` })
+    })
+
+    // 2. Get potential source fields from response schemas
     const responses = sourceData.responses || {}
     const successCode = Object.keys(responses).find(code => code.startsWith('2'))
     const sourceSchema = responses[successCode]?.content?.['application/json']?.schema
 
-    if (!sourceSchema || !sourceSchema.properties) return mappings
+    if (sourceSchema && sourceSchema.properties) {
+        // Extraction helper to find fields at the top level and inside common wrappers
+        function extractFields(schema, prefix = 'response') {
+            if (!schema || !schema.properties) return
+            Object.keys(schema.properties).forEach(key => {
+                const path = `${prefix}.${key}`
+                sourceFields.push({ name: key, path })
 
-    const sourceFields = []
-
-    // Extraction helper to find fields at the top level and inside common wrappers
-    function extractFields(schema, prefix = 'response') {
-        if (!schema || !schema.properties) return
-        Object.keys(schema.properties).forEach(key => {
-            const path = `${prefix}.${key}`
-            sourceFields.push({ name: key, path })
-
-            // Only recurse into 'detail' and 'data' to keep suggestions clean but useful
-            if ((key === 'detail' || key === 'data') && schema.properties[key].properties) {
-                extractFields(schema.properties[key], path)
-            }
-        })
+                // Only recurse into 'detail' and 'data' to keep suggestions clean but useful
+                if ((key === 'detail' || key === 'data') && schema.properties[key].properties) {
+                    extractFields(schema.properties[key], path)
+                }
+            })
+        }
+        extractFields(sourceSchema)
     }
-
-    extractFields(sourceSchema)
 
     // 2. Get all required target fields (path parameters, query parameters, body properties)
     const targetParams = targetData.parameters || []
@@ -42,7 +48,14 @@ export function detectMappings(sourceNode, targetNode) {
 
     // Check Path Parameters
     targetParams.filter(p => p.in === 'path').forEach(p => {
-        // Try to find a match in source fields
+        // High priority: Exact match in source path parameters
+        const exactPathParamMatch = sourceParams.find(sp => sp.name === p.name)
+        if (exactPathParamMatch) {
+            mappings.push({ from: `request.params.${p.name}`, to: `pathParams.${p.name}` })
+            return // Skip further matching for this parameter
+        }
+
+        // Try to find a match in other source fields (responses, etc)
         const match = findBestMatch(p.name, sourceFields)
         if (match) {
             mappings.push({ from: match.path, to: `pathParams.${p.name}` })

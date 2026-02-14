@@ -213,13 +213,22 @@ function handleEdgeSelected(edge) {
 }
 
 function handleNodeUpdate(nodeId, updates) {
-  if (journey.value) {
-    const nodeIndex = journey.value.nodes.findIndex(n => n.id === nodeId)
+  if (journeyStore.activeJourney) {
+    const nodeIndex = journeyStore.activeJourney.nodes.findIndex(n => n.id === nodeId)
     if (nodeIndex !== -1) {
-      // Deep merge updates into node.data
-      journey.value.nodes[nodeIndex].data = {
-        ...journey.value.nodes[nodeIndex].data,
-        ...updates
+      // Create a fresh object for the node to ensure Vue triggers reactivity
+      const node = journeyStore.activeJourney.nodes[nodeIndex]
+      journeyStore.activeJourney.nodes[nodeIndex] = {
+        ...node,
+        data: {
+          ...node.data,
+          ...updates
+        }
+      }
+      
+      // Also update selectedNode if it's the one being modified
+      if (selectedNode.value && selectedNode.value.id === nodeId) {
+        selectedNode.value = journeyStore.activeJourney.nodes[nodeIndex]
       }
       
       // Sync with flow component
@@ -298,28 +307,21 @@ function prefillAllMockData() {
   
   let updatedCount = 0
   journey.value.nodes.forEach(node => {
-    // Generate mock data if schema is present
+    // Generate mock data regardless if it exists - user wants fresh data on click
     const mock = generateEndpointMock(node.data)
     const updates = {}
     
-    if (mock.body && !node.data.requestBody) {
+    if (mock.body) {
       updates.requestBody = mock.body
     }
     
-    // Also prefill params if empty
+    // Also prefill params
     if (mock.params && node.data.parameters) {
       const updatedParams = node.data.parameters.map(p => {
-        if (!p.value) {
-          return { ...p, value: mock.params[p.name] || '' }
-        }
-        return p
+        return { ...p, value: mock.params[p.name] || '' }
       })
       
-      // Check if anything actually changed in params
-      const hasParamChanges = JSON.stringify(updatedParams) !== JSON.stringify(node.data.parameters)
-      if (hasParamChanges) {
-        updates.parameters = updatedParams
-      }
+      updates.parameters = updatedParams
     }
     
     if (Object.keys(updates).length > 0) {

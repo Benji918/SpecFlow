@@ -92,6 +92,16 @@ class JourneyExecutor:
         # Execute request
         method = data.get("method", "GET")
 
+        # Capture used params for potential mapping in next steps
+        used_params = {}
+        for p in data.get("parameters", []):
+            val = p.get("value")
+            if val is None or val == "":
+                # Resolve from session if not explicitly set in the node
+                val = session_data.get(f"pathParams.{p['name']}") or session_data.get(p["name"])
+            
+            if val is not None:
+                used_params[p["name"]] = val
         
         try:
             start_time = datetime.utcnow()
@@ -188,6 +198,7 @@ class JourneyExecutor:
                     "url": url,
                     "headers": headers,
                     "body": body,
+                    "params": used_params,
                 },
             }
 
@@ -202,6 +213,7 @@ class JourneyExecutor:
                     "url": url,
                     "headers": headers,
                     "body": body,
+                    "params": used_params,
                 },
             }
 
@@ -233,9 +245,15 @@ class JourneyExecutor:
                 if not isinstance(mapping, dict):
                     continue
                     
-                # Extract value from response
-                from_path = mapping.get("from", "").replace("response.", "")
-                value = self._get_nested_value(result["responseBody"], from_path)
+                # Extract value from response OR request
+                from_path = mapping.get("from", "")
+                
+                if from_path.startswith("request.params."):
+                    clean_path = from_path.replace("request.params.", "")
+                    value = self._get_nested_value(result.get("request", {}).get("params", {}), clean_path)
+                else:
+                    clean_path = from_path.replace("response.", "")
+                    value = self._get_nested_value(result["responseBody"], clean_path)
 
                 if value is not None:
                     # Store for use in next step
