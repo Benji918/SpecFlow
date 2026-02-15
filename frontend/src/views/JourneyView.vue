@@ -8,9 +8,24 @@
             <button @click="router.push('/dashboard')" class="text-gray-400 hover:text-white">
               <ArrowLeft :size="24" />
             </button>
-            <div>
-              <h1 class="text-2xl font-bold">{{ journey?.name || 'Journey' }}</h1>
-              <p v-if="journey" class="text-sm text-gray-400">
+            <div class="group relative">
+              <div v-if="!isEditingName" @click="startEditingName" class="cursor-pointer hover:bg-white/5 p-1 rounded -ml-1 flex items-center">
+                <h1 class="text-2xl font-bold">{{ journey?.name || 'Journey' }}</h1>
+                <Edit2 :size="16" class="ml-2 text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity" />
+              </div>
+              <input
+                v-else
+                ref="nameInputRef"
+                v-model="editedName"
+                @blur="saveName"
+                @keyup.enter="saveName"
+                @keyup.esc="cancelEditName"
+                type="text"
+                class="bg-black border border-gray-700 rounded px-2 py-1 text-2xl font-bold text-white outline-none focus:border-primary w-full min-w-[300px]"
+              />
+              <p v-if="nameError" class="text-xs text-red-500 absolute top-full left-0 mt-1 whitespace-nowrap">{{ nameError }}</p>
+              
+              <p v-if="journey" class="text-sm text-gray-400 mt-1">
                 {{ journey.nodes?.length || 0 }} steps
               </p>
             </div>
@@ -274,6 +289,7 @@ import {
   Plus,
   Search,
   Check,
+  Edit2,
 } from 'lucide-vue-next'
 import { useSpecStore } from '@/stores/spec'
 import JourneyFlow from '@/components/journey/JourneyFlow.vue'
@@ -318,9 +334,74 @@ const filteredEndpoints = computed(() => {
     const matchesMethod = selectedMethods.value.length === 0 || 
       selectedMethods.value.includes(endpoint.method.toUpperCase())
     
+    
     return matchesSearch && matchesMethod
   })
 })
+
+// Journey Name Editing
+const isEditingName = ref(false)
+const editedName = ref('')
+const nameInputRef = ref(null)
+const nameError = ref('')
+
+function startEditingName() {
+  if (!journey.value) return
+  editedName.value = journey.value.name
+  isEditingName.value = true
+  nameError.value = ''
+  // Focus input on next tick
+  setTimeout(() => {
+    nameInputRef.value?.focus()
+  }, 0)
+}
+
+function cancelEditName() {
+  isEditingName.value = false
+  nameError.value = ''
+}
+
+async function saveName() {
+  if (!isEditingName.value) return
+  
+  const newName = editedName.value.trim()
+  if (!newName) {
+    nameError.value = 'Name cannot be empty'
+    return
+  }
+  
+  if (newName === journey.value.name) {
+    cancelEditName()
+    return
+  }
+
+  // Frontend Validation for XSS/SQL Injection
+  // Basic patterns - comprehensive validation should be on backend too
+  const xssPattern = /<[^>]*>|javascript:|on\w+=/i
+  const sqlPattern = /(\b(select|update|delete|insert|drop|alter)\b.*\b(from|table|into)\b)|(--)/i
+  
+  if (xssPattern.test(newName)) {
+    nameError.value = 'Invalid characters detected (XSS)'
+    return
+  }
+  
+  if (sqlPattern.test(newName)) {
+    nameError.value = 'Invalid characters detected (SQL Injection)'
+    return
+  }
+
+  // Save
+  const result = await journeyStore.updateJourney(journey.value.id, { name: newName })
+  
+  if (result.success) {
+    toast.success('Journey name updated')
+    isEditingName.value = false
+  } else {
+    toast.error(result.error || 'Failed to update name')
+    cancelEditName()
+  }
+}
+
 
 onMounted(async () => {
   await fetchJourney()

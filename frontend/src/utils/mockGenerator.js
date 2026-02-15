@@ -113,7 +113,8 @@ export function generateEndpointMock(endpoint) {
     }
 
     // 1. Identify valid spec (don't use binary data/existing body as spec)
-    let spec = endpoint.requestBodySpec
+    // Check requestBodySpec (frontend normalized), request_body (backend snake_case), or fall back to requestBody if it looks like a spec
+    let spec = endpoint.requestBodySpec || endpoint.request_body
     if (!spec && endpoint.requestBody && typeof endpoint.requestBody === 'object' && endpoint.requestBody.content) {
         spec = endpoint.requestBody
     }

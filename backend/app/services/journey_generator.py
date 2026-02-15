@@ -199,6 +199,7 @@ Return ONLY a JSON array, no explanation.
                             "operationId": endpoint.operation_id,
                             "summary": endpoint.summary,
                             "requestBody": {}, # This will hold the actual data/mock
+                            "request_body": endpoint.request_body, # Helper for consistency with Manual nodes
                             "requestBodySpec": endpoint.request_body, # This holds the OpenAPI spec
                             "responses": endpoint.responses,
                             "parameters": endpoint.parameters,

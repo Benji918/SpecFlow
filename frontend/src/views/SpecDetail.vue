@@ -110,6 +110,12 @@
                     >
                       AI Generated
                     </span>
+                    <span
+                      v-else-if="journey.generation_method === 'manual'"
+                      class="px-2 py-1 bg-blue-500/10 text-blue-400 text-xs rounded-full"
+                    >
+                      Manual Journey
+                    </span>
                   </div>
                   <div class="flex items-center space-x-4 text-sm text-gray-400">
                     <span>{{ journey.nodes?.length || 0 }} steps</span>

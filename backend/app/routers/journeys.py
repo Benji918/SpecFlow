@@ -3,6 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from typing import List
 import uuid
+import re
 
 from app.database import get_db
 from app.models.user import User
@@ -182,6 +183,31 @@ def validate_unique_nodes(nodes: List[dict]):
         seen.add(key)
 
 
+def validate_journey_name(name: str):
+    """Validate journey name for potential security threats (XSS/SQLi)."""
+    if not name or not name.strip():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Journey name cannot be empty."
+        )
+    
+    # Basic XSS patterns
+    xss_pattern = re.compile(r"(?:<script|javascript:|onload=|onerror=|onclick=|<iframe|<object|<embed)", re.IGNORECASE)
+    if xss_pattern.search(name):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Security Verification Failed: Invalid characters detected in journey name."
+        )
+
+    # Basic SQL Injection patterns
+    sql_pattern = re.compile(r"(?:'|--|;|drop\s+table|delete\s+from|insert\s+into|update.*set|select.*from|union\s+select)", re.IGNORECASE)
+    if sql_pattern.search(name):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Security Verification Failed: Invalid pattern detected in journey name."
+        )
+
+
 @router.post("/journeys", response_model=JourneyResponse, status_code=status.HTTP_201_CREATED)
 async def create_journey(
     journey_data: JourneyCreate,
@@ -203,6 +229,9 @@ async def create_journey(
             detail="Spec not found",
         )
     
+    # Validate name
+    validate_journey_name(journey_data.name)
+
     # Validate nodes
     if journey_data.nodes:
         # Check 1: First node must be auth
@@ -260,6 +289,7 @@ async def update_journey(
     
     # Update fields
     if journey_update.name is not None:
+        validate_journey_name(journey_update.name)
         journey.name = journey_update.name
     if journey_update.nodes is not None:
         validate_unique_nodes(journey_update.nodes)
