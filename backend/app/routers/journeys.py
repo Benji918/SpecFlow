@@ -151,6 +151,7 @@ async def get_journey(
     return response_data
 
 
+
 def is_auth_endpoint(endpoint_data: dict) -> bool:
     """Check if an endpoint is likely an authentication endpoint."""
     path = endpoint_data.get("path", "").lower()
@@ -159,6 +160,26 @@ def is_auth_endpoint(endpoint_data: dict) -> bool:
     
     keywords = ["login", "token", "auth", "signin", "authenticate", "session"]
     return any(k in path or k in summary or k in op_id for k in keywords)
+
+
+def validate_unique_nodes(nodes: List[dict]):
+    """Ensure no duplicate endpoints (method + path) exist in the node list."""
+    seen = set()
+    for node in nodes:
+        data = node.get("data", {})
+        # Create a unique key for the endpoint
+        key = (data.get("method", "").upper(), data.get("path", ""))
+        
+        # Skip validation for non-endpoint nodes if any (e.g. specialized logic nodes in future)
+        if not key[0] or not key[1]:
+            continue
+            
+        if key in seen:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Duplicate endpoint detected: {key[0]} {key[1]}. A journey cannot contain the same endpoint multiple times."
+            )
+        seen.add(key)
 
 
 @router.post("/journeys", response_model=JourneyResponse, status_code=status.HTTP_201_CREATED)
@@ -182,8 +203,9 @@ async def create_journey(
             detail="Spec not found",
         )
     
-    # Validate first node is auth for manual creation
+    # Validate nodes
     if journey_data.nodes:
+        # Check 1: First node must be auth
         first_node = journey_data.nodes[0]
         node_data = first_node.get("data", {})
         if not is_auth_endpoint(node_data):
@@ -191,6 +213,9 @@ async def create_journey(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Security Validation: The first node of a journey must be an authentication endpoint (e.g., Login or Token extraction)."
             )
+        
+        # Check 2: No duplicates
+        validate_unique_nodes(journey_data.nodes)
     
     # Create journey
     journey = Journey(
@@ -237,6 +262,7 @@ async def update_journey(
     if journey_update.name is not None:
         journey.name = journey_update.name
     if journey_update.nodes is not None:
+        validate_unique_nodes(journey_update.nodes)
         journey.nodes = journey_update.nodes
     if journey_update.edges is not None:
         journey.edges = journey_update.edges

@@ -17,6 +17,14 @@
           </div>
           <div class="flex items-center space-x-3">
             <button
+              @click="showAddStep = true"
+              class="btn-primary text-sm py-2 px-4 shadow-lg shadow-primary/10 hover:shadow-primary/20"
+              title="Add a new step to the journey"
+            >
+              <Plus :size="16" class="inline mr-2" />
+              Add Step
+            </button>
+            <button
               @click="prefillAllMockData"
               class="btn-secondary text-sm py-2 px-4"
               title="Generate mock data for all steps"
@@ -145,6 +153,107 @@
         </div>
       </transition>
     </div>
+
+    <!-- Add Step Modal -->
+    <div v-if="showAddStep" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+      <div class="bg-surface border border-gray-800 rounded-xl w-full max-w-4xl max-h-[85vh] flex flex-col shadow-2xl relative">
+        <!-- Modal Header -->
+        <div class="flex items-center justify-between p-6 border-b border-gray-800">
+          <div>
+            <h2 class="text-xl font-bold flex items-center">
+              <Plus :size="24" class="mr-2 text-primary" />
+              Add Step to Journey
+            </h2>
+            <p class="text-sm text-gray-400 mt-1">Select an endpoint to append to the flow</p>
+          </div>
+          <button @click="showAddStep = false" class="p-2 hover:bg-gray-800 rounded-lg text-gray-400 hover:text-white transition-colors">
+            <X :size="20" />
+          </button>
+        </div>
+
+        <!-- Filters & Search -->
+        <div class="p-4 border-b border-gray-800 bg-surface/50 backdrop-blur flex flex-col md:flex-row gap-4 items-center">
+          <div class="relative flex-1 w-full">
+            <Search :size="16" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+            <input 
+              v-model="searchQuery"
+              type="text"
+              placeholder="Search endpoints..."
+              class="w-full bg-black/40 border border-gray-800 rounded-xl pl-10 pr-4 py-2 text-sm outline-none focus:border-primary/50 transition-all placeholder:text-gray-600"
+              autoFocus
+            />
+          </div>
+          <div class="flex items-center space-x-2">
+            <button 
+              v-for="m in filterableMethods" 
+              :key="m"
+              @click="toggleMethodFilter(m)"
+              :class="[
+                'px-3 py-1.5 rounded-lg text-[10px] font-black tracking-wider uppercase transition-all border',
+                selectedMethods.includes(m) 
+                  ? getMethodColor(m) + ' border-transparent'
+                  : 'border-transparent hover:border-gray-700 text-gray-500 bg-gray-800/20'
+              ]"
+            >
+              {{ m }}
+            </button>
+          </div>
+        </div>
+
+        <!-- Endpoints List -->
+        <div class="flex-1 overflow-y-auto p-4 custom-scrollbar">
+          <div v-if="filteredEndpoints.length === 0" class="flex flex-col items-center justify-center h-40 text-gray-500">
+            <Search :size="32" class="mb-2 opacity-50" />
+            <p class="text-sm">No matching endpoints found</p>
+          </div>
+
+          <div v-else class="grid grid-cols-1 gap-3">
+             <div
+                v-for="endpoint in filteredEndpoints"
+                :key="`${endpoint.method}-${endpoint.path}`"
+                class="flex items-center justify-between p-4 bg-black/20 border border-gray-800 rounded-xl hover:bg-gray-800/40 hover:border-primary/30 transition-all group"
+              >
+                <div class="flex items-center space-x-4 overflow-hidden">
+                  <span
+                    :class="[
+                      'shrink-0 w-16 text-center py-1.5 rounded-lg font-mono text-[10px] font-black tracking-widest border border-current/20',
+                      getMethodColor(endpoint.method)
+                    ]"
+                  >
+                    {{ endpoint.method }}
+                  </span>
+                  
+                  <div class="min-w-0">
+                    <div class="font-mono text-sm font-bold text-gray-200 truncate group-hover:text-primary transition-colors">
+                      {{ endpoint.path }}
+                    </div>
+                    <div class="text-xs text-gray-500 truncate mt-0.5">
+                      {{ endpoint.summary || endpoint.operation_id }}
+                    </div>
+                  </div>
+                </div>
+
+                <div class="flex items-center pl-4">
+                  <!-- Check if already exists in flow -->
+                  <div v-if="flowRef?.nodes.some(n => n.data.path === endpoint.path && n.data.method === endpoint.method)" 
+                       class="text-xs text-gray-500 flex items-center px-3 py-1.5 bg-gray-800/50 rounded-lg border border-gray-700">
+                    <Check :size="14" class="mr-1.5" />
+                    Added
+                  </div>
+                  <button 
+                    v-else
+                    @click="handleAddNode(endpoint)"
+                    class="btn-primary py-1.5 px-4 text-xs shadow-none hover:shadow-lg hover:scale-105 active:scale-95 flex items-center"
+                  >
+                    <Plus :size="14" class="mr-1.5" />
+                    Add
+                  </button>
+                </div>
+              </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -162,7 +271,11 @@ import {
   X,
   Sparkles,
   Link2Off,
+  Plus,
+  Search,
+  Check,
 } from 'lucide-vue-next'
+import { useSpecStore } from '@/stores/spec'
 import JourneyFlow from '@/components/journey/JourneyFlow.vue'
 import JourneyRunner from '@/components/journey/JourneyRunner.vue'
 import ResponsePanel from '@/components/journey/ResponsePanel.vue'
@@ -172,16 +285,42 @@ import { generateEndpointMock } from '@/utils/mockGenerator'
 const router = useRouter()
 const route = useRoute()
 const journeyStore = useJourneyStore()
+const specStore = useSpecStore()
 const toast = useToast()
 
 const loading = ref(true)
 const showRunner = ref(false)
+const showAddStep = ref(false)
 const selectedResult = ref(null)
 const selectedNode = ref(null)
 const selectedEdge = ref(null)
 const flowRef = ref(null)
 
+// Add Step Modal State
+const searchQuery = ref('')
+const selectedMethods = ref([])
+const filterableMethods = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH']
+
 const journey = computed(() => journeyStore.activeJourney)
+const spec = computed(() => specStore.currentSpec)
+
+const filteredEndpoints = computed(() => {
+  if (!spec.value?.endpoints) return []
+  
+  return spec.value.endpoints.filter(endpoint => {
+    // Search query filter
+    const matchesSearch = !searchQuery.value || 
+      endpoint.path.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+      (endpoint.summary && endpoint.summary.toLowerCase().includes(searchQuery.value.toLowerCase())) ||
+      (endpoint.operation_id && endpoint.operation_id.toLowerCase().includes(searchQuery.value.toLowerCase()))
+    
+    // Method filter
+    const matchesMethod = selectedMethods.value.length === 0 || 
+      selectedMethods.value.includes(endpoint.method.toUpperCase())
+    
+    return matchesSearch && matchesMethod
+  })
+})
 
 onMounted(async () => {
   await fetchJourney()
@@ -192,6 +331,9 @@ async function fetchJourney() {
   const result = await journeyStore.fetchJourney(route.params.id)
   if (!result.success) {
     toast.error('Failed to load journey')
+  } else {
+    // Load the spec as well for "Add Step" functionality
+    await specStore.fetchSpec(result.data.spec_id)
   }
   loading.value = false
 }
@@ -373,6 +515,67 @@ async function handleDeleteJourney() {
   } else {
     toast.error(result.error)
   }
+}
+
+function toggleMethodFilter(method) {
+  const index = selectedMethods.value.indexOf(method)
+  if (index === -1) {
+    selectedMethods.value.push(method)
+  } else {
+    selectedMethods.value.splice(index, 1)
+  }
+}
+
+function getMethodColor(method) {
+  const colors = {
+    GET: 'bg-blue-500/20 text-blue-400',
+    POST: 'bg-green-500/20 text-green-400',
+    PUT: 'bg-yellow-500/20 text-yellow-400',
+    DELETE: 'bg-red-500/20 text-red-400',
+    PATCH: 'bg-purple-500/20 text-purple-400',
+  }
+  return colors[method] || 'bg-gray-500/20 text-gray-400'
+}
+
+function handleAddNode(endpoint) {
+  if (!flowRef.value) return
+
+  // Check for duplicates
+  const existingNodes = flowRef.value.nodes
+  const duplicate = existingNodes.find(n => 
+    n.data.path === endpoint.path && 
+    n.data.method === endpoint.method
+  )
+
+  if (duplicate) {
+    toast.warning(`Endpoint ${endpoint.method} ${endpoint.path} already exists in this journey.`)
+    return
+  }
+
+  // Determine position (below the last node)
+  const lastNode = existingNodes.length > 0 ? existingNodes[existingNodes.length - 1] : null
+  const x = lastNode ? lastNode.position.x : 250
+  const y = lastNode ? lastNode.position.y + 200 : 100
+
+  // Create new node
+  const newNode = {
+    id: `node-${Date.now()}`,
+    type: 'endpoint',
+    position: { x, y },
+    data: {
+      ...JSON.parse(JSON.stringify(endpoint)),
+      status: 'pending' // Default status
+    }
+  }
+
+  // Add to flow
+  flowRef.value.nodes.push(newNode)
+  toast.success('Step added')
+  // Don't close modal immediately to allow adding multiple? 
+  // User asked "ability to added endpoints or nodes", implies maybe single or multiple.
+  // "x buttton beside the node check" probably means close modal or remove filter.
+  // I'll close the modal for better UX unless they ctrl+click (not easy to implement).
+  showAddStep.value = false
 }
 </script>
 

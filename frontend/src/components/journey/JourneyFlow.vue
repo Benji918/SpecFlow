@@ -83,6 +83,7 @@ const toast = useToast()
 const { fitView, onConnect, addEdges } = useVueFlow()
 
 // Handle new connections
+// Handle new connections
 onConnect((params) => {
   const sourceNode = nodes.value.find(n => n.id === params.source)
   const targetNode = nodes.value.find(n => n.id === params.target)
@@ -99,7 +100,8 @@ onConnect((params) => {
     }
   }
   
-  addEdges([edge])
+  // FIX: Update local ref directly so it syncs with v-model and save logic
+  edges.value.push(edge)
   
   if (detectedMappings.length > 0) {
     toast.success(`Auto-mapped ${detectedMappings.length} parameters!`)
@@ -245,11 +247,82 @@ function clearAllMappings() {
   toast.success('All data links and node mappings cleared')
 }
 
+function getSortedNodes(nodesList, edgesList) {
+  // 1. Build graph helpers
+  const inDegree = new Map()
+  const adj = new Map()
+  const nodeMap = new Map()
+
+  nodesList.forEach(node => {
+    inDegree.set(node.id, 0)
+    adj.set(node.id, [])
+    nodeMap.set(node.id, node)
+  })
+
+  edgesList.forEach(edge => {
+    // Only count edges that connect two existing nodes
+    if (nodeMap.has(edge.source) && nodeMap.has(edge.target)) {
+      adj.get(edge.source).push(edge.target)
+      inDegree.set(edge.target, (inDegree.get(edge.target) || 0) + 1)
+    }
+  })
+
+  // 2. Initialize Queue with 0 in-degree nodes
+  const queue = []
+  inDegree.forEach((count, id) => {
+    if (count === 0) {
+      queue.push(nodeMap.get(id))
+    }
+  })
+
+  // Sort initial queue by Y position to respect visual order for independent start nodes
+  queue.sort((a, b) => a.position.y - b.position.y)
+
+  const sorted = []
+  
+  while (queue.length > 0) {
+    const u = queue.shift()
+    sorted.push(u)
+
+    const neighbors = adj.get(u.id) || []
+    
+    // We collect newly available nodes to sort them before adding to queue
+    const nextNodes = []
+    neighbors.forEach(vId => {
+      inDegree.set(vId, inDegree.get(vId) - 1)
+      if (inDegree.get(vId) === 0) {
+        nextNodes.push(nodeMap.get(vId))
+      }
+    })
+    
+    // Sort next batch by Y before adding to queue to maintain determinism
+    nextNodes.sort((a, b) => a.position.y - b.position.y)
+    queue.push(...nextNodes)
+  }
+
+  // 3. Fallback for cycles: if we didn't visit all nodes, append the rest sorted by Y
+  if (sorted.length !== nodesList.length) {
+    const visited = new Set(sorted.map(n => n.id))
+    const unvisited = nodesList.filter(n => !visited.has(n.id))
+    unvisited.sort((a, b) => a.position.y - b.position.y)
+    return [...sorted, ...unvisited]
+  }
+
+  return sorted
+}
+
 async function saveJourney() {
   saving.value = true
 
+  // Sort nodes based on execution flow (Topological + Y-position)
+  // This ensures the backend executes them in the correct visual order
+  const sortedNodes = getSortedNodes(nodes.value, edges.value)
+  
+  // Update local nodes ref to match sorted order
+  nodes.value = sortedNodes
+
   const result = await journeyStore.updateJourney(props.journeyId, {
-    nodes: nodes.value,
+    nodes: sortedNodes,
     edges: edges.value,
   })
 

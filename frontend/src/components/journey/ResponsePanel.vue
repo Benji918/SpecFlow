@@ -285,6 +285,15 @@ const isUpdating = ref(false)
 // Initialize internal state from node data
 watch(() => props.node, (newNode) => {
   if (newNode && !isUpdating.value) {
+    // FIX: Handle Manual Journey nodes where requestBody contains the Spec instead of Value
+    if (!newNode.data.requestBodySpec && newNode.data.requestBody?.content) {
+      emit('update-node', props.node.id, {
+        requestBodySpec: newNode.data.requestBody,
+        requestBody: null
+      })
+      return
+    }
+
     editableBody.value = newNode.data.requestBody 
       ? JSON.stringify(newNode.data.requestBody, null, 2)
       : ''
