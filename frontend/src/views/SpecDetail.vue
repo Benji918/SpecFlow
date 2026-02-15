@@ -131,26 +131,90 @@
         </div>
 
         <!-- Endpoints List -->
-        <div class="card">
-          <h3 class="text-2xl font-semibold mb-6">Endpoints</h3>
-          <div class="space-y-2">
-            <div
-              v-for="(endpoint, index) in spec.endpoints"
-              :key="index"
-              class="flex items-center space-x-4 p-3 bg-surface rounded-lg hover:bg-gray-800 transition-colors"
-            >
-              <span
-                :class="[
-                  'px-3 py-1 rounded font-mono text-xs font-bold',
-                  getMethodColor(endpoint.method),
-                ]"
+        <div class="card overflow-hidden">
+          <div class="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+            <div>
+              <h3 class="text-2xl font-bold bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">Endpoints</h3>
+              <p class="text-[10px] text-gray-500 font-bold uppercase tracking-[0.2em] mt-1">{{ filteredEndpoints.length }} of {{ spec.endpoints?.length || 0 }} Operations Active</p>
+            </div>
+            
+            <div class="flex flex-col sm:flex-row gap-3">
+              <!-- Search Input -->
+              <div class="relative group/search min-w-[280px]">
+                <Search :size="16" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within/search:text-primary transition-colors" />
+                <input 
+                  v-model="searchQuery"
+                  type="text"
+                  placeholder="Filter by path, name or resource..."
+                  class="w-full bg-black/40 border border-gray-800 rounded-xl pl-10 pr-4 py-2 text-sm outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-all placeholder:text-gray-600"
+                />
+              </div>
+
+              <!-- Filter Button (Optional expansion) -->
+              <div class="flex items-center space-x-1 bg-black/40 border border-gray-800 rounded-xl p-1">
+                <button 
+                  v-for="m in filterableMethods" 
+                  :key="m"
+                  @click="toggleMethodFilter(m)"
+                  :class="[
+                    'px-2.5 py-1 rounded-lg text-[10px] font-black tracking-wider uppercase transition-all',
+                    selectedMethods.includes(m) 
+                      ? getMethodColor(m).replace('bg-', 'bg-').replace('/20', '') + ' shadow-lg'
+                      : 'text-gray-600 hover:text-gray-400 hover:bg-white/5'
+                  ]"
+                >
+                  {{ m }}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="space-y-3 max-h-[700px] overflow-y-auto pr-2 custom-scrollbar">
+            <TransitionGroup name="list">
+              <div
+                v-for="(endpoint, index) in filteredEndpoints"
+                :key="`${endpoint.method}-${endpoint.path}`"
+                class="flex items-center space-x-6 p-5 bg-black/40 border border-gray-800 rounded-2xl hover:bg-gray-800/60 hover:border-primary/40 transition-all group cursor-default shadow-sm"
               >
-                {{ endpoint.method }}
-              </span>
-              <span class="font-mono text-sm">{{ endpoint.path }}</span>
-              <span class="text-sm text-gray-400 ml-auto">
-                {{ endpoint.summary || endpoint.operation_id }}
-              </span>
+                <div class="flex-shrink-0">
+                  <span
+                    :class="[
+                      'inline-block min-w-[70px] text-center py-2 rounded-xl font-mono text-[11px] font-black tracking-widest border transition-all group-hover:shadow-[0_0_15px_currentColor]',
+                      getMethodColor(endpoint.method),
+                      'border-current/30'
+                    ]"
+                  >
+                    {{ endpoint.method }}
+                  </span>
+                </div>
+                
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center space-x-3">
+                    <span class="font-mono text-base font-bold text-gray-100 group-hover:text-primary transition-colors tracking-tight truncate">{{ endpoint.path }}</span>
+                  </div>
+                  <div class="text-xs text-gray-400 font-semibold truncate mt-1.5 opacity-70 group-hover:opacity-100 transition-opacity uppercase tracking-wider">
+                    {{ endpoint.summary || endpoint.operation_id }}
+                  </div>
+                </div>
+
+                <div class="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-all translate-x-4 group-hover:translate-x-0">
+                  <button class="p-2.5 bg-primary/10 text-primary hover:bg-primary hover:text-black rounded-xl transition-all shadow-lg" title="Add to Journey">
+                    <PlusSquare :size="20" />
+                  </button>
+                </div>
+              </div>
+            </TransitionGroup>
+
+            <!-- Empty State for Filters -->
+            <div v-if="filteredEndpoints.length === 0" class="flex flex-col items-center justify-center py-20 text-center space-y-4">
+              <div class="p-4 rounded-full bg-gray-800/30">
+                <SearchX :size="48" class="text-gray-600" />
+              </div>
+              <div>
+                <p class="text-gray-400 font-bold uppercase tracking-widest text-xs">No matching endpoints found</p>
+                <p class="text-[10px] text-gray-600 mt-1">Try adjusting your filters or search terms</p>
+              </div>
+              <button @click="resetFilters" class="text-[10px] font-black uppercase tracking-widest text-primary hover:underline">Reset All Filters</button>
             </div>
           </div>
         </div>
@@ -182,6 +246,9 @@ import {
   Workflow,
   ChevronRight,
   AlertCircle,
+  Search,
+  SearchX,
+  PlusSquare,
 } from 'lucide-vue-next'
 
 const router = useRouter()
@@ -201,6 +268,43 @@ const journeys = computed(() =>
     (j) => j.spec_id === route.params.id && !deletingJourneyIds.value.has(j.id)
   )
 )
+
+// Filtering Logic
+const searchQuery = ref('')
+const selectedMethods = ref([])
+const filterableMethods = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH']
+
+const filteredEndpoints = computed(() => {
+  if (!spec.value?.endpoints) return []
+  
+  return spec.value.endpoints.filter(endpoint => {
+    // Search query filter
+    const matchesSearch = !searchQuery.value || 
+      endpoint.path.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+      (endpoint.summary && endpoint.summary.toLowerCase().includes(searchQuery.value.toLowerCase())) ||
+      (endpoint.operation_id && endpoint.operation_id.toLowerCase().includes(searchQuery.value.toLowerCase()))
+    
+    // Method filter
+    const matchesMethod = selectedMethods.value.length === 0 || 
+      selectedMethods.value.includes(endpoint.method.toUpperCase())
+    
+    return matchesSearch && matchesMethod
+  })
+})
+
+function toggleMethodFilter(method) {
+  const index = selectedMethods.value.indexOf(method)
+  if (index === -1) {
+    selectedMethods.value.push(method)
+  } else {
+    selectedMethods.value.splice(index, 1)
+  }
+}
+
+function resetFilters() {
+  searchQuery.value = ''
+  selectedMethods.value = []
+}
 
 const methodStats = computed(() => {
   if (!spec.value?.endpoints) return []
@@ -313,3 +417,36 @@ function formatDate(dateString) {
   })
 }
 </script>
+
+<style scoped>
+/* Endpoints Transition & Custom Scrollbar */
+.list-move,
+.list-enter-active,
+.list-leave-active {
+  transition: all 0.3s cubic-bezier(0.55, 0, 0.1, 1);
+}
+
+.list-enter-from,
+.list-leave-to {
+  opacity: 0;
+  transform: translateX(30px);
+}
+
+.list-leave-active {
+  position: absolute;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #333;
+  border-radius: 10px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #444;
+}
+</style>
