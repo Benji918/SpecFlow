@@ -12,7 +12,7 @@
       </div>
     </header>
 
-    <main class="max-w-7xl mx-auto px-4 py-8">
+    <main class="max-w-7xl mx-auto px-4 py-8 relative">
       <!-- Loading State -->
       <div v-if="loading" class="space-y-6">
         <div class="card">
@@ -23,7 +23,7 @@
       </div>
 
       <!-- Loaded State -->
-      <div v-else-if="spec" class="space-y-6">
+      <div v-else-if="spec" class="space-y-6 pb-40">
         <!-- Spec Info Card -->
         <div class="card">
           <div class="flex items-start justify-between mb-6">
@@ -170,7 +170,7 @@
           </div>
 
           <div class="space-y-3 max-h-[700px] overflow-y-auto pr-2 custom-scrollbar">
-            <TransitionGroup name="list">
+            <TransitionGroup name="list" tag="div">
               <div
                 v-for="(endpoint, index) in filteredEndpoints"
                 :key="`${endpoint.method}-${endpoint.path}`"
@@ -197,9 +197,15 @@
                   </div>
                 </div>
 
-                <div class="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-all translate-x-4 group-hover:translate-x-0">
-                  <button class="p-2.5 bg-primary/10 text-primary hover:bg-primary hover:text-black rounded-xl transition-all shadow-lg" title="Add to Journey">
-                    <PlusSquare :size="20" />
+                <div class="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-all translate-x-4 group-hover:translate-x-0 flex items-center space-x-2">
+                  <button 
+                    @click="addEndpointToSelection(endpoint)"
+                    class="p-2.5 rounded-xl transition-all shadow-lg"
+                    :class="isSelected(endpoint) ? 'bg-primary text-black font-bold' : 'bg-primary/10 text-primary hover:bg-primary hover:text-black hover:scale-110'"
+                    title="Add to Journey Builder"
+                  >
+                    <Check v-if="isSelected(endpoint)" :size="20" />
+                    <PlusSquare v-else :size="20" />
                   </button>
                 </div>
               </div>
@@ -218,6 +224,77 @@
             </div>
           </div>
         </div>
+
+        <!-- Manual Journey Builder Tray (Fixed Bottom) -->
+        <Transition name="slide-up">
+          <div v-if="selectedEndpoints.length > 0" class="fixed bottom-0 left-0 right-0 z-50 p-4 md:p-6 bg-surface/80 backdrop-blur-2xl border-t border-white/10 shadow-[0_-20px_50px_rgba(0,0,0,0.5)]">
+            <div class="max-w-7xl mx-auto">
+              <!-- Selection List logic remains same -->
+              <div class="flex flex-col lg:flex-row items-center gap-6">
+                <!-- Selection List -->
+                <div class="flex-1 w-full overflow-hidden">
+                  <div class="flex items-center justify-between mb-3 px-1">
+                    <div class="flex items-center space-x-2">
+                      <Workflow :size="16" class="text-primary" />
+                      <span class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Manual Journey Builder</span>
+                    </div>
+                    <button @click="clearSelection" class="text-[10px] font-bold text-red-400/70 hover:text-red-400 uppercase tracking-widest transition-colors">
+                      Clear All
+                    </button>
+                  </div>
+                  
+                  <div class="flex items-center space-x-3 overflow-x-auto pb-2 custom-scrollbar">
+                    <div 
+                      v-for="(ep, idx) in selectedEndpoints" 
+                      :key="idx"
+                      class="flex-shrink-0 flex items-center space-x-2 bg-black/60 border border-gray-800 p-2 rounded-xl group relative"
+                    >
+                      <div class="absolute -top-1.5 -left-1.5 w-5 h-5 bg-gray-800 text-[10px] font-bold flex items-center justify-center rounded-full border border-gray-700 text-primary">
+                        {{ idx + 1 }}
+                      </div>
+                      <span :class="['text-[8px] font-black px-1.5 py-0.5 rounded', getMethodColor(ep.method)]">{{ ep.method }}</span>
+                      <span class="text-[10px] font-mono text-gray-300 max-w-[120px] truncate">{{ ep.path }}</span>
+                      <button @click="removeEndpointFromSelection(idx)" class="text-gray-600 hover:text-red-400 transition-colors">
+                        <X :size="12" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Action Panel -->
+                <div class="lg:w-[420px] w-full flex flex-col sm:flex-row items-center gap-4 border-l border-white/10 pl-6">
+                  <div class="flex-1 w-full space-y-2">
+                    <div class="flex items-center justify-between">
+                      <label class="text-[9px] text-gray-500 uppercase font-black tracking-widest pl-1">Journey Name</label>
+                      <!-- Validation Badge -->
+                      <div v-if="isValidFirstNode" class="flex items-center text-[8px] text-green-400 font-black uppercase">
+                        <CheckCircle :size="10" class="mr-1" /> Auth Verified
+                      </div>
+                      <div v-else class="flex items-center text-[8px] text-yellow-500 font-bold uppercase animate-pulse">
+                        <AlertTriangle :size="10" class="mr-1" /> Auth Node Required First
+                      </div>
+                    </div>
+                    <input 
+                      v-model="newJourneyName"
+                      type="text"
+                      placeholder="e.g. User Checkout Flow"
+                      class="w-full bg-black/40 border border-gray-800 rounded-xl px-4 py-2.5 text-xs text-primary outline-none focus:border-primary/50 transition-all font-bold"
+                    />
+                  </div>
+
+                  <button 
+                    @click="createManualJourney"
+                    :disabled="!canCreateJourney || creatingManual"
+                    class="sm:w-auto w-full px-8 py-3 bg-primary text-black font-black text-[11px] uppercase tracking-[0.2em] rounded-xl shadow-[0_4px_20px_rgba(191,245,73,0.3)] hover:shadow-[0_4px_30px_rgba(191,245,73,0.5)] transition-all active:scale-95 disabled:opacity-30 disabled:grayscale shrink-0"
+                  >
+                    <span v-if="!creatingManual">Assemble Journey</span>
+                    <Loader v-else :size="16" class="animate-spin mx-auto" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </Transition>
       </div>
 
       <!-- Error State -->
@@ -249,6 +326,11 @@ import {
   Search,
   SearchX,
   PlusSquare,
+  X,
+  Plus,
+  Check,
+  CheckCircle,
+  AlertTriangle,
 } from 'lucide-vue-next'
 
 const router = useRouter()
@@ -260,6 +342,95 @@ const toast = useToast()
 const loading = ref(true)
 const loadingJourneys = ref(true)
 const generatingJourneys = ref(false)
+const creatingManual = ref(false)
+
+// Manual Journey Selection
+const selectedEndpoints = ref([])
+const newJourneyName = ref('')
+
+function isSelected(endpoint) {
+  return selectedEndpoints.value.some(e => e.path === endpoint.path && e.method === endpoint.method)
+}
+
+function addEndpointToSelection(endpoint) {
+  if (isSelected(endpoint)) {
+    selectedEndpoints.value = selectedEndpoints.value.filter(e => e.path !== endpoint.path || e.method !== endpoint.method)
+    return
+  }
+  selectedEndpoints.value.push(JSON.parse(JSON.stringify(endpoint)))
+  
+  if (selectedEndpoints.value.length === 1 && !newJourneyName.value) {
+    newJourneyName.value = `Manual Journey: ${endpoint.summary || endpoint.path.split('/').pop()}`
+  }
+}
+
+function removeEndpointFromSelection(idx) {
+  selectedEndpoints.value.splice(idx, 1)
+}
+
+function clearSelection() {
+  selectedEndpoints.value = []
+  newJourneyName.value = ''
+}
+
+const isValidFirstNode = computed(() => {
+  if (selectedEndpoints.value.length === 0) return true
+  const first = selectedEndpoints.value[0]
+  const path = first.path.toLowerCase()
+  const summary = (first.summary || '').toLowerCase()
+  const opId = (first.operation_id || '').toLowerCase()
+  
+  const keywords = ['login', 'token', 'auth', 'signin', 'authenticate', 'session']
+  return keywords.some(k => path.includes(k) || summary.includes(k) || opId.includes(k))
+})
+
+const canCreateJourney = computed(() => {
+  return selectedEndpoints.value.length >= 1 && newJourneyName.value.trim() !== '' && isValidFirstNode.value
+})
+
+async function createManualJourney() {
+  if (!canCreateJourney.value) return
+  
+  creatingManual.value = true
+  
+  // Transform selected endpoints into nodes and edges
+  const nodes = selectedEndpoints.value.map((ep, idx) => ({
+    id: `node-${idx}-${Date.now()}`,
+    type: 'endpoint',
+    position: { x: 250, y: 100 + (idx * 250) },
+    data: { ...ep, status: 'pending' }
+  }))
+  
+  const edges = []
+  for (let i = 0; i < nodes.length - 1; i++) {
+    edges.push({
+      id: `edge-${i}-${Date.now()}`,
+      source: nodes[i].id,
+      target: nodes[i+1].id,
+      type: 'mapping',
+      data: { dataMapping: [] } // Auto-mapping will kick in on load if needed
+    })
+  }
+  
+  const result = await journeyStore.createJourney({
+    name: newJourneyName.value,
+    spec_id: route.params.id,
+    nodes,
+    edges,
+    generation_method: 'manual'
+  })
+  
+  if (result.success) {
+    toast.success('Manual journey created successfully!')
+    clearSelection()
+    await fetchJourneys()
+    router.push(`/journey/${result.data.id}`)
+  } else {
+    toast.error(result.error || 'Failed to create journey')
+  }
+  
+  creatingManual.value = false
+}
 
 const spec = computed(() => specStore.currentSpec)
 const deletingJourneyIds = ref(new Set())
@@ -448,5 +619,17 @@ function formatDate(dateString) {
 }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: #444;
+}
+
+/* Animations */
+.slide-up-enter-active,
+.slide-up-leave-active {
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s ease;
+}
+
+.slide-up-enter-from,
+.slide-up-leave-to {
+  transform: translateY(100%);
+  opacity: 0;
 }
 </style>

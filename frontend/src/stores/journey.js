@@ -160,8 +160,15 @@ export const useJourneyStore = defineStore('journey', () => {
         }
 
         // --- SYNC SESSION DATA FOR LIVE PREVIEWS ---
-        if (activeJourney.value && result.responseBody) {
-            const edges = activeJourney.value.edges || []
+        // Ensure we have active journey data to map edges
+        let currentJourney = activeJourney.value
+        if (!currentJourney) {
+            // Fallback: search across all loaded journeys
+            currentJourney = journeys.value.find(j => j.nodes && j.nodes.some(n => n.id === stepId))
+        }
+
+        if (currentJourney && result.responseBody) {
+            const edges = currentJourney.edges || []
             const relevantEdges = edges.filter(e => e.source === stepId)
 
             const newSessionUpdates = {}
@@ -187,13 +194,14 @@ export const useJourneyStore = defineStore('journey', () => {
 
             // 2. Smart extraction (IDs and common fields) - help fallback logic
             if (typeof result.responseBody === 'object' && result.responseBody !== null) {
-                const idKeys = ['id', 'uuid', 'pk', 'restaurant_id', 'order_id', 'user_id']
+                const idKeys = ['id', 'uuid', 'pk', 'restaurant_id', 'order_id', 'user_id', 'token', 'access_token']
 
                 const extractIds = (obj) => {
                     if (!obj || typeof obj !== 'object') return
                     Object.entries(obj).forEach(([k, v]) => {
                         if (idKeys.includes(k) && (typeof v === 'string' || typeof v === 'number')) {
                             newSessionUpdates[k] = v
+                            // Also map to pathParams context for flexibility
                             newSessionUpdates[`pathParams.${k}`] = v
                         }
                         if (['detail', 'data'].includes(k) && typeof v === 'object') {

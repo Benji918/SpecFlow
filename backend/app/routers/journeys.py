@@ -151,6 +151,16 @@ async def get_journey(
     return response_data
 
 
+def is_auth_endpoint(endpoint_data: dict) -> bool:
+    """Check if an endpoint is likely an authentication endpoint."""
+    path = endpoint_data.get("path", "").lower()
+    summary = (endpoint_data.get("summary") or "").lower()
+    op_id = (endpoint_data.get("operation_id") or "").lower()
+    
+    keywords = ["login", "token", "auth", "signin", "authenticate", "session"]
+    return any(k in path or k in summary or k in op_id for k in keywords)
+
+
 @router.post("/journeys", response_model=JourneyResponse, status_code=status.HTTP_201_CREATED)
 async def create_journey(
     journey_data: JourneyCreate,
@@ -171,6 +181,16 @@ async def create_journey(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Spec not found",
         )
+    
+    # Validate first node is auth for manual creation
+    if journey_data.nodes:
+        first_node = journey_data.nodes[0]
+        node_data = first_node.get("data", {})
+        if not is_auth_endpoint(node_data):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Security Validation: The first node of a journey must be an authentication endpoint (e.g., Login or Token extraction)."
+            )
     
     # Create journey
     journey = Journey(

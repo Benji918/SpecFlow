@@ -103,11 +103,21 @@ const labelText = computed(() => {
 </script>
 
 <template>
-  <BaseEdge 
-    :id="id" 
-    :path="path[0]" 
-    :class="['mapping-edge-path', { 'is-selected': selected }]"
-  />
+  <g :class="{ 'is-selected': selected }">
+    <path
+      :id="id"
+      :d="path[0]"
+      class="mapping-edge-bg"
+      fill="none"
+    />
+
+    <path
+      :d="path[0]"
+      class="mapping-edge-flow"
+      fill="none"
+      :stroke-dasharray="selected ? '10, 20' : '4, 16'"
+    />
+  </g>
 
   <EdgeLabelRenderer v-if="labelText">
     <div
@@ -136,26 +146,28 @@ const labelText = computed(() => {
 </template>
 
 <style scoped>
-.mapping-edge-path {
-  fill: none;
-  stroke: rgba(191, 245, 73, 0.35);
-  stroke-width: 2.5;
-  stroke-dasharray: 1, 8;
-  stroke-linecap: round;
-  animation: flow 30s linear infinite;
-  transition: stroke 0.3s, stroke-width 0.3s;
+.mapping-edge-bg {
+  stroke: rgba(191, 245, 73, 0.1);
+  stroke-width: 3;
 }
 
-.mapping-edge-path.is-selected {
+.mapping-edge-flow {
   stroke: #BFF549;
-  stroke-width: 4;
-  stroke-dasharray: 2, 6;
-  animation: flow 15s linear infinite;
+  stroke-width: 3;
+  stroke-linecap: round;
+  animation: svg-flow 1.5s linear infinite;
+  filter: drop-shadow(0 0 3px rgba(191, 245, 73, 0.4));
 }
 
-@keyframes flow {
+.is-selected .mapping-edge-flow {
+  stroke-width: 5;
+  animation-duration: 0.8s;
+  filter: drop-shadow(0 0 8px rgba(191, 245, 73, 0.8));
+}
+
+@keyframes svg-flow {
   from {
-    stroke-dashoffset: 1000;
+    stroke-dashoffset: 40;
   }
   to {
     stroke-dashoffset: 0;

@@ -288,13 +288,17 @@ defineExpose({
   background: transparent;
 }
 
-/* Ensure custom nodes are visible */
+/* Ensure custom edges and nodes have correct z-indexing and styling */
 .vue-flow__node-endpoint {
   z-index: 10;
 }
 
+.vue-flow__edge-mapping {
+  z-index: 5;
+}
+
+/* Remove default stroke override to allow custom edge animations to work */
 .vue-flow__edge-path {
   stroke-width: 3px;
-  stroke: #BFF549 !important;
 }
 </style>
