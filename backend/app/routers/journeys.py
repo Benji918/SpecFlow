@@ -4,7 +4,7 @@ from sqlalchemy import select
 from typing import List
 import uuid
 import re
-
+import asyncio
 from app.database import get_db
 from app.models.user import User
 from app.models.spec import Spec
@@ -148,7 +148,7 @@ async def get_journey(
         )
     
     response_data = JourneyResponse.model_validate(journey).model_dump(mode='json')
-    await cache_service.set(cache_key, response_data)
+    asyncio.create_task(cache_service.set(cache_key, response_data))
     return response_data
 
 
@@ -301,8 +301,10 @@ async def update_journey(
     await db.refresh(journey)
     
     # Invalidate caches
-    await cache_service.delete(get_journey_cache_key(current_user.id, journey_id))
-    await cache_service.delete(get_journey_cache_key(current_user.id))
+    await asyncio.gather(
+        cache_service.delete(get_journey_cache_key(current_user.id, journey_id)),
+        cache_service.delete(get_journey_cache_key(current_user.id))
+    )
     
     return JourneyResponse.model_validate(journey)
 
@@ -331,5 +333,7 @@ async def delete_journey(
     await db.commit()
     
     # Invalidate caches
-    await cache_service.delete(get_journey_cache_key(current_user.id, journey_id))
-    await cache_service.delete(get_journey_cache_key(current_user.id))
+    await asyncio.gather(
+        cache_service.delete(get_journey_cache_key(current_user.id, journey_id)),
+        cache_service.delete(get_journey_cache_key(current_user.id))
+    )

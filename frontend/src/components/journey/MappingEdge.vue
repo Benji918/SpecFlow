@@ -5,8 +5,8 @@ export default {
 </script>
 
 <script setup>
-import { computed } from 'vue'
-import { BaseEdge, EdgeLabelRenderer, getBezierPath } from '@vue-flow/core'
+import { computed, inject } from 'vue'
+import { BaseEdge, EdgeLabelRenderer, getBezierPath, useVueFlow } from '@vue-flow/core'
 import { Database, ArrowUpRight } from 'lucide-vue-next'
 
 const props = defineProps({
@@ -78,7 +78,18 @@ const props = defineProps({
   interactionWidth: Number,
   events: Object,
   style: Object,
+  style: Object,
 })
+
+const { findEdge } = useVueFlow()
+const onEdgeClick = inject('onEdgeClick')
+
+function handleLabelClick() {
+  const edge = findEdge(props.id)
+  if (edge && onEdgeClick) {
+    onEdgeClick({ edge }) 
+  }
+}
 
 const path = computed(() => getBezierPath(props))
 
@@ -90,8 +101,12 @@ const labelText = computed(() => {
   if (!mappings.value || mappings.value.length === 0) return null
   if (mappings.value.length === 1) {
     const m = mappings.value[0]
+    // Clean up keys for display: remove 'response.', 'request.' prefixes, replace _ with space, uppercase
+    const cleanFrom = (m.from || '').split('.').pop().replace(/_/g, ' ').replace(/id$/i, 'ID').toUpperCase()
+    const cleanTo = (m.to || '').split('.').pop().replace(/_/g, ' ').replace(/id$/i, 'ID').toUpperCase()
+    
     return {
-      text: `${String(m.from || '').split('.').pop()} → ${String(m.to || '').split('.').pop()}`,
+      text: `${cleanFrom} → ${cleanTo}`,
       type: (m.from || '').startsWith('request') ? 'request' : 'response'
     }
   }
@@ -130,16 +145,16 @@ const labelText = computed(() => {
     >
       <div 
         :class="[
-          'px-2 py-1 rounded-full text-[9px] font-black border transition-all cursor-pointer flex items-center space-x-1.5 backdrop-blur-md',
+          'px-3 py-1.5 rounded-full text-[10px] font-black border transition-all cursor-pointer flex items-center space-x-2 backdrop-blur-md shadow-lg',
           selected 
-            ? 'bg-primary text-black border-primary scale-110 shadow-[0_0_15px_rgba(191,245,73,0.4)]' 
-            : 'bg-black/60 border-gray-700 text-gray-400 hover:border-primary/50'
+            ? 'bg-primary text-black border-primary scale-110 shadow-[0_0_20px_rgba(191,245,73,0.6)]' 
+            : 'bg-primary text-black border-primary/50 hover:scale-105 hover:shadow-[0_0_15px_rgba(191,245,73,0.3)]'
         ]"
-        @click="$emit('edge-click', { id, data })"
+        @click.stop="handleLabelClick"
       >
-        <Database v-if="labelText.type === 'response'" :size="10" />
-        <ArrowUpRight v-if="labelText.type === 'request'" :size="10" />
-        <span class="tracking-widest uppercase">{{ labelText.text }}</span>
+        <Database v-if="labelText?.type === 'response'" :size="12" />
+        <ArrowUpRight v-if="labelText?.type === 'request'" :size="12" />
+        <span class="tracking-widest uppercase">{{ labelText?.text }}</span>
       </div>
     </div>
   </EdgeLabelRenderer>

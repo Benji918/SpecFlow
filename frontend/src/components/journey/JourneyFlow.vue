@@ -46,7 +46,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, markRaw } from 'vue'
+import { ref, computed, watch, markRaw, provide } from 'vue'
 import { VueFlow, useVueFlow } from '@vue-flow/core'
 import { Background } from '@vue-flow/background'
 import { Controls } from '@vue-flow/controls'
@@ -161,6 +161,9 @@ function onEdgeClick(event) {
   selectedNode.value = null
   emit('edge-selected', event.edge)
 }
+
+// Provide edge click handler for custom edges
+provide('onEdgeClick', onEdgeClick)
 
 function autoLayout() {
   // Vertical layout with fixed spacing

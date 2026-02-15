@@ -63,15 +63,37 @@
         <div class="card">
           <div class="flex items-center justify-between mb-6">
             <h3 class="text-2xl font-semibold">Journeys</h3>
-            <button
-              @click="generateJourneys"
-              :disabled="generatingJourneys"
-              class="btn-primary"
-            >
-              <Sparkles v-if="!generatingJourneys" :size="20" class="inline mr-2" />
-              <Loader v-else :size="20" class="inline mr-2 animate-spin" />
-              {{ generatingJourneys ? 'Generating...' : 'Generate with AI' }}
-            </button>
+            <div class="flex items-center space-x-3">
+              <button
+                v-if="selectedJourneyIds.size > 0"
+                @click="batchDeleteJourneys"
+                class="btn-secondary text-red-400 hover:text-red-500 hover:bg-red-500/10"
+              >
+                <Trash2 :size="16" class="inline mr-2" />
+                Delete ({{ selectedJourneyIds.size }})
+              </button>
+              <button
+                @click="generateJourneys"
+                :disabled="generatingJourneys"
+                class="btn-primary"
+              >
+                <Sparkles v-if="!generatingJourneys" :size="20" class="inline mr-2" />
+                <Loader v-else :size="20" class="inline mr-2 animate-spin" />
+                {{ generatingJourneys ? 'Generating...' : 'Generate with AI' }}
+              </button>
+            </div>
+          </div>
+          
+          <!-- Bulk Selection Header -->
+          <div v-if="journeys.length > 0 && selectedJourneyIds.size > 0" class="flex items-center px-4 py-2 border-b border-gray-800/50 mb-2 transition-all">
+            <input 
+              type="checkbox" 
+              :checked="isAllSelected"
+              :indeterminate="isIndeterminate"
+              @change="toggleSelectAll"
+              class="w-4 h-4 rounded bg-black/40 border-gray-600 text-primary focus:ring-0 focus:ring-offset-0 mr-4 cursor-pointer" 
+            />
+            <span class="text-xs text-gray-500 font-bold uppercase tracking-wider">Select All</span>
           </div>
 
           <!-- Loading Journeys -->
@@ -95,10 +117,22 @@
             <div
               v-for="journey in journeys"
               :key="journey.id"
-              @click="navigateToJourney(journey.id)"
+              @click="handleJourneyClick(journey.id, $event)"
               class="p-4 bg-surface hover:bg-gray-800 rounded-lg cursor-pointer transition-all group border border-transparent hover:border-primary/50"
+              :class="{'border-primary/30 bg-gray-800': selectedJourneyIds.has(journey.id)}"
             >
               <div class="flex items-start justify-between">
+                <div 
+                  class="flex items-center mr-4 pt-1 transition-opacity duration-200"
+                  :class="selectedJourneyIds.size > 0 || isMobile ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'"
+                >
+                   <input 
+                    type="checkbox" 
+                    :checked="selectedJourneyIds.has(journey.id)"
+                    @click.stop="toggleJourneySelection(journey.id)"
+                    class="w-4 h-4 rounded bg-black/40 border-gray-600 text-primary focus:ring-0 focus:ring-offset-0 cursor-pointer" 
+                  />
+                </div>
                 <div class="flex-1">
                   <div class="flex items-center space-x-3 mb-2">
                     <h4 class="text-lg font-semibold group-hover:text-primary transition-colors">
@@ -282,10 +316,13 @@
                     </div>
                     <input 
                       v-model="newJourneyName"
+                      @input="validateJourneyName"
                       type="text"
                       placeholder="e.g. User Checkout Flow"
+                      :class="{'border-red-500 focus:border-red-500': journeyNameError}"
                       class="w-full bg-black/40 border border-gray-800 rounded-xl px-4 py-2.5 text-xs text-primary outline-none focus:border-primary/50 transition-all font-bold"
                     />
+                    <p v-if="journeyNameError" class="text-[9px] text-red-500 font-bold mt-1 pl-1">{{ journeyNameError }}</p>
                   </div>
 
                   <button 
@@ -316,7 +353,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useSpecStore } from '@/stores/spec'
 import { useJourneyStore } from '@/stores/journey'
@@ -350,9 +387,81 @@ const loadingJourneys = ref(true)
 const generatingJourneys = ref(false)
 const creatingManual = ref(false)
 
+// Mobile detection for checkbox visibility
+const isMobile = ref(false)
+const checkMobile = () => {
+  isMobile.value = window.innerWidth < 768
+}
+
+onMounted(() => {
+  checkMobile()
+  window.addEventListener('resize', checkMobile)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', checkMobile)
+})
+
+// Bulk Selection State
+const selectedJourneyIds = ref(new Set())
+
+const isAllSelected = computed(() => {
+  return journeys.value.length > 0 && selectedJourneyIds.value.size === journeys.value.length
+})
+
+const isIndeterminate = computed(() => {
+  return selectedJourneyIds.value.size > 0 && selectedJourneyIds.value.size < journeys.value.length
+})
+
+function toggleSelectAll() {
+  if (isAllSelected.value) {
+    selectedJourneyIds.value.clear()
+  } else {
+    journeys.value.forEach(j => selectedJourneyIds.value.add(j.id))
+  }
+}
+
+function toggleJourneySelection(id) {
+  if (selectedJourneyIds.value.has(id)) {
+    selectedJourneyIds.value.delete(id)
+  } else {
+    selectedJourneyIds.value.add(id)
+  }
+}
+
+function handleJourneyClick(id, event) {
+  // If clicking checkbox, handled by stop propagation
+  // If clicking row:
+  // - if in selection mode (some selected), toggle selection
+  // - else navigate
+  if (selectedJourneyIds.value.size > 0 && !event.target.closest('button')) {
+    toggleJourneySelection(id)
+  } else if (!event.target.closest('button') && !event.target.closest('input')) {
+    navigateToJourney(id)
+  }
+}
+
 // Manual Journey Selection
 const selectedEndpoints = ref([])
 const newJourneyName = ref('')
+const journeyNameError = ref('')
+
+function validateJourneyName() {
+  const name = newJourneyName.value.trim()
+  journeyNameError.value = ''
+  
+  if (!name) return
+
+  // Frontend Validation for XSS/SQL Injection
+  const xssPattern = /<[^>]*>|javascript:|on\w+=/i
+  const sqlPattern = /(\b(select|update|delete|insert|drop|alter)\b.*\b(from|table|into)\b)|(--)/i
+  
+  if (xssPattern.test(name)) {
+    journeyNameError.value = 'Invalid characters detected (XSS)'
+  } else if (sqlPattern.test(name)) {
+    journeyNameError.value = 'Invalid characters detected (SQL Injection)'
+  }
+}
 
 function isSelected(endpoint) {
   return selectedEndpoints.value.some(e => e.path === endpoint.path && e.method === endpoint.method)
@@ -377,6 +486,7 @@ function removeEndpointFromSelection(idx) {
 function clearSelection() {
   selectedEndpoints.value = []
   newJourneyName.value = ''
+  journeyNameError.value = ''
 }
 
 const isValidFirstNode = computed(() => {
@@ -391,7 +501,7 @@ const isValidFirstNode = computed(() => {
 })
 
 const canCreateJourney = computed(() => {
-  return selectedEndpoints.value.length >= 1 && newJourneyName.value.trim() !== '' && isValidFirstNode.value
+  return selectedEndpoints.value.length >= 1 && newJourneyName.value.trim() !== '' && isValidFirstNode.value && !journeyNameError.value
 })
 
 async function createManualJourney() {
@@ -516,7 +626,7 @@ async function fetchJourneys() {
 async function generateJourneys() {
   generatingJourneys.value = true
 
-  const result = await journeyStore.generateJourneys(route.params.id, 'ai')
+  const result = await journeyStore.generateJourneys(route.params.id, 'ai', { timeout: 120000 })
 
   if (result.success) {
     toast.success(`Generated ${result.data.length} journey(s)!`)
@@ -549,6 +659,7 @@ async function handleDeleteJourney(journeyId) {
 
   // Optimistic update: hide immediately
   deletingJourneyIds.value.add(journeyId)
+  selectedJourneyIds.value.delete(journeyId)
 
   // Background request without blocking the UI
   journeyStore.deleteJourney(journeyId).then((result) => {
@@ -560,6 +671,40 @@ async function handleDeleteJourney(journeyId) {
       deletingJourneyIds.value.delete(journeyId)
     }
   })
+}
+
+async function batchDeleteJourneys() {
+  const count = selectedJourneyIds.value.size
+  if (count === 0) return
+  
+  if (!confirm(`Delete ${count} selected journeys? This action cannot be undone.`)) {
+    return
+  }
+  
+  const idsToDelete = Array.from(selectedJourneyIds.value)
+  
+  // Optimistic Hide
+  idsToDelete.forEach(id => deletingJourneyIds.value.add(id))
+  selectedJourneyIds.value.clear()
+  
+  // Execute deletions in parallel
+  const promises = idsToDelete.map(id => journeyStore.deleteJourney(id))
+  const results = await Promise.all(promises)
+  
+  const successCount = results.filter(r => r.success).length
+  const failCount = count - successCount
+  
+  if (successCount > 0) {
+    toast.success(`Deleted ${successCount} journeys`)
+  }
+  
+  if (failCount > 0) {
+    toast.error(`Failed to delete ${failCount} journeys`)
+    // Rollback failed ones (simple approach: iterate results and see which failed)
+    // For now we just refresh strictly if any failed
+    await fetchJourneys()
+    deletingJourneyIds.value.clear()
+  }
 }
 
 function navigateToJourney(journeyId) {

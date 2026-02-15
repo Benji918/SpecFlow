@@ -49,14 +49,15 @@ export const useJourneyStore = defineStore('journey', () => {
         }
     }
 
-    async function generateJourneys(specId, strategy = 'ai') {
+    async function generateJourneys(specId, strategy = 'ai', options = {}) {
         loading.value = true
         error.value = null
 
         try {
             const response = await apiClient.post(
                 `/api/specs/${specId}/generate-journeys`,
-                { strategy }
+                { strategy },
+                options
             )
 
             // Add to journeys list

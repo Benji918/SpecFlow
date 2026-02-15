@@ -1,8 +1,10 @@
 import json
 from typing import List, Dict, Any
-from ollama import Client
+from ollama import AsyncClient
 from app.config import settings
 import os
+import asyncio
+import httpx
 from app.services.spec_parser import EndpointInfo
 
 
@@ -11,11 +13,12 @@ class JourneyGenerator:
 
     def __init__(self):
         """Initialize Ollama client."""
-        self.client = Client(
+        self.client = AsyncClient(
             host="https://ollama.com",
-            headers={'Authorization': 'Bearer ' + os.environ.get('OLLAMA_API_KEY')}
+            headers={'Authorization': 'Bearer ' + os.environ.get('OLLAMA_API_KEY')} if os.environ.get('OLLAMA_API_KEY') else None
         )
         self.model = settings.OLLAMA_MODEL
+        self.timeout = 120.0
 
     async def generate_journeys(
         self, endpoints: List[EndpointInfo]
@@ -64,7 +67,7 @@ Return ONLY a JSON array, no explanation.
 
         # Call Ollama API
         print("Calling Ollama API...")
-        response = self.client.chat(
+        response = await self.client.chat(
             model=self.model,
             messages=[{"role": "user", "content": prompt}],
             format="json",
@@ -89,7 +92,7 @@ Return ONLY a JSON array, no explanation.
 
         # Convert to VueFlow format
         return self._convert_to_vueflow_format(journeys, endpoints)
-
+    
     def _format_endpoints(self, endpoints: List[EndpointInfo]) -> str:
         """Format endpoints for AI prompt with schema details.
         
@@ -230,6 +233,7 @@ Return ONLY a JSON array, no explanation.
                             "id": f"e{idx-1}-{idx}",
                             "source": f"step-{idx-1}",
                             "target": f"step-{idx}",
+                            "type": "mapping",
                             "label": edge_label,
                             "animated": True,
                             "data": {"dataMapping": all_mappings},

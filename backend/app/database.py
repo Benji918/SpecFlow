@@ -13,22 +13,28 @@ ssl_ctx.verify_mode = ssl.CERT_NONE
 # Create async engine
 engine = create_async_engine(
     settings.DATABASE_URL,
-    pool_size=2,
+    pool_size=10,  # ✅ Increased from 2
+    max_overflow=5,  # ✅ Increased from 1
     pool_pre_ping=True,
-    max_overflow=1,
-    pool_timeout=60,
-    pool_recycle=300,
+    pool_timeout=30,  # ✅ Reduced from 60
+    pool_recycle=1800,  # ✅ Increased from 300 (30 min)
     connect_args={
-        "statement_cache_size": 0,
+        "statement_cache_size": 100,  # ✅ CRITICAL: Enable statement caching
+        "prepared_statement_cache_size": 100,  # ✅ Enable prepared statement cache
         "ssl": ssl_ctx,
-    }
+        "command_timeout": 10,  # ✅ Add query timeout
+    },
+    echo=False,  # Set to True for debugging
 )
+
 
 # Create async session factory
 AsyncSessionLocal = async_sessionmaker(
     bind=engine,
     class_=AsyncSession,
     expire_on_commit=False,
+    autoflush=False,
+    
 )
 
 # Base class for models
@@ -40,7 +46,6 @@ async def get_db():
     async with AsyncSessionLocal() as session:
         try:
             yield session
-            await session.commit()
         except Exception:
             await session.rollback()
             raise
