@@ -87,12 +87,14 @@
       v-if="!isFirst"
       type="target"
       :position="Position.Top"
+      :connectable="true"
       class="!w-3 !h-3 !bg-primary !border-2 !border-gray-900"
     />
     <Handle
       v-if="!isLast"
       type="source"
       :position="Position.Bottom"
+      :connectable="true"
       class="!w-3 !h-3 !bg-primary !border-2 !border-gray-900"
     />
   </div>

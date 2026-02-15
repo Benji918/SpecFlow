@@ -169,6 +169,21 @@
         </p>
       </div>
 
+      <!-- Hints & Examples -->
+      <div class="bg-blue-500/5 border border-blue-500/10 rounded-xl p-4 space-y-2">
+        <div class="flex items-center text-blue-400 mb-1">
+          <Info :size="12" class="mr-1.5" />
+          <span class="text-[9px] font-bold uppercase tracking-widest">Mapping Guide</span>
+        </div>
+        <div class="grid grid-cols-2 gap-x-4 gap-y-1 text-[9px] text-gray-400 font-mono">
+          <span>response.id</span> <span class="text-gray-600">→ Single value</span>
+          <span>response.users[0].id</span> <span class="text-gray-600">→ List item</span>
+          <span>body.menu_items</span> <span class="text-gray-600">→ Inject body</span>
+          <span>body.items[0]</span> <span class="text-gray-600">→ Array index</span>
+          <span>pathParams.id</span> <span class="text-gray-600">→ URL param</span>
+        </div>
+      </div>
+
       <!-- Add New Mapping -->
       <button 
         @click="addMapping"
@@ -200,7 +215,7 @@
 
 <script setup>
 import { ref, watch, computed } from 'vue'
-import { X, Trash2, ArrowDown, Plus, Link as LinkIcon, Zap, Database, ArrowUpRight, Check, Target } from 'lucide-vue-next'
+import { X, Trash2, ArrowDown, Plus, Link as LinkIcon, Zap, Database, ArrowUpRight, Check, Target, Info } from 'lucide-vue-next'
 import { useJourneyStore } from '@/stores/journey'
 
 const props = defineProps({

@@ -398,7 +398,7 @@ class JourneyExecutor:
     def _build_body(
         self, step_data: Dict[str, Any], session_data: Dict[str, Any]
     ) -> Optional[Dict[str, Any]]:
-        """Build request body, interpolating values from session.
+        """Build request body, interpolating values from session and applying overrides.
         
         Args:
             step_data: Step configuration
@@ -409,17 +409,33 @@ class JourneyExecutor:
         """
         request_body = step_data.get("requestBody")
         if not request_body:
-            return None
+            # Even if no body template, check if we need to build one from overrides
+            overrides = {k: v for k, v in session_data.items() if k.startswith("body.")}
+            if overrides:
+                request_body = {}
+            else:
+                return None
 
-        # If body template exists, interpolate with session data
-        return self._interpolate_dict(request_body, session_data)
+        # 1. Base interpolation
+        body = self._interpolate_dict(request_body, session_data)
+        if not isinstance(body, dict):
+            return body
+
+        # 2. Apply Overrides (mappings mapping to "body.fieldName")
+        # This allows Data Mappings to overwrite specific body fields
+        for key, value in session_data.items():
+            if key.startswith("body."):
+                path = key[5:] # strip "body."
+                self._set_nested_value(body, path, value)
+        
+        return body
 
     def _get_nested_value(self, obj: Any, path: str) -> Any:
-        """Get nested value from dict using dot notation.
+        """Get nested value from dict using dot notation or array brackets.
         
         Args:
             obj: Dictionary to extract from
-            path: Dot-notation path (e.g., 'user.id')
+            path: Path (e.g., 'user.id', 'items[0].name')
             
         Returns:
             Extracted value or None
@@ -427,7 +443,11 @@ class JourneyExecutor:
         if not path:
             return obj
             
-        keys = path.split(".")
+        # Normalize path: items[0].name -> items.0.name
+        # Handles optional dot after bracket: items[0]name -> items.0.name
+        clean_path = re.sub(r'\[(\d+)\]\.?', r'.\1.', path)
+        keys = [k for k in clean_path.split(".") if k]
+        
         value = obj
 
         for key in keys:
@@ -454,6 +474,40 @@ class JourneyExecutor:
                 return None
 
         return value
+
+    def _set_nested_value(self, obj: Dict[str, Any], path: str, value: Any):
+        """Set nested value in dict using dot notation, creating structure if needed.
+        
+        Args:
+            obj: Dictionary to modify
+            path: Path (e.g., 'user.id')
+            value: Value to set
+        """
+        # Normalize path
+        clean_path = re.sub(r'\[(\d+)\]\.?', r'.\1.', path)
+        keys = [k for k in clean_path.split(".") if k]
+        
+        current = obj
+        for i, key in enumerate(keys[:-1]):
+            # Prepare next level
+            is_digit = keys[i+1].isdigit()
+            
+            if key not in current:
+                # If next key is digit, strictly we might want a list, 
+                # but mixing dict/list creation dynamically is complex.
+                # Defaulting to dict is safer for most JSON bodies unless specific list need.
+                current[key] = {} 
+            
+            if not isinstance(current[key], dict):
+                # Conflict: path expects dict/obj but found something else.
+                # Hard overwrite to enforce path
+                current[key] = {}
+                
+            current = current[key]
+            
+        # Set final value
+        last_key = keys[-1]
+        current[last_key] = value
 
     def _interpolate_dict(
         self, template: Any, session_data: Dict[str, Any]

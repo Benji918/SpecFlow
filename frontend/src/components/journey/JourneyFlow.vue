@@ -11,6 +11,7 @@
       @edges-change="onEdgesChange"
       @node-click="onNodeClick"
       @edge-click="onEdgeClick"
+      @edge-update="onEdgeUpdate"
       class="vue-flow-custom"
       :node-types="nodeTypes"
       :edge-types="edgeTypes"
@@ -47,7 +48,7 @@
 
 <script setup>
 import { ref, computed, watch, markRaw, provide } from 'vue'
-import { VueFlow, useVueFlow } from '@vue-flow/core'
+import { VueFlow, useVueFlow, updateEdge } from '@vue-flow/core'
 import { Background } from '@vue-flow/background'
 import { Controls } from '@vue-flow/controls'
 import { MiniMap } from '@vue-flow/minimap'
@@ -95,6 +96,7 @@ onConnect((params) => {
     id: `e-${params.source}-${params.target}-${Date.now()}`,
     type: 'mapping',
     animated: true,
+    updatable: true,
     data: {
       dataMapping: detectedMappings
     }
@@ -108,6 +110,13 @@ onConnect((params) => {
   }
 })
 
+// Handle edge updates (reconnecting)
+function onEdgeUpdate({ edge, connection }) {
+  // Use VueFlow's updateEdge utility to correctly handle the update
+  edges.value = updateEdge(edge, connection, edges.value)
+  toast.success('Connection updated, data mappings preserved')
+}
+
 // Register custom node and edge types
 const nodeTypes = {
   endpoint: markRaw(EndpointNode),
@@ -118,7 +127,7 @@ const edgeTypes = {
 }
 
 const nodes = ref([...props.initialNodes])
-const edges = ref([...props.initialEdges])
+const edges = ref(props.initialEdges.map(e => ({ ...e, updatable: true })))
 const selectedNode = ref(null)
 const selectedEdge = ref(null)
 const hasChanges = ref(false)
@@ -138,7 +147,8 @@ watch(() => props.initialNodes, (newNodes) => {
 }, { deep: true })
 
 watch(() => props.initialEdges, (newEdges) => {
-    edges.value = [...newEdges]
+    // Ensure all edges are updatable when loaded
+    edges.value = newEdges.map(e => ({ ...e, updatable: true }))
     originalState.value = JSON.stringify({ nodes: nodes.value, edges: edges.value })
 }, { deep: true })
 
