@@ -59,7 +59,7 @@
               Start Free Journey
               <ArrowRight class="ml-2 group-hover:translate-x-1 transition-transform" />
             </RouterLink>
-            <a href="#features" class="w-full sm:w-auto px-8 py-4 bg-white/5 border border-white/10 text-white rounded-2xl text-lg font-bold hover:bg-white/10 transition-all text-center">
+            <a href="#demo" class="w-full sm:w-auto px-8 py-4 bg-white/5 border border-white/10 text-white rounded-2xl text-lg font-bold hover:bg-white/10 transition-all text-center">
               Watch Demo
             </a>
           </div>
@@ -168,6 +168,185 @@
               </div>
             </div>
           </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Video Showcase Section -->
+    <section class="py-32 relative overflow-hidden" id="demo">
+      <!-- Background Effects -->
+      <div class="absolute inset-0 bg-gradient-to-b from-black via-primary/5 to-black"></div>
+      <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1200px] h-[800px] bg-primary/10 blur-[200px] rounded-full"></div>
+      
+      <div class="max-w-7xl mx-auto px-6 relative z-10">
+        <!-- Section Header -->
+        <div class="text-center mb-16 space-y-4">
+          <div class="inline-flex items-center space-x-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold uppercase tracking-widest mb-4">
+            <Play :size="12" class="fill-current" />
+            <span>See It In Action</span>
+          </div>
+          <h2 class="text-5xl lg:text-7xl font-black tracking-tight leading-none">
+            Watch SpecFlow <br/>
+            <span class="text-transparent bg-clip-text bg-gradient-to-r from-primary via-white to-primary">Transform Your Workflow</span>
+          </h2>
+          <p class="text-gray-400 text-lg max-w-2xl mx-auto">
+            See how SpecFlow turns complex API specs into visual, testable journeys in seconds.
+          </p>
+        </div>
+
+        <!-- Video Container -->
+        <div class="relative group max-w-6xl mx-auto">
+          <!-- Glow Effect -->
+          <div class="absolute -inset-4 bg-gradient-to-r from-primary/20 via-primary/40 to-primary/20 blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700 rounded-[60px]"></div>
+          
+          <!-- Video Wrapper -->
+          <div class="relative bg-gradient-to-br from-gray-900/90 to-black/90 rounded-[48px] p-4 border border-white/10 shadow-2xl backdrop-blur-xl overflow-hidden">
+            <!-- Browser Chrome -->
+            <div class="flex items-center justify-between mb-4 pb-4 border-b border-white/5">
+              <div class="flex items-center space-x-3">
+                <div class="flex space-x-2">
+                  <div class="w-3 h-3 rounded-full bg-red-500/80"></div>
+                  <div class="w-3 h-3 rounded-full bg-yellow-500/80"></div>
+                  <div class="w-3 h-3 rounded-full bg-green-500/80"></div>
+                </div>
+                <div class="px-4 py-1.5 bg-white/5 rounded-full text-xs font-mono text-gray-400 flex items-center space-x-2">
+                  <Lock :size="10" class="text-green-400" />
+                  <span>app.specflow.sh</span>
+                </div>
+              </div>
+              <div class="flex items-center space-x-2 text-xs text-primary/80 font-bold uppercase tracking-widest">
+                <Circle :size="8" class="fill-current animate-pulse" />
+                <span>Live Demo</span>
+              </div>
+            </div>
+
+            <!-- Video Player -->
+            <div class="relative aspect-video bg-black rounded-3xl overflow-hidden shadow-2xl">
+              <!-- Loading State -->
+              <div v-if="videoLoading" class="absolute inset-0 flex flex-col items-center justify-center bg-black z-20">
+                <div class="relative">
+                  <div class="w-20 h-20 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
+                  <Zap :size="32" class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-primary fill-current animate-pulse" />
+                </div>
+                <p class="mt-6 text-sm font-bold text-gray-400 uppercase tracking-widest">Loading Demo...</p>
+                <div class="mt-4 w-48 h-1 bg-white/5 rounded-full overflow-hidden">
+                  <div class="h-full bg-primary animate-[loading_2s_ease-in-out_infinite]" :style="{width: videoProgress + '%'}"></div>
+                </div>
+              </div>
+
+              <!-- Buffering Indicator -->
+              <div v-if="videoBuffering && !videoLoading" class="absolute top-4 right-4 z-30 flex items-center space-x-2 px-3 py-2 bg-black/80 backdrop-blur-md rounded-full border border-white/10">
+                <Loader2 :size="14" class="text-primary animate-spin" />
+                <span class="text-xs font-bold text-gray-400">Buffering...</span>
+              </div>
+
+              <!-- Video Element -->
+              <video
+                ref="demoVideo"
+                class="w-full h-full object-cover"
+                @loadstart="handleVideoLoadStart"
+                @loadeddata="handleVideoLoaded"
+                @waiting="videoBuffering = true"
+                @playing="videoBuffering = false"
+                @canplay="videoBuffering = false"
+                @ended="handleVideoEnded"
+                @timeupdate="handleTimeUpdate"
+                preload="metadata"
+                playsinline
+              >
+                <source src="/Specflow recroding.mp4" type="video/mp4" />
+                Your browser does not support the video tag.
+              </video>
+
+              <!-- Play Overlay (when paused) -->
+              <div 
+                v-if="!videoPlaying && !videoLoading" 
+                class="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm cursor-pointer group/play z-10"
+                @click="togglePlay"
+              >
+                <div class="w-24 h-24 rounded-full bg-primary/90 flex items-center justify-center shadow-[0_0_60px_rgba(191,245,73,0.6)] group-hover/play:scale-110 group-hover/play:bg-primary transition-all">
+                  <Play :size="40" class="text-black fill-current ml-1" />
+                </div>
+              </div>
+
+              <!-- Custom Controls -->
+              <div 
+                v-if="!videoLoading"
+                class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/60 to-transparent p-6 opacity-0 group-hover:opacity-100 transition-opacity z-20"
+              >
+                <!-- Progress Bar -->
+                <div class="mb-4">
+                  <div 
+                    class="h-1.5 bg-white/20 rounded-full overflow-hidden cursor-pointer group/progress"
+                    @click="seekVideo"
+                    ref="progressBar"
+                  >
+                    <div class="h-full bg-primary rounded-full transition-all group-hover/progress:h-2" :style="{width: videoProgress + '%'}"></div>
+                  </div>
+                </div>
+
+                <!-- Control Buttons -->
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center space-x-4">
+                    <button 
+                      @click="togglePlay"
+                      class="w-10 h-10 rounded-full bg-white/10 hover:bg-primary hover:text-black flex items-center justify-center transition-all group/btn"
+                    >
+                      <Play v-if="!videoPlaying" :size="18" class="fill-current ml-0.5" />
+                      <Pause v-else :size="18" class="fill-current" />
+                    </button>
+                    
+                    <button 
+                      @click="toggleMute"
+                      class="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-all"
+                    >
+                      <Volume2 v-if="!videoMuted" :size="18" />
+                      <VolumeX v-else :size="18" />
+                    </button>
+
+                    <div class="text-xs font-mono text-gray-400">
+                      {{ formatTime(currentTime) }} / {{ formatTime(duration) }}
+                    </div>
+                  </div>
+
+                  <button 
+                    @click="toggleFullscreen"
+                    class="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-all"
+                  >
+                    <Maximize :size="18" />
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Video Stats -->
+            <div class="mt-6 flex items-center justify-center space-x-8 text-xs">
+              <div class="flex items-center space-x-2 text-gray-500">
+                <Eye :size="14" />
+                <span class="font-bold">Real Product Demo</span>
+              </div>
+              <div class="flex items-center space-x-2 text-gray-500">
+                <Clock :size="14" />
+                <span class="font-bold">{{ formatTime(duration) }} Full Walkthrough</span>
+              </div>
+              <div class="flex items-center space-x-2 text-primary">
+                <Sparkles :size="14" />
+                <span class="font-bold">No Fluff, Pure Value</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- CTA Below Video -->
+        <div class="mt-16 text-center">
+          <p class="text-gray-400 mb-6">Ready to experience this yourself?</p>
+          <RouterLink 
+            to="/signup" 
+            class="inline-flex items-center px-8 py-4 bg-primary text-black rounded-2xl text-lg font-black hover:bg-white transition-all shadow-xl hover:shadow-primary/20 group"
+          >
+            Start Your Free Journey
+            <ArrowRight class="ml-2 group-hover:translate-x-1 transition-transform" />
+          </RouterLink>
         </div>
       </div>
     </section>
@@ -405,7 +584,7 @@
              <div class="mb-8">
                <h4 class="text-xl font-bold mb-2 text-primary">Pro</h4>
                <div class="flex items-baseline mb-4">
-                 <span class="text-4xl font-black">$29</span>
+                 <span class="text-4xl font-black">$9</span>
                  <span class="text-gray-500 ml-2">/month</span>
                </div>
                <p class="text-gray-400 text-sm">Everything you need for serious development.</p>
@@ -445,7 +624,7 @@
                 <div class="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
                   <Mail :size="20" />
                 </div>
-                <span class="text-gray-300 font-bold">hello@specflow.sh</span>
+                <span class="text-gray-300 font-bold">benjamin_kodi@outlook.com</span>
              </div>
              <!-- <div class="flex items-center space-x-4">
                 <div class="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
@@ -543,7 +722,18 @@ import {
   Github,
   Linkedin,
   Mail,
-  MapPin
+  MapPin,
+  Play,
+  Pause,
+  Volume2,
+  VolumeX,
+  Maximize,
+  Lock,
+  Circle,
+  Loader2,
+  Eye,
+  Clock,
+  Sparkles
 } from 'lucide-vue-next'
 
 // Interactive Node State
@@ -579,6 +769,84 @@ function handleDragMove(e) {
 
 function handleDragEnd() {
   draggingNode.value = null
+}
+
+// Video Player State
+const demoVideo = ref(null)
+const progressBar = ref(null)
+const videoLoading = ref(true)
+const videoBuffering = ref(false)
+const videoPlaying = ref(false)
+const videoMuted = ref(false)
+const videoProgress = ref(0)
+const currentTime = ref(0)
+const duration = ref(0)
+
+function handleVideoLoadStart() {
+  videoLoading.value = true
+  videoProgress.value = 0
+}
+
+function handleVideoLoaded() {
+  videoLoading.value = false
+  if (demoVideo.value) {
+    duration.value = demoVideo.value.duration
+  }
+}
+
+function handleVideoEnded() {
+  videoPlaying.value = false
+  videoProgress.value = 0
+  if (demoVideo.value) {
+    demoVideo.value.currentTime = 0
+  }
+}
+
+function handleTimeUpdate() {
+  if (!demoVideo.value) return
+  currentTime.value = demoVideo.value.currentTime
+  videoProgress.value = (demoVideo.value.currentTime / demoVideo.value.duration) * 100
+}
+
+function togglePlay() {
+  if (!demoVideo.value) return
+  if (videoPlaying.value) {
+    demoVideo.value.pause()
+    videoPlaying.value = false
+  } else {
+    demoVideo.value.play()
+    videoPlaying.value = true
+  }
+}
+
+function toggleMute() {
+  if (!demoVideo.value) return
+  demoVideo.value.muted = !demoVideo.value.muted
+  videoMuted.value = demoVideo.value.muted
+}
+
+function toggleFullscreen() {
+  if (!demoVideo.value) return
+  if (demoVideo.value.requestFullscreen) {
+    demoVideo.value.requestFullscreen()
+  } else if (demoVideo.value.webkitRequestFullscreen) {
+    demoVideo.value.webkitRequestFullscreen()
+  }
+}
+
+function seekVideo(event) {
+  if (!demoVideo.value || !progressBar.value) return
+  const rect = progressBar.value.getBoundingClientRect()
+  const clickX = event.clientX - rect.left
+  const percentage = clickX / rect.width
+  demoVideo.value.currentTime = percentage * demoVideo.value.duration
+}
+
+function formatTime(seconds) {
+  if (!seconds || isNaN(seconds)) return '0:00'
+  const mins = Math.floor(seconds / 60)
+  const secs = Math.floor(seconds % 60)
+  return `${mins}:${secs.toString().padStart(2, '0')}`
 }
 </script>
 
