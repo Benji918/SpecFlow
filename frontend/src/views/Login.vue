@@ -3,10 +3,15 @@
     <div class="w-full max-w-md">
       <!-- Logo/Title -->
       <div class="text-center mb-8">
-        <h1 class="text-5xl font-bold mb-2">
-          Spec<span class="text-primary">Flow</span>
-        </h1>
-        <p class="text-gray-400">Welcome back</p>
+        <div class="flex items-center justify-center space-x-2 mb-4">
+          <div class="w-12 h-12 bg-primary rounded-lg flex items-center justify-center transform rotate-12 transition-transform">
+            <Zap :size="28" class="text-black fill-current" />
+          </div>
+          <span class="text-5xl font-black tracking-tighter">
+            Spec<span class="text-primary">Flow</span>
+          </span>
+        </div>
+        <p class="text-gray-400 text-lg">Welcome back</p>
       </div>
 
       <!-- Login Card -->
@@ -105,7 +110,7 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useToast } from 'vue-toastification'
-import { Eye, EyeOff } from 'lucide-vue-next'
+import { Eye, EyeOff, Zap } from 'lucide-vue-next'
 import MailChecker from 'mailchecker'
 
 const router = useRouter()

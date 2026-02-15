@@ -35,13 +35,33 @@
                 <span>Uploaded {{ formatDate(spec.uploaded_at) }}</span>
               </div>
             </div>
-            <button
-              @click="handleDeleteSpec"
-              class="btn-secondary text-sm py-2 px-4 hover:bg-red-500/20 hover:text-red-500"
-            >
-              <Trash2 :size="16" class="inline mr-2" />
-              Delete
-            </button>
+            <div class="flex items-center space-x-3">
+              <!-- Re-sync Button -->
+              <label
+                for="resync-file-input"
+                class="btn-secondary text-sm py-2 px-4 hover:bg-primary/20 hover:text-primary cursor-pointer inline-flex items-center"
+                :class="{'opacity-50 cursor-not-allowed': resyncingSpec}"
+              >
+                <RefreshCw :size="16" class="inline mr-2" :class="{'animate-spin': resyncingSpec}" />
+                {{ resyncingSpec ? 'Re-syncing...' : 'Re-sync Spec' }}
+              </label>
+              <input
+                id="resync-file-input"
+                type="file"
+                accept=".json,.yaml,.yml"
+                @change="handleResyncSpec"
+                class="hidden"
+                :disabled="resyncingSpec"
+              />
+              
+              <button
+                @click="handleDeleteSpec"
+                class="btn-secondary text-sm py-2 px-4 hover:bg-red-500/20 hover:text-red-500"
+              >
+                <Trash2 :size="16" class="inline mr-2" />
+                Delete
+              </button>
+            </div>
           </div>
 
           <!-- Endpoints Summary -->
@@ -374,6 +394,7 @@ import {
   Check,
   CheckCircle,
   AlertTriangle,
+  RefreshCw,
 } from 'lucide-vue-next'
 
 const router = useRouter()
@@ -616,6 +637,65 @@ async function fetchSpec() {
   }
   loading.value = false
 }
+
+// Re-sync Spec Functionality
+const resyncingSpec = ref(false)
+
+async function handleResyncSpec(event) {
+  const file = event.target.files?.[0]
+  if (!file) return
+
+  resyncingSpec.value = true
+
+  try {
+    // Read file
+    const text = await file.text()
+    let specData
+
+    // Parse based on file type
+    if (file.name.endsWith('.json')) {
+      specData = JSON.parse(text)
+    } else if (file.name.endsWith('.yaml') || file.name.endsWith('.yml')) {
+      // For YAML, we'll need to use a library or send to backend
+      // For now, show error and suggest JSON
+      toast.error('Please convert YAML to JSON format for re-sync')
+      resyncingSpec.value = false
+      event.target.value = '' // Reset input
+      return
+    } else {
+      toast.error('Unsupported file format')
+      resyncingSpec.value = false
+      event.target.value = ''
+      return
+    }
+
+    // Validate it's an OpenAPI spec
+    if (!specData.openapi && !specData.swagger) {
+      toast.error('Invalid OpenAPI specification')
+      resyncingSpec.value = false
+      event.target.value = ''
+      return
+    }
+
+    // Call API to update the spec
+    const result = await specStore.resyncSpec(route.params.id, specData)
+
+    if (result.success) {
+      toast.success('Specification re-synced successfully! Endpoints updated.')
+      // Refresh the spec and journeys
+      await Promise.all([fetchSpec(), fetchJourneys()])
+    } else {
+      toast.error(result.error || 'Failed to re-sync specification')
+    }
+  } catch (error) {
+    console.error('Re-sync error:', error)
+    toast.error('Failed to parse or upload specification file')
+  } finally {
+    resyncingSpec.value = false
+    event.target.value = '' // Reset file input
+  }
+}
+
 
 async function fetchJourneys() {
   loadingJourneys.value = true

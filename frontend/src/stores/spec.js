@@ -113,6 +113,49 @@ export const useSpecStore = defineStore('spec', () => {
         }
     }
 
+    async function resyncSpec(specId, content) {
+        loading.value = true
+        error.value = null
+
+        try {
+            const response = await apiClient.put(`/api/specs/${specId}/resync`, {
+                content,
+            })
+
+            // Update in list
+            const index = specs.value.findIndex((s) => s.id === specId)
+            if (index !== -1) {
+                specs.value[index] = response.data
+            }
+
+            // Update current if it's the same
+            if (currentSpec.value?.id === specId) {
+                currentSpec.value = response.data
+            }
+
+            return { success: true, data: response.data }
+        } catch (err) {
+            // Handle validation errors (422) differently
+            if (err.response?.status === 422) {
+                const validationErrors = err.response?.data?.detail
+                if (Array.isArray(validationErrors)) {
+                    // Pydantic validation errors
+                    const errorMessages = validationErrors.map(e => `${e.loc.join('.')}: ${e.msg}`).join(', ')
+                    error.value = `Validation error: ${errorMessages}`
+                } else if (typeof validationErrors === 'string') {
+                    error.value = validationErrors
+                } else {
+                    error.value = 'Invalid request format'
+                }
+            } else {
+                error.value = err.response?.data?.detail || err.message || 'Failed to re-sync spec'
+            }
+            return { success: false, error: error.value }
+        } finally {
+            loading.value = false
+        }
+    }
+
     return {
         specs,
         currentSpec,
@@ -123,5 +166,6 @@ export const useSpecStore = defineStore('spec', () => {
         uploadSpec,
         updateSpec,
         deleteSpec,
+        resyncSpec,
     }
 })

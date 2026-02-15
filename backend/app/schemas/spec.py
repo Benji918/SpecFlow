@@ -11,6 +11,11 @@ class SpecCreate(SpecBase):
     content: Dict[str, Any]  # OpenAPI spec JSON
 
 
+class SpecResync(BaseModel):
+    content: Dict[str, Any]  # OpenAPI spec JSON for re-sync
+
+
+
 class SpecResponse(SpecBase):
     id: UUID4
     version: Optional[str] = None

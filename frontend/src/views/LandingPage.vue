@@ -600,7 +600,7 @@
                 </li>
                 <li class="flex items-center space-x-3 text-sm">
                   <Check :size="16" class="text-primary" />
-                  <span>Team Collaboration & Sharing</span>
+                  <span>Team Collaboration & Sharing (Coming Soon)</span>
                 </li>
              </ul>
              <RouterLink to="/signup" class="w-full py-4 text-center rounded-2xl bg-primary text-black font-black hover:bg-white transition-all shadow-[0_10px_30px_rgba(191,245,73,0.3)]">
@@ -678,10 +678,10 @@
              </div>
 
              <div class="flex items-center space-x-4">
-                <a href="#" class="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center hover:bg-primary hover:text-black transition-all group">
+                <a href="https://twitter.com/code_benji" class="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center hover:bg-primary hover:text-black transition-all group" target="_blank">
                    <Twitter :size="18" class="group-hover:fill-current" />
                 </a>
-                <a href="#" class="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center hover:bg-primary hover:text-black transition-all group">
+                <a href="https://github.com/Benji918" class="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center hover:bg-primary hover:text-black transition-all group" target="_blank">
                    <Github :size="18" class="group-hover:fill-current" />
                 </a>
              </div>

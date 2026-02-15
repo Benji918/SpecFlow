@@ -3,11 +3,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from typing import List
 import uuid
+import asyncio
 
 from app.database import get_db
 from app.models.user import User
 from app.models.spec import Spec
-from app.schemas.spec import SpecCreate, SpecResponse, SpecUpdate
+from app.schemas.spec import SpecCreate, SpecResponse, SpecUpdate, SpecResync
 from app.services.auth import get_current_user
 from app.services.spec_parser import SpecParser
 from app.services.cache import cache_service
@@ -144,6 +145,60 @@ async def update_spec(
     await cache_service.delete(get_spec_cache_key(current_user.id))
     
     return SpecResponse.model_validate(spec)
+
+
+@router.put("/{spec_id}/resync", response_model=SpecResponse)
+async def resync_spec(
+    spec_id: uuid.UUID,
+    spec_data: SpecResync,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Re-sync a spec with updated OpenAPI content to keep endpoints in sync."""
+    result = await db.execute(
+        select(Spec).where(Spec.id == spec_id, Spec.user_id == current_user.id)
+    )
+    spec = result.scalar_one_or_none()
+    
+    if not spec:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Spec not found",
+        )
+    
+    try:
+        # Parse and validate new spec content
+        parser = SpecParser(spec_data.content)
+        endpoints = parser.extract_endpoints()
+        schemas = parser.get_schemas()
+        version = parser.get_version()
+        
+        # Convert EndpointInfo objects to dictionaries
+        endpoints_dict = [e.model_dump() for e in endpoints]
+        
+        # Update spec with new content
+        spec.content = spec_data.content
+        spec.version = version
+        spec.endpoints = endpoints_dict
+        spec.schemas = schemas
+        
+        await db.commit()
+        await db.refresh(spec)
+        
+        # Invalidate caches
+        await asyncio.gather(
+            cache_service.delete(get_spec_cache_key(current_user.id, spec_id)),
+            cache_service.delete(get_spec_cache_key(current_user.id))
+        )
+        
+        return SpecResponse.model_validate(spec)
+        
+    except Exception as e:
+        await db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid OpenAPI specification: {str(e)}",
+        )
 
 
 @router.delete("/{spec_id}", status_code=status.HTTP_204_NO_CONTENT)
