@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, WebSocket, WebSocketDisconnect
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from typing import List
@@ -15,7 +15,7 @@ from app.schemas.journey import (
     JourneyUpdate,
     GenerateJourneysRequest,
 )
-from app.services.auth import get_current_user
+from app.services.auth import get_current_user, verify_token
 from app.services.spec_parser import SpecParser, EndpointInfo
 from app.services.journey_generator import JourneyGenerator
 from app.services.cache import cache_service
@@ -29,76 +29,209 @@ def get_journey_cache_key(user_id: uuid.UUID, journey_id: Optional[uuid.UUID] = 
     return f"journeys:{user_id}"
 
 
-@router.post(
-    "/specs/{spec_id}/generate-journeys",
-    response_model=List[JourneyResponse],
-    status_code=status.HTTP_201_CREATED,
-)
-async def generate_journeys(
-    spec_id: uuid.UUID,
-    request: GenerateJourneysRequest,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-):
-    """Generate journeys from a spec using AI."""
-    # Verify spec ownership
-    result = await db.execute(
-        select(Spec).where(Spec.id == spec_id, Spec.user_id == current_user.id)
-    )
-    spec = result.scalar_one_or_none()
+# @router.post(
+#     "/specs/{spec_id}/generate-journeys",
+#     response_model=List[JourneyResponse],
+#     status_code=status.HTTP_201_CREATED,
+# )
+# async def generate_journeys(
+#     spec_id: uuid.UUID,
+#     request: GenerateJourneysRequest,
+#     current_user: User = Depends(get_current_user),
+#     db: AsyncSession = Depends(get_db),
+# ):
+#     """Generate journeys from a spec using AI."""
+#     # Verify spec ownership
+#     result = await db.execute(
+#         select(Spec).where(Spec.id == spec_id, Spec.user_id == current_user.id)
+#     )
+#     spec = result.scalar_one_or_none()
     
-    if not spec:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Spec not found",
-        )
+#     if not spec:
+#         raise HTTPException(
+#             status_code=status.HTTP_404_NOT_FOUND,
+#             detail="Spec not found",
+#         )
     
-    # Parse spec to get endpoints
-    parser = SpecParser(spec.content)
-    endpoints = parser.extract_endpoints()
+#     # Parse spec to get endpoints
+#     parser = SpecParser(spec.content)
+#     endpoints = parser.extract_endpoints()
     
-    if request.strategy == "ai":
-        # Generate journeys using AI
-        generator = JourneyGenerator()
+#     if request.strategy == "ai":
+#         # Generate journeys using AI
+#         generator = JourneyGenerator()
+#         try:
+#             journey_data_list = await generator.generate_journeys(endpoints)
+#         except Exception as e:
+#             raise HTTPException(
+#                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+#                 detail=f"AI journey generation failed: {str(e)}",
+#             )
+#     else:
+#         # Manual strategy - create a basic journey
+#         journey_data_list = [
+#             {
+#                 "name": "Manual Journey",
+#                 "description": "Manually created journey",
+#                 "nodes": [],
+#                 "edges": [],
+#             }
+#         ]
+    
+#     # Save journeys to database
+#     created_journeys = []
+#     for journey_data in journey_data_list:
+#         journey = Journey(
+#             user_id=current_user.id,
+#             spec_id=spec_id,
+#             name=journey_data["name"],
+#             nodes=journey_data["nodes"],
+#             edges=journey_data["edges"],
+#             generation_method=request.strategy,
+#         )
+#         db.add(journey)
+#         created_journeys.append(journey)
+    
+#     await db.commit()
+    
+#     # Refresh all journeys
+#     # Invalidate list cache
+#     cache_service.delete(get_journey_cache_key(current_user.id))
+    
+#     return [JourneyResponse.model_validate(j) for j in created_journeys]
+
+@router.websocket("/ws/specs/{spec_id}/generate-journeys")
+async def websocket_generate_journeys(websocket: WebSocket, spec_id: uuid.UUID):
+    """WebSocket endpoint for journey generation."""
+    await websocket.accept()
+    
+    try:
+        # First try to get token from cookie
+        token = ""
+        cookies = websocket.cookies
+        if cookies and "access_token" in cookies:
+            token = cookies.get("access_token")
+            print("Token from cookie:", token)
+        else:
+            # Try from headers
+            headers = dict(websocket.headers)
+            cookie_header = headers.get("cookie", "")
+            for cookie in cookie_header.split(";"):
+                if "access_token" in cookie:
+                    token = cookie.split("=")[1].strip()
+                    print("Token from header:", token)
+                    break
+        
+        # Get strategy from client message
         try:
-            journey_data_list = await generator.generate_journeys(endpoints)
-        except Exception as e:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"AI journey generation failed: {str(e)}",
-            )
-    else:
-        # Manual strategy - create a basic journey
-        journey_data_list = [
-            {
-                "name": "Manual Journey",
-                "description": "Manually created journey",
-                "nodes": [],
-                "edges": [],
-            }
-        ]
+            auth_data = await websocket.receive_json()
+            strategy = auth_data.get("strategy", "ai")
+            # If no token from cookie, try getting from message
+            if not token and auth_data.get("token"):
+                token = auth_data.get("token")
+                print("Token from message:", token)
+        except:
+            strategy = "ai"
+        
+        async for db in get_db():
+            try:
+                # Authenticate
+                payload = verify_token(token)
+                user_id = payload.get("sub")
+                result = await db.execute(select(User).where(User.id == user_id))
+                current_user = result.scalar_one_or_none()
+                
+                if not current_user:
+                    await websocket.send_json({"type": "error", "message": "Auth failed"})
+                    return
+                
+                # Get spec
+                result = await db.execute(
+                    select(Spec).where(
+                        Spec.id == spec_id,
+                        Spec.user_id == current_user.id
+                    )
+                )
+                spec = result.scalar_one_or_none()
+                
+                if not spec:
+                    await websocket.send_json({"type": "error", "message": "Spec not found"})
+                    return
+                
+                parser = SpecParser(spec.content)
+                endpoints = parser.extract_endpoints()
+                
+                if strategy == "ai":
+                    # Generate journeys using AI
+                    generator = JourneyGenerator()
+                    try:
+                        journey_data_list = await generator.generate_journeys(endpoints, websocket=websocket)
+                    except Exception as e:
+                        await websocket.send_json({"type": "error", 
+                                                   "message": f"AI journey generation failed: {str(e)}"
+                                                   })
+                        return
+                else:
+                    # Manual strategy - create a basic journey
+                    journey_data_list = [
+                        {
+                            "name": "Manual Journey",
+                            "description": "Manually created journey",
+                            "nodes": [],
+                            "edges": [],
+                        }
+                    ]
+                
+                # Save to database
+                created_journeys = []
+                for journey_data in journey_data_list:
+                    journey = Journey(
+                        user_id=current_user.id,
+                        spec_id=spec_id,
+                        name=journey_data["name"],
+                        nodes=journey_data["nodes"],
+                        edges=journey_data["edges"],
+                        generation_method=strategy,
+                    )
+                    db.add(journey)
+                    created_journeys.append(journey)
+                
+                await db.commit()
+                
+                for journey in created_journeys:
+                    await db.refresh(journey)
+                
+                await cache_service.delete(get_journey_cache_key(current_user.id))
+                
+                # Send result
+                journey_responses = [{
+                    "id": str(j.id),
+                    "spec_id": str(j.spec_id),
+                    "name": j.name,
+                    "nodes": j.nodes,
+                    "edges": j.edges,
+                    "generation_method": j.generation_method,
+                    "created_at": j.created_at.isoformat() if j.created_at else None,
+                } for j in created_journeys]
+                
+                await websocket.send_json({
+                    "type": "complete",
+                    "data": journey_responses,
+                    "message": f"Generated {len(journey_responses)} journey(s)!"
+                })
+                
+            except Exception as e:
+                await websocket.send_json({"type": "error", "message": str(e)})
+            finally:
+                await websocket.close()
+                db.rollback()
+                break
     
-    # Save journeys to database
-    created_journeys = []
-    for journey_data in journey_data_list:
-        journey = Journey(
-            user_id=current_user.id,
-            spec_id=spec_id,
-            name=journey_data["name"],
-            nodes=journey_data["nodes"],
-            edges=journey_data["edges"],
-            generation_method=request.strategy,
-        )
-        db.add(journey)
-        created_journeys.append(journey)
-    
-    await db.commit()
-    
-    # Refresh all journeys
-    # Invalidate list cache
-    await cache_service.delete(get_journey_cache_key(current_user.id))
-    
-    return [JourneyResponse.model_validate(j) for j in created_journeys]
+    except WebSocketDisconnect:
+        print(f"WebSocket disconnected: {spec_id}")
+    except Exception as e:
+        print(f"WebSocket error: {e}")
+        
 
 @router.get("/journeys", response_model=List[JourneyResponse])
 async def list_journeys(
@@ -261,7 +394,7 @@ async def create_journey(
     await db.refresh(journey)
     
     # Invalidate list cache
-    await cache_service.delete(get_journey_cache_key(current_user.id))
+    cache_service.delete(get_journey_cache_key(current_user.id))
     
     return JourneyResponse.model_validate(journey)
 
@@ -301,7 +434,7 @@ async def update_journey(
     await db.refresh(journey)
     
     # Invalidate caches
-    await asyncio.gather(
+    asyncio.gather(
         cache_service.delete(get_journey_cache_key(current_user.id, journey_id)),
         cache_service.delete(get_journey_cache_key(current_user.id))
     )
@@ -333,7 +466,7 @@ async def delete_journey(
     await db.commit()
     
     # Invalidate caches
-    await asyncio.gather(
+    asyncio.gather(
         cache_service.delete(get_journey_cache_key(current_user.id, journey_id)),
         cache_service.delete(get_journey_cache_key(current_user.id))
     )

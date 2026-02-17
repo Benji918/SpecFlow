@@ -1,11 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Response, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from typing import Optional
 
 from app.config import settings
 from app.database import get_db
 from app.models.user import User
-from app.schemas.user import UserCreate, UserLogin, TokenResponse, UserResponse
+from app.schemas.user import UserCreate, UserLogin, TokenResponse, UserResponse, UserWithTokenResponse
 from app.services.auth import (
     get_password_hash,
     verify_password,
@@ -57,7 +58,7 @@ async def register(response: Response, user_data: UserCreate, db: AsyncSession =
     return UserResponse.model_validate(user)
 
 
-@router.post("/login", response_model=UserResponse)
+@router.post("/login", response_model=TokenResponse)
 async def login(response: Response, credentials: UserLogin, db: AsyncSession = Depends(get_db)):
     """Login with email and password."""
     # Find user by email
@@ -84,7 +85,7 @@ async def login(response: Response, credentials: UserLogin, db: AsyncSession = D
         secure=False,  # Set to True in production with HTTPS
     )
     
-    return UserResponse.model_validate(user)
+    return TokenResponse(user=UserResponse.model_validate(user), token=token)
 
 
 @router.post("/logout")
@@ -98,6 +99,18 @@ async def logout(response: Response):
 async def get_me(current_user: User = Depends(get_current_user)):
     """Get current authenticated user."""
     return UserResponse.model_validate(current_user)
+
+
+
+@router.get("/me-with-token", response_model=UserWithTokenResponse)
+async def get_me_with_token(response: Response, current_user: User = Depends(get_current_user)):
+    """Get current authenticated user with token for WebSocket auth."""
+    # Generate a fresh token for WebSocket use
+    token = create_access_token(data={"sub": str(current_user.id)})
+    
+    # Return user with token (but don't set cookie - just in response body)
+    user_data = UserResponse.model_validate(current_user)
+    return UserWithTokenResponse(**user_data.model_dump(), token=token)
 
 
 @router.post("/refresh")

@@ -101,7 +101,33 @@
                 <Loader v-else :size="20" class="inline mr-2 animate-spin" />
                 {{ generatingJourneys ? 'Generating...' : 'Generate with AI' }}
               </button>
+              <!-- Cancel Button -->
+              <button
+                v-if="generatingJourneys"
+                @click="cancelGeneration"
+                class="btn-secondary text-red-400 hover:text-red-500 hover:bg-red-500/10"
+              >
+                <X :size="20" class="inline mr-2" />
+                Cancel
+              </button>
             </div>
+          </div>
+
+          <!-- Generation Progress -->
+          <div v-if="generatingJourneys" class="mb-4 p-4 bg-surface rounded-lg">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-sm text-gray-400">{{ generationMessage }}</span>
+              <span class="text-sm font-medium">{{ progress }}%</span>
+            </div>
+            <div class="w-full bg-gray-700 rounded-full h-2">
+              <div 
+                class="bg-primary h-2 rounded-full transition-all duration-300" 
+                :style="{ width: `${progress}%` }"
+              ></div>
+            </div>
+            <p v-if="generationError" class="mt-2 text-sm text-red-400">
+              {{ generationError }}
+            </p>
           </div>
           
           <!-- Bulk Selection Header -->
@@ -295,7 +321,7 @@
                 <div class="flex-1 w-full overflow-hidden">
                   <div class="flex items-center justify-between mb-3 px-1">
                     <div class="flex items-center space-x-2">
-                      <Workflow :size="16" class="text-primary" />
+                      <Workflow :size="26" class="text-primary" />
                       <span class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Manual Journey Builder</span>
                     </div>
                     <button @click="clearSelection" class="text-[10px] font-bold text-red-400/70 hover:text-red-400 uppercase tracking-widest transition-colors">
@@ -377,6 +403,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useSpecStore } from '@/stores/spec'
 import { useJourneyStore } from '@/stores/journey'
+import { useAuthStore } from '@/stores/auth'
 import { useToast } from 'vue-toastification'
 import {
   ArrowLeft,
@@ -401,12 +428,19 @@ const router = useRouter()
 const route = useRoute()
 const specStore = useSpecStore()
 const journeyStore = useJourneyStore()
+const authStore = useAuthStore()
 const toast = useToast()
 
 const loading = ref(true)
 const loadingJourneys = ref(true)
 const generatingJourneys = ref(false)
 const creatingManual = ref(false)
+
+// WebSocket state for journey generation
+const ws = ref(null)
+const progress = ref(0)
+const generationMessage = ref('')
+const generationError = ref(null)
 
 // Mobile detection for checkbox visibility
 const isMobile = ref(false)
@@ -532,7 +566,7 @@ async function createManualJourney() {
   
   // Transform selected endpoints into nodes and edges
   const nodes = selectedEndpoints.value.map((ep, idx) => ({
-    id: `node-${idx}-${Date.now()}`,
+    id: `step-${idx}-${Date.now()}`,
     type: 'endpoint',
     position: { x: 250, y: 100 + (idx * 250) },
     data: { ...ep, status: 'pending' }
@@ -541,7 +575,7 @@ async function createManualJourney() {
   const edges = []
   for (let i = 0; i < nodes.length - 1; i++) {
     edges.push({
-      id: `edge-${i}-${Date.now()}`,
+      id: `step-${i}-${Date.now()}`,
       source: nodes[i].id,
       target: nodes[i+1].id,
       type: 'mapping',
@@ -705,17 +739,109 @@ async function fetchJourneys() {
 
 async function generateJourneys() {
   generatingJourneys.value = true
+  progress.value = 0
+  generationMessage.value = 'Connecting...'
+  generationError.value = null
 
-  const result = await journeyStore.generateJourneys(route.params.id, 'ai', { timeout: 120000 })
+  // Determine WebSocket protocol and host
+  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+  const host = '127.0.0.1:8000'
+  const specId = route.params.id
+  const wsUrl = `${protocol}//${host}/api/ws/specs/${specId}/generate-journeys`
+  console.log('WebSocket URL:', wsUrl)
 
-  if (result.success) {
-    toast.success(`Generated ${result.data.length} journey(s)!`)
-    await fetchJourneys()
-  } else {
-    toast.error(result.error || 'Failed to generate journeys')
+  // Create WebSocket connection
+  ws.value = new WebSocket(wsUrl)
+
+  // Connection opened
+  ws.value.onopen = () => {
+    console.log('WebSocket connected')
+    generationMessage.value = 'Connected to server'
+    
+    // Send token and strategy
+    const token = authStore.token
+    ws.value.send(JSON.stringify({
+      token: token,
+      strategy: 'ai'
+    }))
   }
 
+  // Listen for messages
+  ws.value.onmessage = (event) => {
+    try {
+      const data = JSON.parse(event.data)
+      console.log('WebSocket message:', data)
+
+      switch (data.type) {
+        case 'progress':
+          progress.value = data.progress
+          generationMessage.value = data.message
+          break
+
+        case 'complete':
+          progress.value = 100
+          generationMessage.value = data.message || 'Generation complete!'
+          generatingJourneys.value = false
+          toast.success(`Generated ${data.data.length} journey(s)!`)
+          fetchJourneys() // Refresh the journeys list
+          ws.value.close()
+          break
+
+        case 'error':
+          generationError.value = data.message
+          generationMessage.value = `Error: ${data.message}`
+          generatingJourneys.value = false
+          toast.error(data.message)
+          ws.value.close()
+          break
+
+        default:
+          console.warn('Unknown message type:', data.type)
+      }
+    } catch (err) {
+      console.error('Failed to parse WebSocket message:', err)
+      generationError.value = 'Failed to parse server response'
+      generatingJourneys.value = false
+      toast.error('Failed to parse server response')
+    }
+  }
+
+  // Connection closed
+  ws.value.onclose = () => {
+    console.log('WebSocket closed')
+    if (generatingJourneys.value) {
+      // Connection closed before completion
+      generationError.value = 'Connection closed unexpectedly'
+      generatingJourneys.value = false
+      toast.error('Connection closed unexpectedly')
+    }
+  }
+
+  // Error occurred
+  ws.value.onerror = (err) => {
+    console.error('WebSocket error:', err)
+    generationError.value = 'WebSocket connection error'
+    generationMessage.value = 'Connection error'
+    generatingJourneys.value = false
+    toast.error('WebSocket connection error')
+  }
+}
+
+/**
+ * Cancel ongoing generation
+ */
+function cancelGeneration() {
+  if (ws.value) {
+    // Close the WebSocket if it's still open or connecting
+    if (ws.value.readyState === WebSocket.OPEN || ws.value.readyState === WebSocket.CONNECTING) {
+      ws.value.close()
+    }
+    ws.value = null
+  }
   generatingJourneys.value = false
+  progress.value = 0
+  generationMessage.value = 'Cancelled'
+  toast.info('Generation cancelled')
 }
 
 async function handleDeleteSpec() {

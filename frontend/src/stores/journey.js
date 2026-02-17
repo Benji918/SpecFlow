@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import apiClient from '@/api/client'
+// import { useWebSocketJourneyGeneration } from '@/composables/useWebSocketJourneyGeneration'
 
 export const useJourneyStore = defineStore('journey', () => {
     // State
@@ -49,28 +50,48 @@ export const useJourneyStore = defineStore('journey', () => {
         }
     }
 
-    async function generateJourneys(specId, strategy = 'ai', options = {}) {
-        loading.value = true
-        error.value = null
+    // async function generateJourneys(specId, strategy = 'ai') {
 
-        try {
-            const response = await apiClient.post(
-                `/api/specs/${specId}/generate-journeys`,
-                { strategy },
-                options
-            )
+    //     loading.value = true
+    //     error.value = null
 
-            // Add to journeys list
-            journeys.value.unshift(...response.data)
+    //     const { generateJourneys: wsGenerate } = useWebSocketJourneyGeneration()
 
-            return { success: true, data: response.data }
-        } catch (err) {
-            error.value = err.response?.data?.detail || 'Failed to generate journeys'
-            return { success: false, error: error.value }
-        } finally {
-            loading.value = false
-        }
-    }
+    //     try {
+    //     const result = await wsGenerate(specId, strategy)
+        
+    //     // Add to journeys list
+    //     journeys.value.unshift(...result)
+        
+    //     return { success: true, data: result }
+    //     } catch (err) {
+    //     error.value = err.message || 'Failed to generate journeys'
+    //     return { success: false, error: error.value }
+    //     } finally {
+    //     loading.value = false
+    //     }
+
+        // loading.value = true
+        // error.value = null
+
+        // try {
+        //     const response = await apiClient.post(
+        //         `/api/specs/${specId}/generate-journeys`,
+        //         { strategy },
+        //         options
+        //     )
+
+        //     // Add to journeys list
+        //     journeys.value.unshift(...response.data)
+
+        //     return { success: true, data: response.data }
+        // } catch (err) {
+        //     error.value = err.response?.data?.detail || 'Failed to generate journeys'
+        //     return { success: false, error: error.value }
+        // } finally {
+        //     loading.value = false
+        // }
+    // }
 
     async function createJourney(journeyData) {
         loading.value = true
@@ -285,7 +306,7 @@ export const useJourneyStore = defineStore('journey', () => {
         runnerConfig,
         fetchJourneys,
         fetchJourney,
-        generateJourneys,
+        // generateJourneys,
         createJourney,
         updateJourney,
         deleteJourney,

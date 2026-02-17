@@ -2,6 +2,7 @@ import json
 from typing import List, Dict, Any
 from ollama import AsyncClient
 from app.config import settings
+from fastapi import WebSocket
 import os
 import asyncio
 import httpx
@@ -18,10 +19,10 @@ class JourneyGenerator:
             headers={'Authorization': 'Bearer ' + os.environ.get('OLLAMA_API_KEY')} if os.environ.get('OLLAMA_API_KEY') else None
         )
         self.model = settings.OLLAMA_MODEL
-        self.timeout = 120.0
+        self.timeout = 180.0
 
     async def generate_journeys(
-        self, endpoints: List[EndpointInfo]
+        self, endpoints: List[EndpointInfo], websocket: WebSocket
     ) -> List[Dict[str, Any]]:
         """Generate logical user journeys from API endpoints using AI.
         
@@ -65,33 +66,66 @@ Journey Logic:
 Return ONLY a JSON array, no explanation.
 """
 
-        # Call Ollama API
-        print("Calling Ollama API...")
-        response = await self.client.chat(
-            model=self.model,
-            messages=[{"role": "user", "content": prompt}],
-            format="json",
-        )
-        print("Response:", response)
-        print('Done calling Ollama API')
-
-        # Parse response
         try:
-            journeys_text = response["message"]["content"]
-            # Extract JSON from response (handle markdown code blocks)
-            if "```json" in journeys_text:
-                journeys_text = journeys_text.split("```json")[1].split("```")[0]
-            elif "```" in journeys_text:
-                journeys_text = journeys_text.split("```")[1].split("```")[0]
+            await self._send_progress(websocket, 5, "Starting generation...")
+            await self._send_progress(websocket, 10, "Preparing endpoints...")
             
-            journeys = json.loads(journeys_text.strip())
-        except (json.JSONDecodeError, KeyError, IndexError) as e:
-            # Fallback to basic journey if AI fails
-            print(f"AI journey generation failed: {e}")
-            journeys = self._create_fallback_journey(endpoints)
+            endpoint_summary = self._format_endpoints(endpoints)
+            
+            await self._send_progress(websocket, 20, "Calling AI model...")
+            
+            try:
+                response = await asyncio.wait_for(
+                    self.client.chat(
+                        model=self.model,
+                        messages=[{"role": "user", "content": prompt}],
+                        format="json",
+                    ),
+                    timeout=self.timeout
+                )
+            except asyncio.TimeoutError:
+                await self._send_progress(websocket, 0, "AI timeout")
+                raise Exception(f"Timeout after {self.timeout}s")
+            
+            await self._send_progress(websocket, 70, "Processing response...")
 
-        # Convert to VueFlow format
-        return self._convert_to_vueflow_format(journeys, endpoints)
+            # Parse response
+            try:
+                journeys_text = response["message"]["content"]
+                # Extract JSON from response (handle markdown code blocks)
+                if "```json" in journeys_text:
+                    journeys_text = journeys_text.split("```json")[1].split("```")[0]
+                elif "```" in journeys_text:
+                    journeys_text = journeys_text.split("```")[1].split("```")[0]
+                
+                journeys = json.loads(journeys_text.strip())
+            except (json.JSONDecodeError, KeyError, IndexError) as e:
+                # Fallback to basic journey if AI fails
+                print(f"AI journey generation failed: {e}")
+                journeys = self._create_fallback_journey(endpoints)
+
+            # Convert to VueFlow format
+            await self._send_progress(websocket, 85, "Converting format...")
+            result = self._convert_to_vueflow_format(journeys, endpoints)
+            await self._send_progress(websocket, 100, "Done!")
+            return result
+    
+        except Exception as e:
+            await self._send_progress(websocket, 0, f"Error: {str(e)}")
+            raise
+    
+    async def _send_progress(self, websocket: WebSocket, progress: int, message: str):
+        """Send progress via WebSocket if available."""
+        if websocket:
+            try:
+                await websocket.send_json({
+                    "type": "progress",
+                    "progress": progress,
+                    "message": message,
+                    "timestamp": datetime.utcnow().isoformat()
+                })
+            except:
+                pass
     
     def _format_endpoints(self, endpoints: List[EndpointInfo]) -> str:
         """Format endpoints for AI prompt with schema details.

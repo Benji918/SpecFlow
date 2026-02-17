@@ -75,6 +75,9 @@ class UserResponse(UserBase):
     class Config:
         from_attributes = True
 
+class UserWithTokenResponse(UserResponse):
+    """User response with token for WebSocket authentication."""
+    token: Optional[str] = None
 
 class TokenResponse(BaseModel):
     token: str

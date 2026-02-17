@@ -5,6 +5,7 @@ import apiClient from '@/api/client'
 export const useAuthStore = defineStore('auth', () => {
     // State
     const user = ref(null)
+    const token = ref(null)
     const isInitialLoad = ref(true)
 
     // Getters
@@ -19,7 +20,9 @@ export const useAuthStore = defineStore('auth', () => {
                 name,
             })
 
-            user.value = response.data
+            const data = response.data
+            user.value = data?.user ?? data
+            token.value = data?.token ?? null
             return { success: true }
         } catch (error) {
             return {
@@ -36,7 +39,9 @@ export const useAuthStore = defineStore('auth', () => {
                 password,
             })
 
-            user.value = response.data
+            const data = response.data
+            user.value = data?.user ?? data
+            token.value = data?.token ?? null
             return { success: true }
         } catch (error) {
             return {
@@ -48,10 +53,14 @@ export const useAuthStore = defineStore('auth', () => {
 
     async function fetchCurrentUser() {
         try {
-            const response = await apiClient.get('/api/auth/me')
+            // Use /me-with-token to get token for WebSocket authentication
+            const response = await apiClient.get('/api/auth/me-with-token')
             user.value = response.data
+            // Store token for WebSocket use
+            token.value = response.data.token || null
         } catch (error) {
             user.value = null
+            token.value = null
         } finally {
             isInitialLoad.value = false
         }
@@ -64,6 +73,7 @@ export const useAuthStore = defineStore('auth', () => {
             console.error('Logout failed', error)
         } finally {
             user.value = null
+            token.value = null
             window.location.href = '/login'
         }
     }
@@ -78,6 +88,7 @@ export const useAuthStore = defineStore('auth', () => {
 
     return {
         user,
+        token,
         isInitialLoad,
         isAuthenticated,
         register,

@@ -158,7 +158,9 @@
             <!-- Action Bar -->
             <div class="mt-8 pt-6 border-t border-white/5 flex items-center justify-between">
               <div class="flex -space-x-2">
-                <div v-for="i in 3" :key="i" class="w-8 h-8 rounded-full border-2 border-gray-900 bg-gray-800 flex items-center justify-center text-[8px] font-bold">AI</div>
+                <div v-for="i in 3" :key="i" class="w-8 h-8 rounded-full border-2 border-gray-900 bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center shadow-inner group/avatar hover:border-primary/30 transition-all">
+                  <Zap :size="10" :class="['text-primary/60 fill-current', i === 2 ? 'opacity-100' : i === 1 ? 'opacity-70' : 'opacity-50']" />
+                </div>
               </div>
               <div class="flex flex-col items-end">
                 <span class="text-[10px] font-black uppercase text-gray-500 mb-1">Try moving the nodes</span>

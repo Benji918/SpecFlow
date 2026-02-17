@@ -32,9 +32,11 @@ export const useSpecStore = defineStore('spec', () => {
 
         try {
             const response = await apiClient.get(`/api/specs/${specId}`)
+            // console.log('Spec API response:', response.data)
             currentSpec.value = response.data
             return { success: true, data: response.data }
         } catch (err) {
+            // console.error('Spec fetch error:', err)
             error.value = err.response?.data?.detail || 'Failed to fetch spec'
             return { success: false, error: error.value }
         } finally {
