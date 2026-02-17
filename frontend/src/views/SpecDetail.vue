@@ -501,11 +501,33 @@ const selectedEndpoints = ref([])
 const newJourneyName = ref('')
 const journeyNameError = ref('')
 
+// Generate a random name for manual journey
+function generateRandomJourneyName() {
+  const adjectives = ['Quick', 'Simple', 'Basic', 'User', 'Admin', 'Test', 'Demo', 'Sample', 'Main', 'Primary']
+  const nouns = ['Flow', 'Path', 'Route', 'Sequence', 'Process', 'Workflow', 'Chain', 'Trip', 'Journey', 'Cycle']
+  const adj = adjectives[Math.floor(Math.random() * adjectives.length)]
+  const noun = nouns[Math.floor(Math.random() * nouns.length)]
+  const randomNum = Math.floor(Math.random() * 1000)
+  return `Manual ${adj} ${noun} ${randomNum}`
+}
+
+// Check if journey name already exists
+function isDuplicateJourneyName(name) {
+  const existingNames = journeys.value.map(j => j.name.toLowerCase())
+  return existingNames.includes(name.toLowerCase())
+}
+
 function validateJourneyName() {
   const name = newJourneyName.value.trim()
   journeyNameError.value = ''
   
   if (!name) return
+
+  // Check for duplicates
+  if (isDuplicateJourneyName(name)) {
+    journeyNameError.value = 'A journey with this name already exists'
+    return
+  }
 
   // Frontend Validation for XSS/SQL Injection
   const xssPattern = /<[^>]*>|javascript:|on\w+=/i
@@ -530,7 +552,23 @@ function addEndpointToSelection(endpoint) {
   selectedEndpoints.value.push(JSON.parse(JSON.stringify(endpoint)))
   
   if (selectedEndpoints.value.length === 1 && !newJourneyName.value) {
-    newJourneyName.value = `Manual Journey: ${endpoint.summary || endpoint.path.split('/').pop()}`
+    // Generate name based on endpoint, but ensure no duplicates
+    let baseName = endpoint.summary || endpoint.path.split('/').pop() || 'Journey'
+    let generatedName = `Manual: ${baseName}`
+    
+    // If duplicate, generate random name
+    if (isDuplicateJourneyName(generatedName)) {
+      generatedName = generateRandomJourneyName()
+    }
+    
+    // Keep generating until we find a unique name
+    let counter = 1
+    while (isDuplicateJourneyName(generatedName)) {
+      generatedName = `${generateRandomJourneyName()} ${counter}`
+      counter++
+    }
+    
+    newJourneyName.value = generatedName
   }
 }
 

@@ -394,7 +394,7 @@ async def create_journey(
     await db.refresh(journey)
     
     # Invalidate list cache
-    cache_service.delete(get_journey_cache_key(current_user.id))
+    await cache_service.delete(get_journey_cache_key(current_user.id))
     
     return JourneyResponse.model_validate(journey)
 
@@ -434,7 +434,7 @@ async def update_journey(
     await db.refresh(journey)
     
     # Invalidate caches
-    asyncio.gather(
+    await asyncio.gather(
         cache_service.delete(get_journey_cache_key(current_user.id, journey_id)),
         cache_service.delete(get_journey_cache_key(current_user.id))
     )
@@ -466,7 +466,7 @@ async def delete_journey(
     await db.commit()
     
     # Invalidate caches
-    asyncio.gather(
+    await asyncio.gather(
         cache_service.delete(get_journey_cache_key(current_user.id, journey_id)),
         cache_service.delete(get_journey_cache_key(current_user.id))
     )
