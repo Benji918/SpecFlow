@@ -1,7 +1,7 @@
 import axios from 'axios'
 
 // Create axios instance
-const apiClient = axios.create({
+const client = axios.create({
     baseURL: import.meta.env.VITE_API_URL || '',
     timeout: 30000,
     withCredentials: true,
@@ -11,7 +11,7 @@ const apiClient = axios.create({
 })
 
 // Request interceptor
-apiClient.interceptors.request.use(
+client.interceptors.request.use(
     (config) => {
         return config
     },
@@ -21,7 +21,7 @@ apiClient.interceptors.request.use(
 )
 
 // Response interceptor - handle errors
-apiClient.interceptors.response.use(
+client.interceptors.response.use(
     (response) => response,
     (error) => {
         if (error.response?.status === 401) {
@@ -34,4 +34,4 @@ apiClient.interceptors.response.use(
     }
 )
 
-export default apiClient
+export default client
