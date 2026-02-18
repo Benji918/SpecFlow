@@ -17,6 +17,18 @@ from app.services.auth import (
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
 
+def get_cookie_settings():
+    """Get appropriate cookie settings based on environment."""
+    is_production = not settings.DEBUG
+    return {
+        "httponly": True,
+        "max_age": settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        "expires": settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        "secure": is_production,  # True in production (requires HTTPS)
+        "samesite": "none" if is_production else "lax",  # "none" for cross-origin in production
+    }
+
+
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 async def register(response: Response, user_data: UserCreate, db: AsyncSession = Depends(get_db)):
     """Register a new user."""
@@ -45,14 +57,11 @@ async def register(response: Response, user_data: UserCreate, db: AsyncSession =
     token = create_access_token(data={"sub": str(user.id)})
     
     # Set HttpOnly cookie
+    cookie_settings = get_cookie_settings()
     response.set_cookie(
         key="access_token",
         value=token,
-        httponly=True,
-        max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
-        expires=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
-        samesite="lax" if settings.DEBUG else "none",
-        secure=False if settings.DEBUG else True,
+        **cookie_settings,
     )
     
     return UserResponse.model_validate(user)
@@ -75,14 +84,11 @@ async def login(response: Response, credentials: UserLogin, db: AsyncSession = D
     token = create_access_token(data={"sub": str(user.id)})
     
     # Set HttpOnly cookie
+    cookie_settings = get_cookie_settings()
     response.set_cookie(
         key="access_token",
         value=token,
-        httponly=True,
-        max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
-        expires=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
-        samesite="lax" if settings.DEBUG else "none",
-        secure=False if settings.DEBUG else True,
+        **cookie_settings,
     )
     
     return TokenResponse(user=UserResponse.model_validate(user), token=token)
@@ -119,14 +125,11 @@ async def refresh_token(response: Response, current_user: User = Depends(get_cur
     token = create_access_token(data={"sub": str(current_user.id)})
     
     # Set HttpOnly cookie
+    cookie_settings = get_cookie_settings()
     response.set_cookie(
         key="access_token",
         value=token,
-        httponly=True,
-        max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
-        expires=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
-        samesite="lax" if settings.DEBUG else "none",
-        secure=False if settings.DEBUG else True,
+        **cookie_settings,
     )
     
     return {"message": "Token refreshed"}
