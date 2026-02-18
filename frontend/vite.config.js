@@ -27,8 +27,6 @@ export default defineConfig(({ mode }) => ({
         },
     },
 
-    // Production build - NO proxy needed, direct API calls
-    base: '/',
 
     // Preview configuration for testing production build locally
     preview: {

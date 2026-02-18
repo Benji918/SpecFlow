@@ -20,14 +20,19 @@ router = APIRouter(prefix="/api/auth", tags=["auth"])
 def get_cookie_settings():
     """Get appropriate cookie settings based on environment."""
     is_production = not settings.DEBUG
-    return {
+    
+    cookie_config = {
         "httponly": True,
         "max_age": settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
         "expires": settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
-        "secure": is_production,  # True in production (requires HTTPS)
-        "samesite": "none" if is_production else "lax",  # "none" for cross-origin in production
+        "secure": is_production,
+        "samesite": "none" if is_production else "lax",
     }
-
+    
+    if is_production:
+        cookie_config["domain"] = ".code.run"
+        
+    return cookie_config
 
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 async def register(response: Response, user_data: UserCreate, db: AsyncSession = Depends(get_db)):
