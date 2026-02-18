@@ -13,18 +13,18 @@ ssl_ctx.verify_mode = ssl.CERT_NONE
 # Create async engine
 engine = create_async_engine(
     settings.DATABASE_URL,
-    pool_size=10,  # ✅ Increased from 2
-    max_overflow=5,  # ✅ Increased from 1
+    pool_size=5, 
+    max_overflow=2,  
     pool_pre_ping=True,
-    pool_timeout=30,  # ✅ Reduced from 60
-    pool_recycle=1800,  # ✅ Increased from 300 (30 min)
+    pool_timeout=60,  
+    pool_recycle=1800,  
     connect_args={
-        "statement_cache_size": 100,  # ✅ CRITICAL: Enable statement caching
-        "prepared_statement_cache_size": 100,  # ✅ Enable prepared statement cache
+        "statement_cache_size": 100,  
+        "prepared_statement_cache_size": 100,  
         "ssl": ssl_ctx,
-        "command_timeout": 10,  # ✅ Add query timeout
+        "command_timeout": 30,  
     },
-    echo=False,  # Set to True for debugging
+    echo=False,  
 )
 
 
