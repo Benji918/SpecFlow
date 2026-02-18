@@ -3,11 +3,23 @@
     <!-- Header -->
     <header class="border-b border-gray-800 bg-surface/50 backdrop-blur-lg sticky top-0 z-10">
       <div class="max-w-7xl mx-auto px-4 py-4">
-        <div class="flex items-center space-x-4">
-          <button @click="router.back()" class="text-gray-400 hover:text-white">
-            <ArrowLeft :size="24" />
-          </button>
-          <h1 class="text-2xl font-bold">Specification Details</h1>
+        <div class="flex items-center justify-between">
+          <div class="flex items-center space-x-4">
+            <button @click="router.back()" class="text-gray-400 hover:text-white">
+              <ArrowLeft :size="24" />
+            </button>
+            <h1 class="text-2xl font-bold">Specification Details</h1>
+          </div>
+          <div class="flex items-center space-x-2">
+            <button 
+              @click="handleLogout" 
+              class="text-gray-400 hover:text-white hover:bg-white/10 px-3 py-2 rounded-lg transition-colors flex items-center space-x-2"
+              title="Logout"
+            >
+              <LogOut :size="20" />
+              <span class="text-sm hidden sm:inline">Logout</span>
+            </button>
+          </div>
         </div>
       </div>
     </header>
@@ -422,6 +434,7 @@ import {
   CheckCircle,
   AlertTriangle,
   RefreshCw,
+  LogOut,
 } from 'lucide-vue-next'
 
 const router = useRouter()
@@ -494,6 +507,10 @@ function handleJourneyClick(id, event) {
   } else if (!event.target.closest('button') && !event.target.closest('input')) {
     navigateToJourney(id)
   }
+}
+
+function handleLogout() {
+  authStore.logout()
 }
 
 // Manual Journey Selection
