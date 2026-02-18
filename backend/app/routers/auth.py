@@ -26,7 +26,7 @@ def get_cookie_settings():
         "max_age": settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
         "expires": settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
         "secure": is_production,
-        "samesite": "none" if is_production else "lax",
+        "samesite": "none"
     }
     
     if is_production:
