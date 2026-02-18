@@ -27,24 +27,10 @@ export default defineConfig(({ mode }) => ({
         },
     },
 
-    // Production configuration
-    ...(mode === 'production' && {
-        base: '/',
-        server: {
-            proxy: {
-                '/api': {
-                    target: PROD_API_URL,
-                    changeOrigin: true,
-                    secure: true,
-                },
-                '/ws': {
-                    target: PROD_API_URL,
-                    ws: true,
-                },
-            },
-        },
-    }),
+    // Production build - NO proxy needed, direct API calls
+    base: '/',
 
+    // Preview configuration for testing production build locally
     preview: {
         allowedHosts: [
             'site--specflow-fe--j29wymgjz5b5.code.run'
@@ -63,6 +49,7 @@ export default defineConfig(({ mode }) => ({
     },
 
     // Expose API URL to the app via environment variable
+    // In production, the app will make direct calls to the backend
     define: {
         'import.meta.env.VITE_API_URL': mode === 'production' ? `"${PROD_API_URL}"` : '""',
     },
