@@ -24,6 +24,8 @@ venv/
 ENV/
 env/
 .venv
+frontend/.env
+frontend/.env.production
 
 # Node
 node_modules/
