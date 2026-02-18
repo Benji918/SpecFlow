@@ -51,8 +51,8 @@ async def register(response: Response, user_data: UserCreate, db: AsyncSession =
         httponly=True,
         max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
         expires=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
-        samesite="lax",
-        secure=False,  # Set to True in production with HTTPS
+        samesite="lax" if settings.DEBUG else "none",
+        secure=False if settings.DEBUG else True,
     )
     
     return UserResponse.model_validate(user)
@@ -81,8 +81,8 @@ async def login(response: Response, credentials: UserLogin, db: AsyncSession = D
         httponly=True,
         max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
         expires=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
-        samesite="lax",
-        secure=False,  # Set to True in production with HTTPS
+        samesite="lax" if settings.DEBUG else "none",
+        secure=False if settings.DEBUG else True,
     )
     
     return TokenResponse(user=UserResponse.model_validate(user), token=token)
@@ -125,8 +125,8 @@ async def refresh_token(response: Response, current_user: User = Depends(get_cur
         httponly=True,
         max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
         expires=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
-        samesite="lax",
-        secure=False,  # Set to True in production with HTTPS
+        samesite="lax" if settings.DEBUG else "none",
+        secure=False if settings.DEBUG else True,
     )
     
     return {"message": "Token refreshed"}
