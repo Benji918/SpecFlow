@@ -23,4 +23,10 @@ export default defineConfig({
             },
         },
     },
+
+    preview: {
+    allowedHosts: [
+      'site--specflow-fe--j29wymgjz5b5.code.run'
+    ]
+  }
 })
