@@ -470,7 +470,8 @@ function generateSessionId() {
 function getWsUrl(specId) {
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
   // Use the current host (works for both dev and production)
-  const host = window.location.host
+  const host = '127.0.0.1:8000'
+  console.log(host)
   return `${protocol}//${host}/api/ws/specs/${specId}/generate-journeys`
 }
 

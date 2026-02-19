@@ -27,6 +27,21 @@ export default defineConfig(({ mode }) => ({
         },
     },
 
+    // Build configuration for optimal caching
+    build: {
+        // Use content hashing for better long-term caching
+        rollupOptions: {
+            output: {
+                assetFileNames: (assetInfo) => {
+                    // Add content hash to JS and CSS files
+                    if (assetInfo.name?.endsWith('.js') || assetInfo.name?.endsWith('.css')) {
+                        return 'assets/[name]-[hash][extname]'
+                    }
+                    return 'assets/[name]-[hash][extname]'
+                },
+            },
+        },
+    },
 
     // Preview configuration for testing production build locally
     preview: {

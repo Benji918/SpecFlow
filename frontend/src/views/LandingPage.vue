@@ -704,7 +704,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import {
   Zap,
   ArrowRight,
@@ -783,6 +783,70 @@ const videoMuted = ref(false)
 const videoProgress = ref(0)
 const currentTime = ref(0)
 const duration = ref(0)
+
+// Aggressively cache the demo video using Cache API
+const VIDEO_URL = '/Specflow recroding.mp4'
+const CACHE_NAME = 'specflow-video-cache-v1'
+
+async function cacheVideo() {
+  if ('caches' in window) {
+    try {
+      // Open or create the cache
+      const cache = await caches.open(CACHE_NAME)
+      
+      // Check if already cached
+      const cachedResponse = await cache.match(VIDEO_URL)
+      if (cachedResponse) {
+        console.log('Video already cached')
+        return
+      }
+      
+      // Fetch and cache the video
+      console.log('Caching video...')
+      const response = await fetch(VIDEO_URL, { mode: 'cors' })
+      
+      if (response.ok) {
+        await cache.put(VIDEO_URL, response.clone())
+        console.log('Video cached successfully')
+      }
+    } catch (error) {
+      console.log('Video caching skipped:', error.message)
+    }
+  }
+}
+
+// Preload video from cache if available
+async function preloadVideoFromCache() {
+  if ('caches' in window) {
+    try {
+      const cache = await caches.open(CACHE_NAME)
+      const cachedResponse = await cache.match(VIDEO_URL)
+      
+      if (cachedResponse) {
+        console.log('Video found in cache, using cached version')
+        // Create a blob URL from the cached response
+        const blob = await cachedResponse.blob()
+        const cachedUrl = URL.createObjectURL(blob)
+        
+        // Update the video source if element exists
+        if (demoVideo.value) {
+          demoVideo.value.src = cachedUrl
+          demoVideo.value.load()
+        }
+      } else {
+        // Cache for next time
+        cacheVideo()
+      }
+    } catch (error) {
+      console.log('Video preload skipped:', error.message)
+    }
+  }
+}
+
+// Run on mount
+onMounted(() => {
+  preloadVideoFromCache()
+})
 
 function handleVideoLoadStart() {
   videoLoading.value = true
