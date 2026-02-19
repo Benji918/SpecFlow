@@ -461,13 +461,176 @@ const checkMobile = () => {
   isMobile.value = window.innerWidth < 768
 }
 
-onMounted(() => {
+// Generate a unique session ID for this generation process
+function generateSessionId() {
+  return `gen_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+}
+
+// Get WebSocket URL based on environment
+function getWsUrl(specId) {
+  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+  // Use the current host (works for both dev and production)
+  const host = window.location.host
+  return `${protocol}//${host}/api/ws/specs/${specId}/generate-journeys`
+}
+
+// Save generation state to localStorage
+function saveGenerationState(state) {
+  localStorage.setItem('journeyGeneration', JSON.stringify(state))
+}
+
+// Get generation state from localStorage
+function getGenerationState() {
+  const saved = localStorage.getItem('journeyGeneration')
+  return saved ? JSON.parse(saved) : null
+}
+
+// Clear generation state from localStorage
+function clearGenerationState() {
+  localStorage.removeItem('journeyGeneration')
+}
+
+// Reconnect to an ongoing generation
+async function reconnectToGeneration(specId, sessionId) {
+  generatingJourneys.value = true
+  progress.value = 0
+  generationMessage.value = 'Reconnecting...'
+  generationError.value = null
+
+  const wsUrl = getWsUrl(specId)
+  console.log('Reconnecting to WebSocket:', wsUrl)
+
+  ws.value = new WebSocket(wsUrl)
+
+  ws.value.onopen = () => {
+    console.log('WebSocket reconnected')
+    generationMessage.value = 'Reconnected to server'
+    
+    const token = authStore.token
+    ws.value.send(JSON.stringify({
+      token: token,
+      strategy: 'ai',
+      sessionId: sessionId  // Request to resume this session
+    }))
+  }
+
+  ws.value.onmessage = (event) => {
+    try {
+      const data = JSON.parse(event.data)
+      console.log('WebSocket message:', data)
+
+      switch (data.type) {
+        case 'progress':
+          progress.value = data.progress
+          generationMessage.value = data.message
+          // Update localStorage with current progress
+          saveGenerationState({
+            specId,
+            sessionId,
+            progress: data.progress,
+            message: data.message,
+            timestamp: Date.now()
+          })
+          break
+
+        case 'complete':
+          progress.value = 100
+          generationMessage.value = data.message || 'Generation complete!'
+          generatingJourneys.value = false
+          toast.success(`Generated ${data.data.length} journey(s)!`)
+          fetchJourneys()
+          ws.value.close()
+          clearGenerationState()
+          break
+
+        case 'error':
+          generationError.value = data.message
+          generationMessage.value = `Error: ${data.message}`
+          generatingJourneys.value = false
+          toast.error(data.message)
+          ws.value.close()
+          clearGenerationState()
+          break
+
+        case 'resumed':
+          // Server confirmed session resume
+          progress.value = data.progress || 0
+          generationMessage.value = data.message || 'Resuming generation...'
+          saveGenerationState({
+            specId,
+            sessionId,
+            progress: data.progress || 0,
+            message: data.message || 'Resuming generation...',
+            timestamp: Date.now()
+          })
+          break
+
+        default:
+          console.warn('Unknown message type:', data.type)
+      }
+    } catch (err) {
+      console.error('Failed to parse WebSocket message:', err)
+      generationError.value = 'Failed to parse server response'
+    }
+  }
+
+  ws.value.onclose = () => {
+    console.log('WebSocket closed')
+    if (generatingJourneys.value) {
+      generationError.value = 'Connection closed unexpectedly'
+      generatingJourneys.value = false
+      toast.error('Connection closed unexpectedly')
+      clearGenerationState()
+    }
+  }
+
+  ws.value.onerror = (err) => {
+    console.error('WebSocket error:', err)
+    generationError.value = 'WebSocket connection error'
+    generationMessage.value = 'Connection error'
+    generatingJourneys.value = false
+    toast.error('WebSocket connection error')
+    clearGenerationState()
+  }
+}
+
+onMounted(async () => {
   checkMobile()
   window.addEventListener('resize', checkMobile)
+  
+  // Check for ongoing generation from previous session
+  const savedState = getGenerationState()
+  if (savedState && savedState.specId === route.params.id) {
+    // Check if the saved generation is recent (within last 5 minutes)
+    const fiveMinutes = 5 * 60 * 1000
+    if (Date.now() - savedState.timestamp < fiveMinutes) {
+      // Restore UI state
+      generatingJourneys.value = true
+      progress.value = savedState.progress || 0
+      generationMessage.value = savedState.message || 'Reconnecting...'
+      
+      // Ask user if they want to reconnect
+      const shouldReconnect = confirm('A journey generation is in progress. Would you like to reconnect and continue viewing the progress?')
+      if (shouldReconnect) {
+        await reconnectToGeneration(savedState.specId, savedState.sessionId)
+      } else {
+        // User declined, clear the state
+        clearGenerationState()
+        generatingJourneys.value = false
+      }
+    } else {
+      // Generation expired, clear state
+      clearGenerationState()
+    }
+  }
 })
 
 onUnmounted(() => {
   window.removeEventListener('resize', checkMobile)
+  // Close WebSocket if still connected when leaving page
+  if (ws.value && ws.value.readyState === WebSocket.OPEN) {
+    ws.value.close()
+  }
 })
 
 // Bulk Selection State
@@ -798,11 +961,19 @@ async function generateJourneys() {
   generationMessage.value = 'Connecting...'
   generationError.value = null
 
-  // Determine WebSocket protocol and host
-  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-  const host = '127.0.0.1:8000'
   const specId = route.params.id
-  const wsUrl = `${protocol}//${host}/api/ws/specs/${specId}/generate-journeys`
+  const sessionId = generateSessionId()
+  
+  // Save initial state to localStorage
+  saveGenerationState({
+    specId,
+    sessionId,
+    progress: 0,
+    message: 'Starting generation...',
+    timestamp: Date.now()
+  })
+
+  const wsUrl = getWsUrl(specId)
   console.log('WebSocket URL:', wsUrl)
 
   // Create WebSocket connection
@@ -817,7 +988,8 @@ async function generateJourneys() {
     const token = authStore.token
     ws.value.send(JSON.stringify({
       token: token,
-      strategy: 'ai'
+      strategy: 'ai',
+      sessionId: sessionId
     }))
   }
 
@@ -831,6 +1003,14 @@ async function generateJourneys() {
         case 'progress':
           progress.value = data.progress
           generationMessage.value = data.message
+          // Update localStorage
+          saveGenerationState({
+            specId,
+            sessionId,
+            progress: data.progress,
+            message: data.message,
+            timestamp: Date.now()
+          })
           break
 
         case 'complete':
@@ -840,6 +1020,7 @@ async function generateJourneys() {
           toast.success(`Generated ${data.data.length} journey(s)!`)
           fetchJourneys() // Refresh the journeys list
           ws.value.close()
+          clearGenerationState()
           break
 
         case 'error':
@@ -848,6 +1029,7 @@ async function generateJourneys() {
           generatingJourneys.value = false
           toast.error(data.message)
           ws.value.close()
+          clearGenerationState()
           break
 
         default:
@@ -869,6 +1051,7 @@ async function generateJourneys() {
       generationError.value = 'Connection closed unexpectedly'
       generatingJourneys.value = false
       toast.error('Connection closed unexpectedly')
+      clearGenerationState()
     }
   }
 
@@ -879,6 +1062,7 @@ async function generateJourneys() {
     generationMessage.value = 'Connection error'
     generatingJourneys.value = false
     toast.error('WebSocket connection error')
+    clearGenerationState()
   }
 }
 
@@ -896,6 +1080,11 @@ function cancelGeneration() {
   generatingJourneys.value = false
   progress.value = 0
   generationMessage.value = 'Cancelled'
+  generationError.value = null
+  
+  // Clear localStorage state
+  clearGenerationState()
+  
   toast.info('Generation cancelled')
 }
 
@@ -944,25 +1133,18 @@ async function batchDeleteJourneys() {
   
   const idsToDelete = Array.from(selectedJourneyIds.value)
   
-  // Optimistic Hide
+  // Optimistic hide
   idsToDelete.forEach(id => deletingJourneyIds.value.add(id))
   selectedJourneyIds.value.clear()
   
-  // Execute deletions in parallel
-  const promises = idsToDelete.map(id => journeyStore.deleteJourney(id))
-  const results = await Promise.all(promises)
+  // Use bulk delete for efficiency
+  const result = await journeyStore.bulkDeleteJourneys(idsToDelete)
   
-  const successCount = results.filter(r => r.success).length
-  const failCount = count - successCount
-  
-  if (successCount > 0) {
-    toast.success(`Deleted ${successCount} journeys`)
-  }
-  
-  if (failCount > 0) {
-    toast.error(`Failed to delete ${failCount} journeys`)
-    // Rollback failed ones (simple approach: iterate results and see which failed)
-    // For now we just refresh strictly if any failed
+  if (result.success) {
+    toast.success(`Deleted ${result.deleted} journeys`)
+  } else {
+    toast.error(result.error || 'Failed to delete journeys')
+    // Refresh to get correct state
     await fetchJourneys()
     deletingJourneyIds.value.clear()
   }

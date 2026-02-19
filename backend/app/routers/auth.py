@@ -19,17 +19,16 @@ router = APIRouter(prefix="/api/auth", tags=["auth"])
 
 def get_cookie_settings():
     """Get appropriate cookie settings based on environment."""
-    is_production = not settings.DEBUG
-    
+
     cookie_config = {
         "httponly": True,
         "max_age": settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
         "expires": settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
-        "secure": True,
-        "samesite": "none"
+        "secure": False if settings.DEBUG else True,
+        "samesite": "lax" if settings.DEBUG else "none",
     }
     
-    if is_production:
+    if not settings.DEBUG:
         cookie_config["domain"] = ".code.run"
         
     return cookie_config

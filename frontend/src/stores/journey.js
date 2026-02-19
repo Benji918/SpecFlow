@@ -161,6 +161,38 @@ export const useJourneyStore = defineStore('journey', () => {
         }
     }
 
+    async function bulkDeleteJourneys(journeyIds) {
+        if (!journeyIds || journeyIds.length === 0) {
+            return { success: false, error: 'No journeys to delete' }
+        }
+
+        loading.value = true
+        error.value = null
+
+        try {
+            const response = await apiClient.delete('/api/journeys/bulk-delete', {
+                data: journeyIds
+            })
+
+            // Remove deleted journeys from list
+            journeys.value = journeys.value.filter(
+                (j) => !journeyIds.includes(j.id)
+            )
+
+            // Clear active if it was deleted
+            if (activeJourney.value && journeyIds.includes(activeJourney.value.id)) {
+                activeJourney.value = null
+            }
+
+            return { success: true, deleted: response.data.deleted }
+        } catch (err) {
+            error.value = err.response?.data?.detail || 'Failed to delete journeys'
+            return { success: false, error: error.value }
+        } finally {
+            loading.value = false
+        }
+    }
+
     function setStepStatus(stepId, status) {
         if (!activeJourney.value) return
 
@@ -310,6 +342,7 @@ export const useJourneyStore = defineStore('journey', () => {
         createJourney,
         updateJourney,
         deleteJourney,
+        bulkDeleteJourneys,
         setStepStatus,
         saveStepResult,
         saveStepError,

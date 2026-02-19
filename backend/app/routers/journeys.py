@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status, WebSocket, WebSocketDisconnect
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, delete
 from typing import List
 import uuid
 import re
@@ -442,6 +442,55 @@ async def update_journey(
     return JourneyResponse.model_validate(journey)
 
 
+@router.delete("/journeys/bulk-delete", status_code=status.HTTP_200_OK)
+async def bulk_delete_journeys(
+    journey_ids: List[str],
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Delete multiple journeys efficiently in a single request."""
+    if not journey_ids:
+        return {"deleted": 0, "message": "No journey IDs provided"}
+    
+    # Convert string UUIDs to UUID objects and limit batch size
+    try:
+        uuid_ids = [uuid.UUID(jid) for jid in journey_ids[:100]]  # Limit to 100 per request
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid journey ID format",
+        )
+    
+    # Delete all journeys in a single query
+    result = await db.execute(
+        delete(Journey).where(
+            Journey.id.in_(uuid_ids),
+            Journey.user_id == current_user.id
+        )
+    )
+    
+    deleted_count = result.rowcount
+    await db.commit()
+    
+    # Invalidate all relevant caches asynchronously
+    cache_tasks = [
+        cache_service.delete(get_journey_cache_key(current_user.id))
+    ]
+    # Add individual journey caches
+    for journey_id in uuid_ids:
+        cache_tasks.append(
+            cache_service.delete(get_journey_cache_key(current_user.id, str(journey_id)))
+        )
+    
+    # Run all cache invalidations in parallel
+    await asyncio.gather(*cache_tasks, return_exceptions=True)
+    
+    return {
+        "deleted": deleted_count,
+        "message": f"Successfully deleted {deleted_count} journey(s)"
+    }
+
+
 @router.delete("/journeys/{journey_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_journey(
     journey_id: uuid.UUID,
@@ -470,3 +519,5 @@ async def delete_journey(
         cache_service.delete(get_journey_cache_key(current_user.id, journey_id)),
         cache_service.delete(get_journey_cache_key(current_user.id))
     )
+
+

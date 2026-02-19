@@ -47,7 +47,10 @@
       <div v-if="activeTab === 'config'" class="space-y-6">
         <div>
           <div class="flex items-center justify-between mb-2">
-            <h4 class="text-sm font-semibold text-gray-400">Request Body (JSON)</h4>
+            <div class="flex items-center space-x-2">
+              <h4 class="text-sm font-semibold text-gray-400">Request Body (JSON)</h4>
+              <span v-if="isBodyFromSchema" class="text-[10px] text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded">Schema Preview</span>
+            </div>
             <button
               @click="generateMock"
               class="text-xs text-primary hover:underline flex items-center"
@@ -287,16 +290,38 @@ watch(() => props.node, (newNode) => {
   if (newNode && !isUpdating.value) {
     // FIX: Handle Manual Journey nodes where requestBody contains the Spec instead of Value
     if (!newNode.data.requestBodySpec && newNode.data.requestBody?.content) {
+      // First set the editable body from the schema before emitting update
+      const schema = newNode.data.requestBody.content?.['application/json']?.schema
+      if (schema) {
+        editableBody.value = JSON.stringify(extractExampleFromSchema(schema), null, 2)
+      }
+      
+      // Then emit update to normalize the node data
       emit('update-node', props.node.id, {
         requestBodySpec: newNode.data.requestBody,
         requestBody: null
       })
-      return
+      // Don't return early - continue to set up parameters
     }
 
-    editableBody.value = newNode.data.requestBody 
-      ? JSON.stringify(newNode.data.requestBody, null, 2)
-      : ''
+    // First priority: Show saved request body value if it exists
+    if (newNode.data.requestBody) {
+      editableBody.value = JSON.stringify(newNode.data.requestBody, null, 2)
+    } 
+    // Second priority: Show request body schema if available (from endpoint spec)
+    else if (newNode.data.requestBodySpec) {
+      // Extract example from schema to show as preview
+      const schema = newNode.data.requestBodySpec.content?.['application/json']?.schema
+      if (schema) {
+        editableBody.value = JSON.stringify(extractExampleFromSchema(schema), null, 2)
+      } else {
+        editableBody.value = ''
+      }
+    } 
+    // No body defined
+    else {
+      editableBody.value = ''
+    }
     
     // Copy parameters
     const params = {}
@@ -361,6 +386,13 @@ const statusClass = computed(() => {
   return 'bg-blue-500/20 text-blue-400'
 })
 
+// Track if current body is from schema (preview) vs user-entered
+const isBodyFromSchema = computed(() => {
+  if (!props.node?.data) return false
+  // If there's no saved requestBody but there's a requestBodySpec, it's from schema
+  return !props.node.data.requestBody && props.node.data.requestBodySpec
+})
+
 function handleBodyInput() {
   try {
     isUpdating.value = true
@@ -417,6 +449,56 @@ function formatJSON(data) {
     } catch { return data }
   }
   return JSON.stringify(data, null, 2)
+}
+
+// Extract an example from JSON schema to show as preview
+function extractExampleFromSchema(schema, visited = new WeakSet()) {
+  if (!schema || visited.has(schema)) return null
+  visited.add(schema)
+
+  // If there's an example, use it
+  if (schema.example) return schema.example
+  
+  // If there's a default, use it
+  if (schema.default !== undefined) return schema.default
+
+  // Handle different schema types
+  switch (schema.type) {
+    case 'object':
+      if (schema.properties) {
+        const obj = {}
+        for (const [key, prop] of Object.entries(schema.properties)) {
+          obj[key] = extractExampleFromSchema(prop, visited)
+        }
+        return obj
+      }
+      return {}
+
+    case 'array':
+      const itemExample = extractExampleFromSchema(schema.items, visited)
+      return itemExample !== null ? [itemExample] : []
+
+    case 'string':
+      if (schema.enum) return schema.enum[0]
+      if (schema.format === 'date-time') return '2024-01-01T00:00:00Z'
+      if (schema.format === 'date') return '2024-01-01'
+      if (schema.format === 'email') return 'user@example.com'
+      if (schema.format === 'uri') return 'https://example.com'
+      if (schema.format === 'uuid') return '550e8400-e29b-41d4-a716-446655440000'
+      return '<string>'
+
+    case 'number':
+    case 'integer':
+      if (schema.enum) return schema.enum[0]
+      if (schema.minimum !== undefined) return schema.minimum
+      return 0
+
+    case 'boolean':
+      return false
+
+    default:
+      return null
+  }
 }
 
 async function copyResult() {

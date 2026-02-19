@@ -5,7 +5,11 @@
       <div class="max-w-full px-4 py-4">
         <div class="flex items-center justify-between">
           <div class="flex items-center space-x-4">
-            <button @click="router.push('/dashboard')" class="text-gray-400 hover:text-white">
+            <button 
+              @click="router.push(`/spec/${journey?.spec_id}`)" 
+              class="text-gray-400 hover:text-white"
+              title="Back to Spec Details"
+            >
               <ArrowLeft :size="24" />
             </button>
             <div class="group relative">
