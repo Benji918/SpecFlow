@@ -15,7 +15,7 @@
         <div class="hidden md:flex items-center space-x-10 text-sm font-medium text-gray-400">
           <a href="#home" class="hover:text-primary transition-colors">Home</a>
           <a href="#features" class="hover:text-primary transition-colors">Features</a>
-          <a href="#pricing" class="hover:text-primary transition-colors">Pricing</a>
+          <!-- <a href="#pricing" class="hover:text-primary transition-colors">Pricing</a> -->
           <a href="#contact" class="hover:text-primary transition-colors">Contact</a>
         </div>
 
@@ -528,7 +528,14 @@
           </div>
 
           <!-- Feature 6 -->
-          <div class="card-feature group">
+          <div class="card-feature group relative overflow-hidden">
+            <!-- Coming Soon Badge -->
+            <div class="absolute top-4 right-4 z-10">
+              <div class="px-3 py-1.5 bg-primary/10 border border-primary/30 rounded-full flex items-center space-x-2 shadow-[0_0_20px_rgba(191,245,73,0.15)]">
+                <Clock :size="12" class="text-primary animate-pulse" />
+                <span class="text-[10px] font-black uppercase tracking-widest text-primary">Coming Soon</span>
+              </div>
+            </div>
             <div class="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mb-6 group-hover:bg-primary group-hover:text-black transition-all">
                <Share2 :size="24" />
             </div>
@@ -542,17 +549,17 @@
     </section>
 
     <!-- Pricing Section -->
-    <section id="pricing" class="py-32 bg-white/5 border-y border-white/5 overflow-hidden relative">
-      <div class="absolute bottom-0 right-0 w-[800px] h-[800px] bg-primary/5 blur-[120px] rounded-full translate-x-1/2 translate-y-1/2"></div>
+    <!-- <section id="pricing" class="py-32 bg-white/5 border-y border-white/5 overflow-hidden relative"> -->
+      <!-- <div class="absolute bottom-0 right-0 w-[800px] h-[800px] bg-primary/5 blur-[120px] rounded-full translate-x-1/2 translate-y-1/2"></div>
       <div class="max-w-7xl mx-auto px-6 text-center">
         <div class="mb-20 space-y-4">
           <h2 class="text-5xl font-black tracking-tight">Pricing that grows with you.</h2>
           <p class="text-gray-400">Simple, transparent plans for every team size.</p>
         </div>
 
-        <div class="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+        <div class="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto"> -->
           <!-- Free Plan -->
-          <div class="bg-black border border-white/10 rounded-[32px] p-10 text-left flex flex-col hover:border-white/20 transition-colors">
+          <!-- <div class="bg-black border border-white/10 rounded-[32px] p-10 text-left flex flex-col hover:border-white/20 transition-colors">
              <div class="mb-8">
                <h4 class="text-xl font-bold mb-2">Free</h4>
                <div class="flex items-baseline mb-4">
@@ -578,10 +585,10 @@
              <RouterLink to="/signup" class="w-full py-4 text-center rounded-2xl border border-white/10 hover:bg-white/5 transition-all font-bold">
                Get Started
              </RouterLink>
-          </div>
+          </div> -->
 
           <!-- Pro Plan -->
-          <div class="bg-black border-2 border-primary rounded-[32px] p-10 text-left flex flex-col relative overflow-hidden shadow-[0_0_50px_rgba(191,245,73,0.1)]">
+          <!-- <div class="bg-black border-2 border-primary rounded-[32px] p-10 text-left flex flex-col relative overflow-hidden shadow-[0_0_50px_rgba(191,245,73,0.1)]">
              <div class="absolute top-0 right-0 px-4 py-1 bg-primary text-black text-[10px] font-black uppercase tracking-widest rounded-bl-xl">Popular</div>
              <div class="mb-8">
                <h4 class="text-xl font-bold mb-2 text-primary">Pro</h4>
@@ -610,8 +617,8 @@
              </RouterLink>
           </div>
         </div>
-      </div>
-    </section>
+      </div> -->
+    <!-- </section> -->
 
     <!-- Contact Form Section -->
     <section id="contact" class="py-32 relative">
@@ -674,8 +681,9 @@
              </div>
              
              <div class="flex items-center space-x-10 text-xs font-bold uppercase tracking-widest text-gray-500">
+               <a href="#home" class="hover:text-primary transition-colors">Home</a>
                <a href="#features" class="hover:text-primary transition-colors">Features</a>
-               <a href="#pricing" class="hover:text-primary transition-colors">Pricing</a>
+               <!-- <a href="#pricing" class="hover:text-primary transition-colors">Pricing</a> -->
                <a href="#contact" class="hover:text-primary transition-colors">Contact</a>
              </div>
 
@@ -721,6 +729,7 @@ import {
   Share2,
   Quote,
   Twitter,
+  Clock,
   Github,
   Linkedin,
   Mail,
@@ -734,7 +743,6 @@ import {
   Circle,
   Loader2,
   Eye,
-  Clock,
   Sparkles
 } from 'lucide-vue-next'
 
