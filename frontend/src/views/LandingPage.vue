@@ -69,7 +69,8 @@
         <div class="relative group">
           <div class="absolute inset-0 bg-primary/20 blur-[120px] -z-10 rounded-3xl group-hover:bg-primary/30 transition-all duration-700"></div>
           <div class="relative bg-gray-900/40 border border-white/10 rounded-[40px] p-6 shadow-2xl backdrop-blur-2xl ring-1 ring-white/10 overflow-hidden min-h-[500px]"
-               @mousemove="handleDragMove" @mouseup="handleDragEnd" @mouseleave="handleDragEnd">
+               @mousemove="handleDragMove" @mouseup="handleDragEnd" @mouseleave="handleDragEnd"
+               @touchmove="handleDragMove" @touchend="handleDragEnd" @touchcancel="handleDragEnd">
             <!-- Mock UI Overlay -->
             <div class="flex items-center justify-between mb-8 pb-4 border-b border-white/5">
               <div class="flex items-center space-x-3">
@@ -79,7 +80,7 @@
                    <div class="w-3 h-3 rounded-full bg-green-500/80"></div>
                 </div>
                 <div class="px-3 py-1 bg-white/5 rounded-full text-[10px] font-mono text-gray-400">
-                  api.specflow.sh/v1
+                  specflow
                 </div>
               </div>
               <div class="flex items-center space-x-4">
@@ -111,9 +112,10 @@
               <div 
                 v-for="node in nodes" 
                 :key="node.id"
-                class="absolute w-32 cursor-move select-none"
+                class="absolute w-32 cursor-move select-none touch-none"
                 :style="{ left: node.x + 'px', top: node.y + 'px' }"
                 @mousedown="handleDragStart($event, node.id)"
+                @touchstart="handleDragStart($event, node.id)"
               >
                 <div :class="[
                   'p-3 border rounded-xl backdrop-blur-md transition-colors group/node relative',
@@ -213,7 +215,7 @@
                 </div>
                 <div class="px-4 py-1.5 bg-white/5 rounded-full text-xs font-mono text-gray-400 flex items-center space-x-2">
                   <Lock :size="10" class="text-green-400" />
-                  <span>app.specflow.sh</span>
+                  <span>specflow</span>
                 </div>
               </div>
               <div class="flex items-center space-x-2 text-xs text-primary/80 font-bold uppercase tracking-widest">
@@ -758,13 +760,18 @@ const draggingNode = ref(null)
 const offset = ref({ x: 0, y: 0 })
 
 function handleDragStart(e, nodeId) {
+  e.preventDefault()
   draggingNode.value = nodeId
   const target = nodes.value.find(n => n.id === nodeId)
   if (!target) return
   
+  // Handle both touch and mouse events
+  const clientX = e.touches ? e.touches[0].clientX : e.clientX
+  const clientY = e.touches ? e.touches[0].clientY : e.clientY
+  
   offset.value = {
-    x: e.clientX - target.x,
-    y: e.clientY - target.y
+    x: clientX - target.x,
+    y: clientY - target.y
   }
 }
 
@@ -773,8 +780,12 @@ function handleDragMove(e) {
   const target = nodes.value.find(n => n.id === draggingNode.value)
   if (!target) return
   
-  target.x = e.clientX - offset.value.x
-  target.y = e.clientY - offset.value.y
+  // Handle both touch and mouse events
+  const clientX = e.touches ? e.touches[0].clientX : e.clientX
+  const clientY = e.touches ? e.touches[0].clientY : e.clientY
+  
+  target.x = clientX - offset.value.x
+  target.y = clientY - offset.value.y
 }
 
 function handleDragEnd() {
