@@ -111,7 +111,6 @@ async def websocket_generate_journeys(websocket: WebSocket, spec_id: uuid.UUID):
         cookies = websocket.cookies
         if cookies and "access_token" in cookies:
             token = cookies.get("access_token")
-            print("Token from cookie:", token)
         else:
             # Try from headers
             headers = dict(websocket.headers)
@@ -119,7 +118,6 @@ async def websocket_generate_journeys(websocket: WebSocket, spec_id: uuid.UUID):
             for cookie in cookie_header.split(";"):
                 if "access_token" in cookie:
                     token = cookie.split("=")[1].strip()
-                    print("Token from header:", token)
                     break
         
         # Get strategy from client message
@@ -129,7 +127,6 @@ async def websocket_generate_journeys(websocket: WebSocket, spec_id: uuid.UUID):
             # If no token from cookie, try getting from message
             if not token and auth_data.get("token"):
                 token = auth_data.get("token")
-                print("Token from message:", token)
         except:
             strategy = "ai"
         
@@ -185,6 +182,23 @@ async def websocket_generate_journeys(websocket: WebSocket, spec_id: uuid.UUID):
                 # Save to database
                 created_journeys = []
                 for journey_data in journey_data_list:
+                    # Skip empty/invalid journeys
+                    if not journey_data.get("nodes"):
+                        continue
+                    
+                    # Validate first node is auth/reg
+                    first_node = journey_data["nodes"][0]
+                    if not is_auth_endpoint(first_node.get("data", {})):
+                        print(f"Skipping journey '{journey_data.get('name')}' - first node is not auth/reg")
+                        continue
+                        
+                    # Basic uniqueness validation (within one journey)
+                    try:
+                        validate_unique_nodes(journey_data["nodes"])
+                    except HTTPException:
+                        print(f"Skipping journey '{journey_data.get('name')}' - duplicate nodes found")
+                        continue
+
                     journey = Journey(
                         user_id=current_user.id,
                         spec_id=spec_id,
@@ -287,13 +301,28 @@ async def get_journey(
 
 
 def is_auth_endpoint(endpoint_data: dict) -> bool:
-    """Check if an endpoint is likely an authentication endpoint."""
+    """Check if an endpoint is likely an authentication or registration endpoint."""
     path = endpoint_data.get("path", "").lower()
     summary = (endpoint_data.get("summary") or "").lower()
     op_id = (endpoint_data.get("operation_id") or "").lower()
+    method = endpoint_data.get("method", "").lower()
+    responses = endpoint_data.get("responses", {})
     
-    keywords = ["login", "token", "auth", "signin", "authenticate", "session"]
-    return any(k in path or k in summary or k in op_id for k in keywords)
+    # Login/authentication keywords
+    auth_keywords = ["login", "token", "auth", "signin", "authenticate", "session", "oauth"]
+    path_segments = [seg for seg in path.split("/") if seg]
+    last_segment = path_segments[-1] if path_segments else ""
+    is_auth = any(k in last_segment for k in auth_keywords)
+    
+    # Registration keywords
+    reg_keywords = ["register", "signup", "sign-up", "create-account", "create_user", "createuser", "account", "users"]
+    is_reg = any(k in last_segment for k in reg_keywords)
+    
+    # Special case: POST to /users (common for user creation)
+    # is_user_creation = method == "post" and any(seg == "users" for seg in path.split("/") if seg)
+    
+
+    return is_auth or is_reg
 
 
 def validate_unique_nodes(nodes: List[dict]):
@@ -304,7 +333,7 @@ def validate_unique_nodes(nodes: List[dict]):
         # Create a unique key for the endpoint
         key = (data.get("method", "").upper(), data.get("path", ""))
         
-        # Skip validation for non-endpoint nodes if any (e.g. specialized logic nodes in future)
+        # Skip validation for non-endpoint nodes if any
         if not key[0] or not key[1]:
             continue
             
@@ -314,6 +343,24 @@ def validate_unique_nodes(nodes: List[dict]):
                 detail=f"Duplicate endpoint detected: {key[0]} {key[1]}. A journey cannot contain the same endpoint multiple times."
             )
         seen.add(key)
+
+
+def validate_journey_nodes(nodes: List[dict]):
+    """Validate journey nodes structure and security requirements."""
+    if not nodes:
+        return
+
+    # Check 1: First node must be auth or registration
+    first_node = nodes[0]
+    node_data = first_node.get("data", {})
+    if not is_auth_endpoint(node_data):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Security Validation: The first node of a journey must be an authentication or registration endpoint (e.g., Login, Signup, or Token extraction)."
+        )
+    
+    # Check 2: No duplicates (method + path)
+    validate_unique_nodes(nodes)
 
 
 def validate_journey_name(name: str):
@@ -367,17 +414,7 @@ async def create_journey(
 
     # Validate nodes
     if journey_data.nodes:
-        # Check 1: First node must be auth
-        first_node = journey_data.nodes[0]
-        node_data = first_node.get("data", {})
-        if not is_auth_endpoint(node_data):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Security Validation: The first node of a journey must be an authentication endpoint (e.g., Login or Token extraction)."
-            )
-        
-        # Check 2: No duplicates
-        validate_unique_nodes(journey_data.nodes)
+        validate_journey_nodes(journey_data.nodes)
     
     # Create journey
     journey = Journey(
@@ -425,7 +462,7 @@ async def update_journey(
         validate_journey_name(journey_update.name)
         journey.name = journey_update.name
     if journey_update.nodes is not None:
-        validate_unique_nodes(journey_update.nodes)
+        validate_journey_nodes(journey_update.nodes)
         journey.nodes = journey_update.nodes
     if journey_update.edges is not None:
         journey.edges = journey_update.edges

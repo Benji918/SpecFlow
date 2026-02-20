@@ -786,28 +786,17 @@ const isValidFirstNode = computed(() => {
   // Only check the last segment (the actual endpoint/action)
   const lastSegment = pathSegments[pathSegments.length - 1] || ''
   
-  const summary = (first.summary || '').toLowerCase()
-  const opId = (first.operation_id || '').toLowerCase()
-  const method = first.method?.toLowerCase() || ''
+  // Authentication keywords - only use the last path segment
+  const authKeywords = ['login', 'token', 'auth', 'signin',
+  'register', 'signup', 'sign-up', 'create-account', 'create_user', 'createuser', 'account', 'users',
+  'authenticate', 'session']
   
-  // Login/authentication keywords - check last segment, summary, operation_id
-  const loginKeywords = ['login', 'signin', 'auth', 'authenticate', 'token', 'session', 'oauth']
-  // Registration keywords  
-  const registerKeywords = ['register', 'signup', 'sign-up', 'create-account', 'create_user', 'createuser', 'account', 'users']
-  
-  const isLogin = loginKeywords.some(k => 
-    lastSegment.includes(k) ||
-    summary.includes(k) || 
-    opId.includes(k)
+  // Check if last segment matches any auth keyword
+  const isAuth = authKeywords.some(k => 
+    lastSegment.includes(k)
   )
   
-  const isRegister = registerKeywords.some(k => 
-    lastSegment.includes(k) ||
-    summary.includes(k) || 
-    opId.includes(k)
-  ) || (method === 'post' && lastSegment.includes('users'))
-  
-  return isLogin || isRegister
+  return isAuth
 })
 
 const canCreateJourney = computed(() => {

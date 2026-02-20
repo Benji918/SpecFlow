@@ -59,10 +59,10 @@ export const useJourneyStore = defineStore('journey', () => {
 
     //     try {
     //     const result = await wsGenerate(specId, strategy)
-        
+
     //     // Add to journeys list
     //     journeys.value.unshift(...result)
-        
+
     //     return { success: true, data: result }
     //     } catch (err) {
     //     error.value = err.message || 'Failed to generate journeys'
@@ -71,26 +71,26 @@ export const useJourneyStore = defineStore('journey', () => {
     //     loading.value = false
     //     }
 
-        // loading.value = true
-        // error.value = null
+    // loading.value = true
+    // error.value = null
 
-        // try {
-        //     const response = await apiClient.post(
-        //         `/api/specs/${specId}/generate-journeys`,
-        //         { strategy },
-        //         options
-        //     )
+    // try {
+    //     const response = await apiClient.post(
+    //         `/api/specs/${specId}/generate-journeys`,
+    //         { strategy },
+    //         options
+    //     )
 
-        //     // Add to journeys list
-        //     journeys.value.unshift(...response.data)
+    //     // Add to journeys list
+    //     journeys.value.unshift(...response.data)
 
-        //     return { success: true, data: response.data }
-        // } catch (err) {
-        //     error.value = err.response?.data?.detail || 'Failed to generate journeys'
-        //     return { success: false, error: error.value }
-        // } finally {
-        //     loading.value = false
-        // }
+    //     return { success: true, data: response.data }
+    // } catch (err) {
+    //     error.value = err.response?.data?.detail || 'Failed to generate journeys'
+    //     return { success: false, error: error.value }
+    // } finally {
+    //     loading.value = false
+    // }
     // }
 
     async function createJourney(journeyData) {
