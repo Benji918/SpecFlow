@@ -369,7 +369,7 @@
                         <CheckCircle :size="10" class="mr-1" /> Auth Verified
                       </div>
                       <div v-else class="flex items-center text-[8px] text-yellow-500 font-bold uppercase animate-pulse">
-                        <AlertTriangle :size="10" class="mr-1" /> Auth Node Required First
+                        <AlertTriangle :size="10" class="mr-1" /> Login/Register Required First
                       </div>
                     </div>
                     <input 
@@ -468,10 +468,20 @@ function generateSessionId() {
 
 // Get WebSocket URL based on environment
 function getWsUrl(specId) {
-  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-  // Use the current host (works for both dev and production)
-  const host = '127.0.0.1:8000'
-  console.log(host)
+  const protocol = 'ws:'
+  
+  // In production, use the VITE_API_URL (without the /api prefix for WebSocket)
+  // In development, use localhost:8000
+  let host
+  if (import.meta.env.VITE_API_URL) {
+    // Production: extract host from VITE_API_URL (e.g., https://backend--specflow--j29wymgjz5b5.code.run)
+    const apiUrl = import.meta.env.VITE_API_URL
+    host = apiUrl.replace(/^https?:\/\//, '').replace(/\/$/, '')
+  } else {
+    // Development: use localhost
+    host = '127.0.0.1:8000'
+  }
+  
   return `${protocol}//${host}/api/ws/specs/${specId}/generate-journeys`
 }
 
@@ -766,12 +776,38 @@ function clearSelection() {
 const isValidFirstNode = computed(() => {
   if (selectedEndpoints.value.length === 0) return true
   const first = selectedEndpoints.value[0]
-  const path = first.path.toLowerCase()
+  
+  // Get path segments (e.g., "/api/v1/auth/login" -> ["api", "v1", "auth", "login"])
+  const pathSegments = first.path
+    .toLowerCase()
+    .split('/')
+    .filter(s => s.length > 0)
+  
+  // Only check the last segment (the actual endpoint/action)
+  const lastSegment = pathSegments[pathSegments.length - 1] || ''
+  
   const summary = (first.summary || '').toLowerCase()
   const opId = (first.operation_id || '').toLowerCase()
+  const method = first.method?.toLowerCase() || ''
   
-  const keywords = ['login', 'token', 'auth', 'signin', 'authenticate', 'session']
-  return keywords.some(k => path.includes(k) || summary.includes(k) || opId.includes(k))
+  // Login/authentication keywords - check last segment, summary, operation_id
+  const loginKeywords = ['login', 'signin', 'auth', 'authenticate', 'token', 'session', 'oauth']
+  // Registration keywords  
+  const registerKeywords = ['register', 'signup', 'sign-up', 'create-account', 'create_user', 'createuser', 'account', 'users']
+  
+  const isLogin = loginKeywords.some(k => 
+    lastSegment.includes(k) ||
+    summary.includes(k) || 
+    opId.includes(k)
+  )
+  
+  const isRegister = registerKeywords.some(k => 
+    lastSegment.includes(k) ||
+    summary.includes(k) || 
+    opId.includes(k)
+  ) || (method === 'post' && lastSegment.includes('users'))
+  
+  return isLogin || isRegister
 })
 
 const canCreateJourney = computed(() => {

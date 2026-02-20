@@ -175,8 +175,6 @@ async function handleDeleteSpec(specId) {
 
 function handleLogout() {
   authStore.logout()
-  toast.info('Logged out successfully')
-  router.push('/login')
 }
 
 function formatDate(dateString) {
