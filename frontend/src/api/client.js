@@ -14,9 +14,14 @@ const client = axios.create({
 // Request interceptor - add auth token to requests
 client.interceptors.request.use(
     (config) => {
-        const authStore = useAuthStore()
-        if (authStore.token) {
-            config.headers.Authorization = `Bearer ${authStore.token}`
+        // Only add token if auth store is initialized and has a token
+        try {
+            const authStore = useAuthStore()
+            if (authStore.token) {
+                config.headers.Authorization = `Bearer ${authStore.token}`
+            }
+        } catch (e) {
+            // Auth store not yet initialized, skip adding token
         }
         return config
     },

@@ -57,9 +57,13 @@ const router = createRouter({
 router.beforeEach(async (to, from, next) => {
     const authStore = useAuthStore()
 
-    // Wait for initial load to complete if it hasn't already
-    if (authStore.isInitialLoad) {
+    // Only fetch current user on first load (not after logout)
+    // The isInitialLoad flag is reset only when explicitly needed
+    if (authStore.isInitialLoad && authStore.token) {
         await authStore.fetchCurrentUser()
+    } else if (authStore.isInitialLoad && !authStore.token) {
+        // If we have no token and are still in initial load, mark as done
+        authStore.isInitialLoad = false
     }
 
     const requiresAuth = to.meta.requiresAuth

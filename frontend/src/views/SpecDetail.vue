@@ -468,7 +468,8 @@ function generateSessionId() {
 
 // Get WebSocket URL based on environment
 function getWsUrl(specId) {
-  const protocol = 'ws:'
+  // Use wss for HTTPS (production), ws for HTTP (development)
+  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
   
   // In production, use the VITE_API_URL (without the /api prefix for WebSocket)
   // In development, use localhost:8000
