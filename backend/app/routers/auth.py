@@ -29,6 +29,8 @@ def get_cookie_settings():
     }
     
     print(settings.DEBUG)
+    print(settings.REDIS_URL)
+    print(settings.CORS_ORIGINS)
     
     if not settings.DEBUG:
         cookie_config["domain"] = ".code.run"
