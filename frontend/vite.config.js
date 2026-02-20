@@ -3,7 +3,7 @@ import vue from '@vitejs/plugin-vue'
 import path from 'path'
 
 // Production backend URL
-const PROD_API_URL = 'https://backend--specflow--j29wymgjz5b5.code.run'
+const PROD_API_URL = import.meta.env.VITE_API_URL
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
