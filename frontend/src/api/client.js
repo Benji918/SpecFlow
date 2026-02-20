@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { useAuthStore } from '@/stores/auth'
 
 // Create axios instance
 const client = axios.create({
@@ -10,9 +11,13 @@ const client = axios.create({
     },
 })
 
-// Request interceptor
+// Request interceptor - add auth token to requests
 client.interceptors.request.use(
     (config) => {
+        const authStore = useAuthStore()
+        if (authStore.token) {
+            config.headers.Authorization = `Bearer ${authStore.token}`
+        }
         return config
     },
     (error) => {

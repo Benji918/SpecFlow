@@ -32,8 +32,9 @@ def get_cookie_settings():
     print(settings.REDIS_URL)
     print(settings.CORS_ORIGINS)
     
-    if not settings.DEBUG:
-        cookie_config["domain"] = ".code.run"
+    # Note: Do NOT set domain for cookies on public suffixes like .code.run
+    # The browser will use the current host automatically
+    # Setting domain=.code.run fails because code.run is a public suffix
         
     return cookie_config
 
