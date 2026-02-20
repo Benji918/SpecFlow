@@ -24,8 +24,8 @@ def get_cookie_settings():
         "httponly": True,
         "max_age": settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
         "expires": settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
-        "secure": False if settings.DEBUG else True,
-        "samesite": "lax" if settings.DEBUG else "none",
+        "secure": True,
+        "samesite": "none",
     }
     
     if not settings.DEBUG:
