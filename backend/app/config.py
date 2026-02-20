@@ -30,7 +30,7 @@ class Settings(BaseSettings):
 
     # App
     APP_NAME: str = "SpecFlow"
-    DEBUG: bool = os.getenv("DEBUG", True)
+    DEBUG: bool = os.getenv("DEBUG")
     CORS_ORIGINS: str = os.getenv("CORS_ORIGINS", "http://localhost:5173,http://localhost:3000")
 
     @property

@@ -189,7 +189,7 @@ async def websocket_generate_journeys(websocket: WebSocket, spec_id: uuid.UUID):
                     # Validate first node is auth/reg
                     first_node = journey_data["nodes"][0]
                     if not is_auth_endpoint(first_node.get("data", {})):
-                        print(f"Skipping journey '{journey_data.get('name')}' - first node is not auth/reg")
+                        print(f"Skipping journey '{journey_data.get('name')}' - first node is not login/register")
                         continue
                         
                     # Basic uniqueness validation (within one journey)
@@ -238,7 +238,7 @@ async def websocket_generate_journeys(websocket: WebSocket, spec_id: uuid.UUID):
                 await websocket.send_json({"type": "error", "message": str(e)})
             finally:
                 await websocket.close()
-                db.rollback()
+                await db.rollback()
                 break
     
     except WebSocketDisconnect:
@@ -303,10 +303,6 @@ async def get_journey(
 def is_auth_endpoint(endpoint_data: dict) -> bool:
     """Check if an endpoint is likely an authentication or registration endpoint."""
     path = endpoint_data.get("path", "").lower()
-    summary = (endpoint_data.get("summary") or "").lower()
-    op_id = (endpoint_data.get("operation_id") or "").lower()
-    method = endpoint_data.get("method", "").lower()
-    responses = endpoint_data.get("responses", {})
     
     # Login/authentication keywords
     auth_keywords = ["login", "token", "auth", "signin", "authenticate", "session", "oauth"]

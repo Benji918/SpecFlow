@@ -6,6 +6,7 @@ from fastapi import WebSocket
 import os
 import asyncio
 import httpx
+from datetime import datetime
 from app.services.spec_parser import EndpointInfo
 
 
@@ -19,7 +20,7 @@ class JourneyGenerator:
             headers={'Authorization': 'Bearer ' + os.environ.get('OLLAMA_API_KEY')} if os.environ.get('OLLAMA_API_KEY') else None
         )
         self.model = settings.OLLAMA_MODEL
-        self.timeout = 180.0
+        self.timeout = 300.0  # 5 minutes timeout for Ollama
 
     async def generate_journeys(
         self, endpoints: List[EndpointInfo], websocket: WebSocket
@@ -39,6 +40,8 @@ class JourneyGenerator:
 Endpoints:
 {endpoint_summary}
 
+IMPORTANT: Every journey MUST start with an authentication endpoint (EITHER LOGIN OR REGISTER). This is a strict requirement. If no login/register endpoint exists in the endpoints list, you MUST NOT generate any journeys.
+
 For each journey, return JSON with:
 - name: Short descriptive name
 - description: what this journey tests
@@ -52,6 +55,11 @@ For each journey, return JSON with:
     }}]
   }}
 
+CRITICAL REQUIREMENT:
+- The FIRST step in EVERY journey MUST be a login or register endpoint (e.g., /auth/login, /auth/register, /users/register, /token, etc.)
+- Identify login/register endpoints by looking for paths containing: login, signin, register, signup, token, auth, authenticate, session
+- If no authentication endpoint exists in the provided endpoints, return an EMPTY array - do not generate any journeys
+
 Mapping Rules:
 1. AUTH: If an endpoint provides a token (e.g., login/register), map it to 'auth_token'. 
 2. PATH PARAMS: If a subsequent endpoint has a path like '/users/{{id}}', ensure you map the ID from a previous 'create' or 'list' response to 'pathParams.id'.
@@ -59,7 +67,7 @@ Mapping Rules:
 4. NAMING: In 'to', use 'auth_token' for bearers, 'pathParams.{{name}}' for URL vars, or any descriptive key for body interpolation.
 
 Journey Logic:
-- Start with Auth if endpoints require it (see 'security' field).
+- MUST start with Auth (login/register) endpoint - this is required!
 - Follow a CRUD pattern where possible (Create -> Get/Update -> Delete).
 - Include "Success" flows and "Business Logic" flows (e.g., Add to Cart -> Checkout).
 
@@ -67,12 +75,17 @@ Return ONLY a JSON array, no explanation.
 """
 
         try:
-            await self._send_progress(websocket, 5, "Starting generation...")
-            await self._send_progress(websocket, 10, "Preparing endpoints...")
+            await self._send_progress(websocket, 5, "Initializing AI journey generator...")
+            await asyncio.sleep(0.1)  # Small delay to ensure message is sent
+            await self._send_progress(websocket, 10, "Parsing API endpoints from specification...")
+            await asyncio.sleep(0.1)
             
             endpoint_summary = self._format_endpoints(endpoints)
             
-            await self._send_progress(websocket, 20, "Calling AI model...")
+            await self._send_progress(websocket, 20, f"Analyzing {len(endpoints)} endpoints for user journeys...")
+            await asyncio.sleep(0.1)
+            await self._send_progress(websocket, 30, "Sending request to AI model...")
+            await asyncio.sleep(0.1)
             
             try:
                 response = await asyncio.wait_for(
@@ -84,10 +97,15 @@ Return ONLY a JSON array, no explanation.
                     timeout=self.timeout
                 )
             except asyncio.TimeoutError:
-                await self._send_progress(websocket, 0, "AI timeout")
-                raise Exception(f"Timeout after {self.timeout}s")
+                await self._send_progress(websocket, 0, "AI request timed out")
+                raise Exception(f"Timeout after {self.timeout}s - Ollama took too long to respond")
             
-            await self._send_progress(websocket, 70, "Processing response...")
+            await self._send_progress(websocket, 50, "Received response from AI model, parsing results...")
+            await asyncio.sleep(0.1)
+            await self._send_progress(websocket, 60, "Processing journey data...")
+            
+            await self._send_progress(websocket, 70, "Analyzing AI response and extracting journey steps...")
+            await asyncio.sleep(0.1)
 
             # Parse response
             try:
@@ -105,9 +123,12 @@ Return ONLY a JSON array, no explanation.
                 journeys = self._create_fallback_journey(endpoints)
 
             # Convert to VueFlow format
-            await self._send_progress(websocket, 85, "Converting format...")
+            await self._send_progress(websocket, 85, "Building journey nodes and connections...")
+            await asyncio.sleep(0.1)
             result = self._convert_to_vueflow_format(journeys, endpoints)
-            await self._send_progress(websocket, 100, "Done!")
+            await self._send_progress(websocket, 95, "Finalizing journeys...")
+            await asyncio.sleep(0.1)
+            await self._send_progress(websocket, 100, "Journey generation complete!")
             return result
     
         except Exception as e:
@@ -176,6 +197,20 @@ Return ONLY a JSON array, no explanation.
         Returns:
             Basic journey structure
         """
+        # Find auth/login/register endpoints first
+        auth_keywords = ['login', 'signin', 'register', 'signup', 'token', 'auth', 'authenticate', 'session']
+        auth_endpoints = [e for e in endpoints if any(k in e.path.lower() or k in (e.summary or '').lower() for k in auth_keywords)]
+        
+        if auth_endpoints:
+            # Use auth endpoint as first step
+            steps = [auth_endpoints[0]]
+            # Add some other endpoints if available
+            non_auth = [e for e in endpoints if e not in auth_endpoints][:4]
+            steps.extend(non_auth)
+        else:
+            # No auth endpoint, use first few endpoints
+            steps = endpoints[:5] if len(endpoints) >= 5 else endpoints
+        
         return [
             {
                 "name": "Basic API Flow",
@@ -186,7 +221,7 @@ Return ONLY a JSON array, no explanation.
                         "name": e.summary or e.operation_id,
                         "data_mappings": [],
                     }
-                    for e in endpoints[:5]  # Limit to first 5
+                    for e in steps
                 ],
             }
         ]

@@ -990,6 +990,20 @@ async function generateJourneys() {
   const specId = route.params.id
   const sessionId = generateSessionId()
   
+  // Set timeout for 5 minutes (300000ms)
+  const timeoutId = setTimeout(() => {
+    if (generatingJourneys.value) {
+      generationError.value = 'Generation timed out after 5 minutes'
+      generationMessage.value = 'Request timed out'
+      generatingJourneys.value = false
+      if (ws.value && ws.value.readyState === WebSocket.OPEN) {
+        ws.value.close()
+      }
+      toast.error('Generation timed out - please try again')
+      clearGenerationState()
+    }
+  }, 300000)
+  
   // Save initial state to localStorage
   saveGenerationState({
     specId,
@@ -1040,6 +1054,7 @@ async function generateJourneys() {
           break
 
         case 'complete':
+          clearTimeout(timeoutId)
           progress.value = 100
           generationMessage.value = data.message || 'Generation complete!'
           generatingJourneys.value = false
@@ -1072,6 +1087,7 @@ async function generateJourneys() {
   // Connection closed
   ws.value.onclose = () => {
     console.log('WebSocket closed')
+    clearTimeout(timeoutId)
     if (generatingJourneys.value) {
       // Connection closed before completion
       generationError.value = 'Connection closed unexpectedly'
@@ -1084,6 +1100,7 @@ async function generateJourneys() {
   // Error occurred
   ws.value.onerror = (err) => {
     console.error('WebSocket error:', err)
+    clearTimeout(timeoutId)
     generationError.value = 'WebSocket connection error'
     generationMessage.value = 'Connection error'
     generatingJourneys.value = false
