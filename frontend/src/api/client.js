@@ -1,5 +1,4 @@
 import axios from 'axios'
-import { useAuthStore } from '@/stores/auth'
 
 // Create axios instance
 const client = axios.create({
@@ -11,26 +10,10 @@ const client = axios.create({
     },
 })
 
-// Request interceptor - add auth token to requests
+// Request interceptor - cookies are sent automatically with withCredentials: true
+// No need to manually add Authorization header
 client.interceptors.request.use(
     (config) => {
-        // Try to get token from auth store, fallback to localStorage
-        let authToken = null
-        try {
-            const authStore = useAuthStore()
-            authToken = authStore.token
-        } catch (e) {
-            // Auth store not yet initialized
-        }
-        
-        // Fallback to localStorage if no token in store
-        if (!authToken) {
-            authToken = localStorage.getItem('auth_token')
-        }
-        
-        if (authToken) {
-            config.headers.Authorization = `Bearer ${authToken}`
-        }
         return config
     },
     (error) => {

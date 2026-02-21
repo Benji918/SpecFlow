@@ -63,12 +63,9 @@ router.beforeEach(async (to, from, next) => {
     const publicRoutes = ['/login', '/signup', '/']
     const isPublicRoute = publicRoutes.includes(to.path)
 
-    // Only fetch current user on first load AND when going to protected routes
-    if (authStore.isInitialLoad && authStore.token && !isPublicRoute) {
+    // Fetch current user on initial load when navigating to protected routes
+    if (authStore.isInitialLoad && !isPublicRoute) {
         await authStore.fetchCurrentUser()
-    } else if (authStore.isInitialLoad && !authStore.token) {
-        // If we have no token and are still in initial load, mark as done
-        authStore.isInitialLoad = false
     }
 
     const requiresAuth = to.meta.requiresAuth
