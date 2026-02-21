@@ -14,14 +14,22 @@ const client = axios.create({
 // Request interceptor - add auth token to requests
 client.interceptors.request.use(
     (config) => {
-        // Only add token if auth store is initialized and has a token
+        // Try to get token from auth store, fallback to localStorage
+        let authToken = null
         try {
             const authStore = useAuthStore()
-            if (authStore.token) {
-                config.headers.Authorization = `Bearer ${authStore.token}`
-            }
+            authToken = authStore.token
         } catch (e) {
-            // Auth store not yet initialized, skip adding token
+            // Auth store not yet initialized
+        }
+        
+        // Fallback to localStorage if no token in store
+        if (!authToken) {
+            authToken = localStorage.getItem('auth_token')
+        }
+        
+        if (authToken) {
+            config.headers.Authorization = `Bearer ${authToken}`
         }
         return config
     },

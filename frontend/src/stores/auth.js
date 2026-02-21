@@ -2,11 +2,15 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import apiClient from '@/api/client'
 
+// Token storage key
+const TOKEN_KEY = 'auth_token'
+
 export const useAuthStore = defineStore('auth', () => {
-    // State
+    // State - initialize from localStorage if available
+    const storedToken = localStorage.getItem(TOKEN_KEY)
     const user = ref(null)
-    const token = ref(null)
-    const isInitialLoad = ref(true)
+    const token = ref(storedToken)
+    const isInitialLoad = ref(!storedToken)
 
     // Getters
     const isAuthenticated = computed(() => !!user.value)
@@ -23,6 +27,10 @@ export const useAuthStore = defineStore('auth', () => {
             const data = response.data
             user.value = data?.user ?? data
             token.value = data?.token ?? null
+            // Persist token to localStorage
+            if (token.value) {
+                localStorage.setItem(TOKEN_KEY, token.value)
+            }
             return { success: true }
         } catch (error) {
             return {
@@ -42,6 +50,10 @@ export const useAuthStore = defineStore('auth', () => {
             const data = response.data
             user.value = data?.user ?? data
             token.value = data?.token ?? null
+            // Persist token to localStorage
+            if (token.value) {
+                localStorage.setItem(TOKEN_KEY, token.value)
+            }
             return { success: true }
         } catch (error) {
             return {
@@ -52,15 +64,35 @@ export const useAuthStore = defineStore('auth', () => {
     }
 
     async function fetchCurrentUser() {
+        // If no token, try to get one from localStorage
+        if (!token.value) {
+            const storedToken = localStorage.getItem(TOKEN_KEY)
+            if (storedToken) {
+                token.value = storedToken
+            }
+        }
+        
+        // Still no token? User is not authenticated
+        if (!token.value) {
+            isInitialLoad.value = false
+            return
+        }
+        
         try {
             // Use /me-with-token to get token for WebSocket authentication
             const response = await apiClient.get('/api/auth/me-with-token')
             user.value = response.data
             // Store token for WebSocket use
-            token.value = response.data.token || null
+            token.value = response.data.token || token.value
+            // Ensure token is persisted
+            if (token.value) {
+                localStorage.setItem(TOKEN_KEY, token.value)
+            }
         } catch (error) {
+            // Token invalid or expired - clear everything
             user.value = null
             token.value = null
+            localStorage.removeItem(TOKEN_KEY)
         } finally {
             isInitialLoad.value = false
         }
@@ -74,6 +106,8 @@ export const useAuthStore = defineStore('auth', () => {
         } finally {
             user.value = null
             token.value = null
+            // Clear token from localStorage
+            localStorage.removeItem(TOKEN_KEY)
             window.location.href = '/login'
         }
     }
