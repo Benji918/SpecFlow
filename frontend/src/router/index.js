@@ -1,10 +1,12 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 
-// Lazy-loaded route components
-const LandingPage = () => import('@/views/LandingPage.vue')
-const Login = () => import('@/views/Login.vue')
-const Signup = () => import('@/views/Signup.vue')
+// Eagerly loaded route components (login/signup are high-priority pages)
+import LandingPage from '@/views/LandingPage.vue'
+import Login from '@/views/Login.vue'
+import Signup from '@/views/Signup.vue'
+
+// Lazy-loaded route components (loaded in background)
 const Dashboard = () => import('@/views/Dashboard.vue')
 const SpecDetail = () => import('@/views/SpecDetail.vue')
 const JourneyView = () => import('@/views/JourneyView.vue')
@@ -53,13 +55,16 @@ const router = createRouter({
     routes,
 })
 
-// Navigation guard
+// Navigation guard - optimized to skip API calls for public routes
 router.beforeEach(async (to, from, next) => {
     const authStore = useAuthStore()
-
-    // Only fetch current user on first load (not after logout)
-    // The isInitialLoad flag is reset only when explicitly needed
-    if (authStore.isInitialLoad && authStore.token) {
+    
+    // Public routes that don't need authentication check
+    const publicRoutes = ['/login', '/signup', '/']
+    const isPublicRoute = publicRoutes.includes(to.path)
+    
+    // Only fetch current user on first load AND when going to protected routes
+    if (authStore.isInitialLoad && authStore.token && !isPublicRoute) {
         await authStore.fetchCurrentUser()
     } else if (authStore.isInitialLoad && !authStore.token) {
         // If we have no token and are still in initial load, mark as done

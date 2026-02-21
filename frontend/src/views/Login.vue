@@ -3,14 +3,14 @@
     <div class="w-full max-w-md">
       <!-- Logo/Title -->
       <div class="text-center mb-8">
-        <div class="flex items-center justify-center space-x-2 mb-4">
-          <div class="w-12 h-12 bg-primary rounded-lg flex items-center justify-center transform rotate-12 transition-transform">
+        <RouterLink to="/" class="inline-flex items-center space-x-2 mb-4 hover:opacity-80 transition-opacity">
+          <div class="w-12 h-12 bg-primary rounded-lg flex items-center justify-center transform rotate-12 transition-transform hover:rotate-0">
             <Zap :size="28" class="text-black fill-current" />
           </div>
           <span class="text-5xl font-black tracking-tighter">
             Spec<span class="text-primary">Flow</span>
           </span>
-        </div>
+        </RouterLink>
         <p class="text-gray-400 text-lg">Welcome back</p>
       </div>
 
