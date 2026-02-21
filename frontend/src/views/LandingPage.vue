@@ -31,7 +31,7 @@
     <!-- Hero Section -->
     <section id="home" class="relative pt-32 pb-20 overflow-hidden">
       <!-- Background Glows -->
-      <div class="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[600px] bg-primary/10 blur-[150px] -z-10 rounded-full"></div>
+      <div class="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[600px] bg-[radial-gradient(circle,rgba(191,245,73,0.1)_0%,transparent_70%)] -z-10 rounded-full"></div>
       
       <div class="max-w-7xl mx-auto px-6 grid lg:grid-cols-2 gap-16 items-center">
         <div class="space-y-8 relative z-10">
@@ -67,8 +67,8 @@
 
         <!-- Interactive Product Preview -->
         <div class="relative group">
-          <div class="absolute inset-0 bg-primary/20 blur-[120px] -z-10 rounded-3xl group-hover:bg-primary/30 transition-all duration-700"></div>
-          <div class="relative bg-gray-900/40 border border-white/10 rounded-[40px] p-6 shadow-2xl backdrop-blur-2xl ring-1 ring-white/10 overflow-hidden min-h-[500px]"
+          <div class="absolute inset-0 bg-[radial-gradient(circle,rgba(191,245,73,0.15)_0%,transparent_70%)] -z-10 rounded-3xl group-hover:bg-primary/20 transition-all duration-700"></div>
+          <div class="relative bg-gray-900/40 border border-white/10 rounded-[40px] p-6 shadow-2xl backdrop-blur-xl ring-1 ring-white/10 overflow-hidden min-h-[500px]"
                @mousemove="handleDragMove" @mouseup="handleDragEnd" @mouseleave="handleDragEnd"
                @touchmove="handleDragMove" @touchend="handleDragEnd" @touchcancel="handleDragEnd">
             <!-- Mock UI Overlay -->

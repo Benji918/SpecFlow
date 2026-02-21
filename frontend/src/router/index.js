@@ -58,11 +58,11 @@ const router = createRouter({
 // Navigation guard - optimized to skip API calls for public routes
 router.beforeEach(async (to, from, next) => {
     const authStore = useAuthStore()
-    
+
     // Public routes that don't need authentication check
     const publicRoutes = ['/login', '/signup', '/']
     const isPublicRoute = publicRoutes.includes(to.path)
-    
+
     // Only fetch current user on first load AND when going to protected routes
     if (authStore.isInitialLoad && authStore.token && !isPublicRoute) {
         await authStore.fetchCurrentUser()
