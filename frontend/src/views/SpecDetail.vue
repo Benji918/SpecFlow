@@ -5,7 +5,7 @@
       <div class="max-w-7xl mx-auto px-4 py-4">
         <div class="flex items-center justify-between">
           <div class="flex items-center space-x-4">
-            <button @click="router.back()" class="text-gray-400 hover:text-white">
+            <button @click="router.push('/dashboard')" class="text-gray-400 hover:text-white">
               <ArrowLeft :size="24" />
             </button>
             <h1 class="text-2xl font-bold">Specification Details</h1>
@@ -402,7 +402,7 @@
       <div v-else class="card text-center py-12">
         <AlertCircle :size="48" class="mx-auto text-red-500 mb-4" />
         <p class="text-gray-400">Failed to load specification</p>
-        <button @click="router.back()" class="btn-secondary mt-4">
+        <button @click="router.push('/dashboard')" class="btn-secondary mt-4">
           Go Back
         </button>
       </div>
