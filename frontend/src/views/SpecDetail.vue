@@ -411,7 +411,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useSpecStore } from '@/stores/spec'
 import { useJourneyStore } from '@/stores/journey'
@@ -906,6 +906,20 @@ const methodStats = computed(() => {
 
 onMounted(async () => {
   await Promise.all([fetchSpec(), fetchJourneys()])
+})
+
+// Watch for route changes to refetch spec when navigating between specs
+watch(() => route.params.id, async (newId, oldId) => {
+  if (newId && newId !== oldId) {
+    // Clear current state
+    selectedJourneyIds.value.clear()
+    selectedEndpoints.value = []
+    newJourneyName.value = ''
+    journeyNameError.value = ''
+    
+    // Fetch new spec and journeys
+    await Promise.all([fetchSpec(), fetchJourneys()])
+  }
 })
 
 async function fetchSpec() {
