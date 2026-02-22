@@ -10,6 +10,7 @@ import Signup from '@/views/Signup.vue'
 const Dashboard = () => import('@/views/Dashboard.vue')
 const SpecDetail = () => import('@/views/SpecDetail.vue')
 const JourneyView = () => import('@/views/JourneyView.vue')
+const AdminDashboard = () => import('@/views/AdminDashboard.vue')
 
 const routes = [
     {
@@ -48,6 +49,12 @@ const routes = [
         component: JourneyView,
         meta: { requiresAuth: true },
     },
+    {
+        path: '/admin',
+        name: 'AdminDashboard',
+        component: AdminDashboard,
+        meta: { requiresAuth: true, requiresAdmin: true },
+    },
 ]
 
 const router = createRouter({
@@ -69,10 +76,14 @@ router.beforeEach(async (to, from, next) => {
     }
 
     const requiresAuth = to.meta.requiresAuth
+    const requiresAdmin = to.meta.requiresAdmin
 
     if (requiresAuth && !authStore.isAuthenticated) {
         // Redirect to login if route requires auth and user is not authenticated
         next('/login')
+    } else if (requiresAdmin && !authStore.user?.is_admin) {
+        // Redirect to dashboard if user is not an admin
+        next('/dashboard')
     } else if (!requiresAuth && authStore.isAuthenticated && (to.path === '/login' || to.path === '/signup')) {
         // Redirect to dashboard if already logged in and trying to access auth pages
         next('/dashboard')

@@ -36,7 +36,7 @@ class AsyncEngineWithRetry:
                 "statement_cache_size": 100,  
                 "prepared_statement_cache_size": 100,  
                 "ssl": ssl_ctx,
-                "command_timeout": 30,
+                "command_timeout": 120,
                 "server_settings": {
                     "application_name": "specflow"
                 }

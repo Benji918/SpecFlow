@@ -70,10 +70,17 @@ class UserLogin(BaseModel):
 class UserResponse(UserBase):
     id: UUID4
     plan: str
+    is_admin: bool = False
     created_at: datetime
 
     class Config:
         from_attributes = True
+
+
+class AdminCreate(UserCreate):
+    """Schema for creating an admin account."""
+    is_admin: bool = True
+    
 
 class UserWithTokenResponse(UserResponse):
     """User response with token for WebSocket authentication."""
