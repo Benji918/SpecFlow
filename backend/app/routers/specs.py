@@ -10,7 +10,7 @@ from app.models.user import User
 from app.models.spec import Spec
 from app.schemas.spec import SpecCreate, SpecResponse, SpecUpdate, SpecResync
 from app.services.auth import get_current_user
-from app.services.spec_parser import SpecParser
+from app.services.spec_parser import SpecParser, SpecNameValidationError
 from app.services.cache import cache_service
 from typing import Optional
 
@@ -29,6 +29,27 @@ async def create_spec(
     db: AsyncSession = Depends(get_db),
 ):
     """Upload and validate an OpenAPI specification."""
+    # Validate spec name format
+    is_valid_name, name_error = SpecParser.validate_spec_name(spec_data.name)
+    if not is_valid_name:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=name_error,
+        )
+    
+    # Check for duplicate spec name for this user
+    existing_spec = await db.execute(
+        select(Spec).where(
+            Spec.user_id == current_user.id,
+            Spec.name.ilike(spec_data.name.strip())
+        )
+    )
+    if existing_spec.scalar_one_or_none():
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"A specification with the name '{spec_data.name}' already exists. Please choose a different name.",
+        )
+    
     try:
         # Parse and validate spec
         parser = SpecParser(spec_data.content)
@@ -58,6 +79,8 @@ async def create_spec(
         
         return SpecResponse.model_validate(spec)
         
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -135,6 +158,28 @@ async def update_spec(
     
     # Update fields
     if spec_update.name is not None:
+        # Validate new name format
+        is_valid_name, name_error = SpecParser.validate_spec_name(spec_update.name)
+        if not is_valid_name:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=name_error,
+            )
+        
+        # Check for duplicate name (excluding current spec)
+        existing_spec = await db.execute(
+            select(Spec).where(
+                Spec.user_id == current_user.id,
+                Spec.id != spec_id,
+                Spec.name.ilike(spec_update.name.strip())
+            )
+        )
+        if existing_spec.scalar_one_or_none():
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"A specification with the name '{spec_update.name}' already exists. Please choose a different name.",
+            )
+        
         spec.name = spec_update.name
     
     await db.commit()

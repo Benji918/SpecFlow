@@ -1,6 +1,7 @@
 import prance
 from typing import Dict, List, Optional
 from pydantic import BaseModel
+import re
 
 
 class EndpointInfo(BaseModel):
@@ -16,8 +17,45 @@ class EndpointInfo(BaseModel):
     tags: List[str]
 
 
+class SpecNameValidationError(Exception):
+    """Exception raised when spec name validation fails."""
+    pass
+
+
 class SpecParser:
     """Parser for OpenAPI specifications."""
+
+    # Valid name pattern: alphanumeric, spaces, hyphens, underscores
+    # Must start with alphanumeric character
+    VALID_NAME_PATTERN = re.compile(r'^[a-zA-Z0-9][a-zA-Z0-9_\s\-]*$')
+    MAX_NAME_LENGTH = 100
+    MIN_NAME_LENGTH = 1
+
+    @classmethod
+    def validate_spec_name(cls, name: str) -> tuple[bool, str]:
+        """Validate a specification name.
+        
+        Args:
+            name: The name to validate
+            
+        Returns:
+            Tuple of (is_valid, error_message). If valid, error_message is empty.
+        """
+        if not name:
+            return False, "Specification name cannot be empty"
+        
+        name = name.strip()
+        
+        if len(name) < cls.MIN_NAME_LENGTH:
+            return False, f"Specification name must be at least {cls.MIN_NAME_LENGTH} character(s)"
+        
+        if len(name) > cls.MAX_NAME_LENGTH:
+            return False, f"Specification name cannot exceed {cls.MAX_NAME_LENGTH} characters"
+        
+        if not cls.VALID_NAME_PATTERN.match(name):
+            return False, "Specification name can only contain letters, numbers, spaces, hyphens, and underscores, and must start with a letter or number"
+        
+        return True, ""
 
     def __init__(self, spec_content: Dict):
         """Initialize parser with OpenAPI spec content.

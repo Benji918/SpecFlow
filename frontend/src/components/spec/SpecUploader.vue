@@ -182,6 +182,18 @@ async function handleUpload() {
   uploadProgress.value = 0
   validationError.value = null
 
+  // Check for duplicate spec name
+  const trimmedName = specName.value.trim()
+  const existingSpec = specStore.specs.find(
+    (s) => s.name.toLowerCase() === trimmedName.toLowerCase()
+  )
+  if (existingSpec) {
+    validationError.value = `A specification with the name "${trimmedName}" already exists. Please choose a different name.`
+    uploading.value = false
+    toast.error('Specification name must be unique')
+    return
+  }
+
   try {
     // Read file content
     const content = await readFileContent(selectedFile.value)
