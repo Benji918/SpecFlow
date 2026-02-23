@@ -13,7 +13,7 @@
         </RouterLink>
         <div class="flex items-center space-x-4">
           <span class="text-sm text-gray-400">{{ authStore.user?.email }}</span>
-          <RouterLink v-if="authStore.user?.is_admin" to="/admin" class="btn-secondary text-sm py-2 px-4 flex items-center space-x-2 border-primary/30 hover:border-primary">
+          <RouterLink v-if="authStore.user?.is_admin" to="/admin" target="_blank" class="btn-secondary text-sm py-2 px-4 flex items-center space-x-2 border-primary/30 hover:border-primary">
             <ShieldCheck :size="16" class="text-primary" />
             <span>Admin Panel</span>
           </RouterLink>

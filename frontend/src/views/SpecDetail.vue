@@ -10,7 +10,11 @@
             </button>
             <h1 class="text-2xl font-bold">Specification Details</h1>
           </div>
-          <div class="flex items-center space-x-2">
+          <div class="flex items-center space-x-4">
+            <RouterLink v-if="authStore.user?.is_admin" to="/admin" target="_blank" class="btn-secondary text-sm py-2 px-4 flex items-center space-x-2 border-primary/30 hover:border-primary">
+              <ShieldCheck :size="16" class="text-primary" />
+              <span class="hidden sm:inline">Admin Panel</span>
+            </RouterLink>
             <button 
               @click="handleLogout" 
               class="text-gray-400 hover:text-white hover:bg-white/10 px-3 py-2 rounded-lg transition-colors flex items-center space-x-2"
@@ -436,6 +440,7 @@ import {
   AlertTriangle,
   RefreshCw,
   LogOut,
+  ShieldCheck,
 } from 'lucide-vue-next'
 
 const router = useRouter()
