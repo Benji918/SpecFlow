@@ -53,9 +53,9 @@
             <div class="user-role">Super Admin</div>
           </div>
         </div>
-        <button @click="sidebarCollapsed = !sidebarCollapsed" class="collapse-toggle">
-          <ChevronLeft v-if="!sidebarCollapsed" :size="18" />
-          <ChevronRight v-else :size="18" />
+        <button @click="sidebarCollapsed = !sidebarCollapsed" class="collapse-toggle" :class="{ 'is-collapsed': sidebarCollapsed }">
+          <ChevronLeft v-if="!sidebarCollapsed" :size="20" />
+          <ChevronRight v-else :size="20" />
           <span v-if="!sidebarCollapsed" class="ml-2">Collapse</span>
         </button>
       </div>
@@ -342,12 +342,9 @@
                     <td class="text-gray-500">{{ formatDate(u.created_at) }}</td>
                     <td class="text-right">
                       <div class="table-actions">
-                        <button class="t-btn" title="Toggle Admin" @click="toggleAdmin(u)">
-                          <ShieldCheck :size="16" :class="u.is_admin ? 'text-primary' : 'text-gray-400'" />
+                        <button class="t-btn" title="Edit User" @click="startEditUser(u)">
+                          <Pencil :size="16" class="text-gray-400 group-hover:text-primary" />
                         </button>
-                        <select :value="u.plan" @change="e => changePlan(u, e.target.value)" class="t-select">
-                          <option v-for="p in ['free','starter','team','pro']" :key="p" :value="p">{{ p }}</option>
-                        </select>
                         <button class="t-btn delete" title="Delete User" @click="confirmDeleteUser(u)">
                           <Trash2 :size="16" class="text-red-500/80" />
                         </button>
@@ -371,12 +368,47 @@
         <template v-else-if="activeTab === 'activity'">
           <div class="table-container">
             <div class="card-header mb-6">
-              <h3>Recent System Activity</h3>
-              <p class="text-xs text-gray-500 mt-1">Real-time execution logs and user interactions</p>
+              <div class="title-group-sm">
+                <h3>Recent System Activity</h3>
+                <p class="text-xs text-gray-500 mt-1">Real-time execution logs and user interactions</p>
+              </div>
+              
+              <!-- Activity Filters -->
+              <div class="activity-filters-row">
+                <div class="filter-group">
+                  <label>Journey</label>
+                  <input v-model="activitySearch" type="text" placeholder="Search journey..." class="f-input" />
+                </div>
+                <div class="filter-group">
+                  <label>User</label>
+                  <input v-model="activityUserSearch" type="text" placeholder="Search user..." class="f-input" />
+                </div>
+                <div class="filter-group">
+                  <label>Status</label>
+                  <select v-model="activityStatusFilter" class="f-select">
+                    <option value="all">All Status</option>
+                    <option value="completed">Completed</option>
+                    <option value="failed">Failed</option>
+                    <option value="running">Running</option>
+                  </select>
+                </div>
+                <div class="filter-group duration-range">
+                  <label>Duration (s)</label>
+                  <div class="flex items-center gap-2">
+                    <input v-model="activityDurationMin" type="number" placeholder="Min" class="f-input-sm" />
+                    <span class="text-gray-600">-</span>
+                    <input v-model="activityDurationMax" type="number" placeholder="Max" class="f-input-sm" />
+                  </div>
+                </div>
+              </div>
             </div>
             
             <div class="orbit-card table-card p-0">
-              <table class="modern-table">
+              <div v-if="filteredActivity.length === 0" class="no-results p-20 text-center">
+                <div class="text-gray-500 font-bold mb-2">No activities found matching filters</div>
+                <button class="btn-ghost text-primary text-xs" @click="activitySearch='';activityUserSearch='';activityStatusFilter='all';activityDurationMin='';activityDurationMax=''">Clear Filters</button>
+              </div>
+              <table v-else class="modern-table">
                 <thead>
                   <tr>
                     <th>Status</th>
@@ -387,7 +419,7 @@
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="a in activity" :key="a.execution_id">
+                  <tr v-for="a in filteredActivity" :key="a.execution_id">
                     <td>
                       <div class="status-marker" :class="a.status">
                         <div class="status-dot-inner"></div>
@@ -399,14 +431,14 @@
                       <div class="user-row">
                         <div class="user-avatar-modern sm">{{ a.user_name?.[0]?.toUpperCase() }}</div>
                         <div class="flex flex-col">
-                          <span class="text-xs font-bold">{{ a.user_name }}</span>
+                          <span class="text-xs font-bold text-white">{{ a.user_name }}</span>
                           <span class="text-[10px] text-gray-500">{{ a.user_email }}</span>
                         </div>
                       </div>
                     </td>
                     <td class="text-gray-500">{{ formatDateTime(a.started_at) }}</td>
                     <td class="text-gray-500 font-mono text-xs">
-                      {{ a.completed_at ? '2.4s' : 'Running...' }}
+                      {{ getActivityDuration(a) }}
                     </td>
                   </tr>
                 </tbody>
@@ -526,12 +558,49 @@
         </div>
       </div>
     </Transition>
+
+    <!-- Modal for User Editing -->
+    <Transition name="fade-scale">
+      <div v-if="showEditModal" class="orbit-modal-overlay" @click.self="showEditModal = false">
+        <div class="orbit-modal-box">
+          <div class="modal-glow"></div>
+          <h2 class="text-2xl font-black mb-2">Edit User Profile</h2>
+          <p class="text-sm text-gray-500 mb-8">Modify account details and platform privileges.</p>
+          
+          <form @submit.prevent="updateUserDetails" class="space-y-6">
+            <div class="form-field">
+              <label>Full Name</label>
+              <input v-model="editUserData.name" type="text" placeholder="Alex Rivera" required />
+            </div>
+            <div class="form-field">
+              <label>Email ID</label>
+              <input v-model="editUserData.email" type="email" placeholder="alex@specflow.com" required />
+            </div>
+            
+            <div class="flex items-center gap-3 p-4 bg-white/5 rounded-xl border border-white/10">
+              <input type="checkbox" v-model="editUserData.is_admin" id="isAdminCheck" class="w-5 h-5 accent-primary" />
+              <label for="isAdminCheck" class="mb-0 cursor-pointer text-sm font-bold text-white">Administrator Access</label>
+            </div>
+            
+            <div v-if="editFormError" class="error-msg text-red-500 text-sm font-bold">{{ editFormError }}</div>
+            
+            <div class="modal-footer flex justify-between items-center pt-6">
+              <button type="button" class="btn-ghost" @click="showEditModal = false">Cancel</button>
+              <button type="submit" class="btn-primary-modern px-8" :disabled="updatingUser">
+                {{ updatingUser ? 'Saving...' : 'Save Changes' }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </Transition>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted, nextTick, watch } from 'vue'
 import { useAuthStore } from '@/stores/auth'
+import { useToast } from 'vue-toastification'
 import apiClient from '@/api/client'
 import { 
   Users, 
@@ -554,10 +623,12 @@ import {
   Moon,
   Plus,
   ShieldCheck,
-  Trash2
+  Trash2,
+  Pencil
 } from 'lucide-vue-next'
 
 const authStore = useAuthStore()
+const toast = useToast()
 
 // ── Tabs ──────────────────────────────────────────────────────────
 const tabs = [
@@ -584,6 +655,13 @@ const searchQuery = ref('')
 const sidebarCollapsed = ref(false)
 const showPassword = ref(false)
 const theme = ref('dark')
+
+// Activity Filtering State
+const activitySearch = ref('')
+const activityUserSearch = ref('')
+const activityStatusFilter = ref('all')
+const activityDurationMin = ref('')
+const activityDurationMax = ref('')
 
 const adminUpdateData = ref({ 
   name: authStore.user?.name || '', 
@@ -612,6 +690,13 @@ const creatingAdmin   = ref(false)
 const adminFormError  = ref('')
 const adminFormSuccess = ref('')
 const newAdmin = ref({ name: '', email: '', password: '' })
+
+// Edit User State
+const showEditModal = ref(false)
+const editingUser = ref(null)
+const editUserData = ref({ name: '', email: '', is_admin: false })
+const updatingUser = ref(false)
+const editFormError = ref('')
 
 // ── Data Loaders ──────────────────────────────────────────────────
 async function loadAll() {
@@ -647,7 +732,7 @@ async function loadUsers() {
 }
 
 async function loadActivity() {
-  const { data } = await apiClient.get('/api/admin/recent-activity?limit=15')
+  const { data } = await apiClient.get('/api/admin/recent-activity?limit=100')
   activity.value = data
 }
 
@@ -683,13 +768,124 @@ async function createAdmin() {
       is_admin: true,
     })
     adminFormSuccess.value = `Admin account for ${newAdmin.value.email} created!`
+    toast.success(adminFormSuccess.value)
     newAdmin.value = { name: '', email: '', password: '' }
     await loadUsers()
   } catch (e) {
     adminFormError.value = e.response?.data?.detail || 'Failed to create admin'
+    toast.error(adminFormError.value)
   } finally {
     creatingAdmin.value = false
   }
+}
+
+// ── User Management ────────────────────────────────────────────────
+function startEditUser(user) {
+  editingUser.value = user
+  editUserData.value = { 
+    name: user.name || '', 
+    email: user.email || '', 
+    is_admin: user.is_admin || false 
+  }
+  showEditModal.value = true
+}
+
+async function updateUserDetails() {
+  updatingUser.value = true
+  editFormError.value = ''
+  try {
+    await apiClient.patch(`/api/admin/users/${editingUser.value.id}`, editUserData.value)
+    showEditModal.value = false
+    toast.success(`User ${editUserData.value.email} updated successfully!`)
+    await loadUsers()
+  } catch (e) {
+    editFormError.value = e.response?.data?.detail || 'Failed to update user'
+    toast.error(editFormError.value)
+  } finally {
+    updatingUser.value = false
+  }
+}
+
+async function confirmDeleteUser(user) {
+  if (confirm(`Are you sure you want to delete user ${user.email}? This action cannot be undone.`)) {
+    try {
+      await apiClient.delete(`/api/admin/users/${user.id}`)
+      toast.success(`User ${user.email} deleted successfully!`)
+      await loadUsers()
+    } catch (e) {
+      const error = e.response?.data?.detail || 'Failed to delete user'
+      toast.error(error)
+    }
+  }
+}
+
+async function toggleAdmin(user) {
+  try {
+    await apiClient.patch(`/api/admin/users/${user.id}`, { is_admin: !user.is_admin })
+    await loadUsers()
+  } catch (e) {
+    alert(e.response?.data?.detail || 'Failed to toggle admin status')
+  }
+}
+
+async function changePlan(user, plan) {
+  try {
+    await apiClient.patch(`/api/admin/users/${user.id}`, { plan })
+    await loadUsers()
+  } catch (e) {
+    alert(e.response?.data?.detail || 'Failed to change plan')
+  }
+}
+
+// ── Activity Filtering Logic ──────────────────────────────────────
+const filteredActivity = computed(() => {
+  if (!activity.value) return []
+  
+  return activity.value.filter(a => {
+    // Journey Filter
+    if (activitySearch.value && !a.journey_name.toLowerCase().includes(activitySearch.value.toLowerCase())) {
+      return false
+    }
+    
+    // User Filter
+    if (activityUserSearch.value) {
+      const search = activityUserSearch.value.toLowerCase()
+      const matchesName = a.user_name?.toLowerCase().includes(search)
+      const matchesEmail = a.user_email?.toLowerCase().includes(search)
+      if (!matchesName && !matchesEmail) return false
+    }
+    
+    // Status Filter
+    if (activityStatusFilter.value !== 'all' && a.status !== activityStatusFilter.value) {
+      return false
+    }
+    
+    // Duration Filter
+    if (a.completed_at && a.started_at) {
+      const start = new Date(a.started_at)
+      const end = new Date(a.completed_at)
+      const durationSec = (end - start) / 1000
+      
+      const min = parseFloat(activityDurationMin.value)
+      const max = parseFloat(activityDurationMax.value)
+      
+      if (!isNaN(min) && durationSec < min) return false
+      if (!isNaN(max) && durationSec > max) return false
+    } else if (activityDurationMin.value || activityDurationMax.value) {
+      // If filtering by duration but it's still running, it doesn't have a final duration
+      if (a.status === 'running') return false
+    }
+    
+    return true
+  })
+})
+
+function getActivityDuration(a) {
+  if (!a.completed_at || !a.started_at) return 'Running...'
+  const start = new Date(a.started_at)
+  const end = new Date(a.completed_at)
+  const diffSec = (end - start) / 1000
+  return diffSec.toFixed(1) + 's'
 }
 
 // ── Computed ──────────────────────────────────────────────────────
@@ -826,9 +1022,21 @@ function renderDonutChart() {
       }]
     },
     options: {
-      cutout: '68%',
-      plugins: { legend: { display: false } },
-      animation: { animateScale: true, duration: 600 }
+      cutout: '72%',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { 
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#111',
+          titleFont: { family: 'Outfit', size: 14, weight: 'bold' },
+          bodyFont: { family: 'Outfit', size: 13 },
+          padding: 12,
+          cornerRadius: 10,
+          displayColors: true
+        }
+      },
+      animation: { animateScale: true, duration: 800 }
     }
   })
 }
@@ -855,17 +1063,17 @@ function renderGrowthCharts() {
           usePointStyle: true,
           pointStyle: 'circle',
           padding: 20,
-          font: { family: 'Inter', size: 11 } 
+          font: { family: 'Outfit', size: 12, weight: '600' } 
         } 
       } 
     },
     scales: {
       x: { 
-        ticks: { color: textColor, maxTicksLimit: 8, font: { family: 'Inter', size: 10 } }, 
+        ticks: { color: textColor, maxTicksLimit: 8, font: { family: 'Outfit', size: 11 } }, 
         grid: { color: gridColor, drawTicks: false } 
       },
       y: { 
-        ticks: { color: textColor, font: { family: 'Inter', size: 10 }, padding: 10 }, 
+        ticks: { color: textColor, font: { family: 'Outfit', size: 11 }, padding: 10 }, 
         grid: { color: gridColor, drawTicks: false }, 
         beginAtZero: true 
       }
@@ -941,16 +1149,28 @@ function renderGrowthCharts() {
           {
             label: 'Failed',
             data: growth.value.executions_failed,
-            borderColor: '#f87171',
-            backgroundColor: 'rgba(248,113,113,0.10)',
+            borderColor: '#ff4d4d',
+            backgroundColor: 'rgba(255, 77, 77, 0.15)',
             fill: true,
             tension: 0.4,
-            pointBackgroundColor: '#f87171',
-            pointRadius: 3,
+            pointBackgroundColor: '#ff4d4d',
+            pointRadius: 4,
+            pointHoverRadius: 6,
+            borderWidth: 3,
+            borderDash: [5, 5] // Differentiate failed with dashed line
           }
         ]
       },
-      options: baseOpts
+      options: {
+        ...baseOpts,
+        scales: {
+          ...baseOpts.scales,
+          y: {
+            ...baseOpts.scales.y,
+            suggestedMax: 5 // Ensure some headroom even if values are low
+          }
+        }
+      }
     })
   }
 }
@@ -971,6 +1191,17 @@ watch(activeTab, async (val) => {
     await nextTick()
     renderCharts()
   }
+})
+
+// Resize charts when sidebar state changes
+watch(sidebarCollapsed, () => {
+  setTimeout(() => {
+    if (planChart) planChart.resize()
+    if (userGrowthChartInst) userGrowthChartInst.resize()
+    if (specChartInst) specChartInst.resize()
+    if (execChartInst) execChartInst.resize()
+    // Small delay to allow CSS transitions to finish
+  }, 310)
 })
 
 onMounted(loadAll)
@@ -1050,7 +1281,24 @@ onMounted(loadAll)
   cursor: pointer;
   position: relative;
 }
+.nav-icon {
+  flex-shrink: 0;
+  transition: transform 0.2s;
+}
+.sidebar-collapsed .nav-link:hover .nav-icon {
+  transform: scale(1.2);
+  color: #BFF549;
+}
 .nav-link:hover { color: #fff; background: rgba(255,255,255,0.05); }
+.sidebar-collapsed .nav-link {
+  justify-content: center;
+  padding: 12px 0;
+  width: 48px;
+  margin: 0 auto;
+}
+.sidebar-collapsed .nav-icon {
+  margin: 0;
+}
 .nav-link.active { color: #BFF549; background: rgba(191,245,73,0.08); font-weight: 600; }
 .active-indicator {
   position: absolute;
@@ -1083,12 +1331,23 @@ onMounted(loadAll)
 .user-name { font-size: 14px; font-weight: 700; color: #fff; }
 .user-role { font-size: 11px; color: #555; }
 .collapse-toggle {
-  width: 100%; padding: 8px; border-radius: 8px;
-  background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05);
-  color: #666; font-size: 12px; font-weight: 600; cursor: pointer;
-  transition: all 0.2s;
+  width: 100%; padding: 10px; border-radius: 12px;
+  background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+  color: #BFF549; font-size: 13px; font-weight: 700; cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex; align-items: center; justify-content: center;
 }
-.collapse-toggle:hover { color: #fff; background: rgba(255,255,255,0.08); }
+.sidebar-collapsed .collapse-toggle {
+  width: 44px;
+  padding: 10px 0;
+  margin: 0 auto;
+}
+.collapse-toggle:hover { 
+  color: #000; background: #BFF549; 
+  border-color: #BFF549;
+  box-shadow: 0 4px 15px rgba(191,245,73,0.5);
+  transform: scale(1.05);
+}
 
 /* ── Main Content Area ── */
 .admin-main {
@@ -1238,7 +1497,7 @@ onMounted(loadAll)
 .chart-content { height: 350px; }
 
 /* Side Chart (Donut) */
-.donut-content { position: relative; height: 200px; margin-bottom: 24px; }
+.donut-content { position: relative; height: 260px; margin-bottom: 24px; display: flex; align-items: center; justify-content: center; }
 .donut-center {
   position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
   display: flex;
@@ -1247,8 +1506,8 @@ onMounted(loadAll)
   justify-content: center;
   text-align: center;
 }
-.total-val { font-size: 32px; font-weight: 900; line-height: 1; margin-bottom: 2px; }
-.total-label { font-size: 10px; color: #555; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; }
+.total-val { font-size: 42px; font-weight: 900; line-height: 1; margin-bottom: 2px; color: #fff; }
+.total-label { font-size: 12px; color: #888; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; }
 
 .plan-list { display: flex; flex-direction: column; gap: 12px; }
 .plan-item { display: flex; justify-content: space-between; align-items: center; }
@@ -1417,6 +1676,53 @@ onMounted(loadAll)
   margin-bottom: 24px;
 }
 .user-table-header h3 { font-size: 20px; font-weight: 900; }
+
+/* ── Activity Filters ── */
+.activity-filters-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  align-items: flex-end;
+}
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.filter-group label {
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: #444;
+  letter-spacing: 0.1em;
+}
+.f-input, .f-select {
+  background: #111;
+  border: 1px solid #222;
+  border-radius: 8px;
+  padding: 8px 12px;
+  color: #fff;
+  font-size: 13px;
+  outline: none;
+  transition: all 0.2s;
+}
+.f-input:focus, .f-select:focus {
+  border-color: #BFF549;
+  background: #151515;
+}
+.f-input-sm {
+  width: 70px;
+  background: #111;
+  border: 1px solid #222;
+  border-radius: 8px;
+  padding: 8px;
+  color: #fff;
+  font-size: 12px;
+  outline: none;
+}
+.f-input-sm:focus { border-color: #BFF549; }
+.duration-range { min-width: 160px; }
+
 .action-group {
   display: flex;
   align-items: center;
@@ -1487,6 +1793,16 @@ onMounted(loadAll)
 .light-theme .t-select,
 .light-theme .period-select { background: #f8f9fa; border-color: rgba(0,0,0,0.1); color: #1a1a1a; }
 .light-theme .icon-btn { background: #f8f9fa; border-color: rgba(0,0,0,0.08); }
+.light-theme .collapse-toggle { 
+  background: #f8f9fa; 
+  border-color: rgba(0,0,0,0.1); 
+  color: #555; 
+}
+.light-theme .collapse-toggle:hover {
+  background: #BFF549;
+  color: #000;
+  border-color: #BFF549;
+}
 .light-theme .mini-avatar { box-shadow: 0 4px 10px rgba(191,245,73,0.3); }
 
 /* ── Mobile Responsiveness ── */
