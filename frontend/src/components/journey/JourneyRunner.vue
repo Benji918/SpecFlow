@@ -62,13 +62,23 @@
           <div class="text-center">
             <p :class="[
               'text-[12px] uppercase font-black tracking-[0.4em] mb-2',
-              isRunning ? 'text-red-400' : 'text-gray-500'
-            ]">System Status</p>
+              isRunning ? 'text-red-400' : (executionState === 'failed' ? 'text-red-500' : 'text-gray-500')
+            ]">
+              {{ executionState === 'failed' ? 'Attention Required' : 'System Status' }}
+            </p>
             <p :class="[
               'text-5xl font-black uppercase tracking-tighter transition-all duration-300',
-              isRunning ? 'text-red-500 drop-shadow-[0_0_15px_rgba(239,68,68,0.5)]' : 'text-gray-700'
+              isRunning ? 'text-red-500 drop-shadow-[0_0_15px_rgba(239,68,68,0.5)]' : 
+              (executionState === 'completed' ? 'text-primary' : 
+              (executionState === 'failed' ? 'text-red-500 underline decoration-red-900/50' : 'text-gray-700'))
             ]">
-              {{ isRunning ? 'Executing' : (executionState === 'completed' ? 'Success' : (executionState === 'failed' ? 'Error' : 'Ready')) }}
+              {{ isRunning ? 'Executing' : (executionState === 'completed' ? 'Passed' : (executionState === 'failed' ? 'Failed' : 'Ready')) }}
+            </p>
+            <p v-if="executionState === 'failed'" class="text-[10px] text-red-500/70 font-bold mt-2 uppercase tracking-widest">
+              One or more steps encountered errors
+            </p>
+            <p v-else-if="executionState === 'completed'" class="text-[10px] text-primary/70 font-bold mt-2 uppercase tracking-widest">
+              All endpoints responded successfully
             </p>
           </div>
         </div>

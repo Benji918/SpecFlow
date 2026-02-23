@@ -520,7 +520,28 @@ function handleStepComplete(result) {
 
 function handleExecutionComplete(message) {
   if (message) {
-    toast.success('Journey execution completed!')
+    const status = message.status
+    const executionId = message.executionId
+    const totalSteps = message.totalSteps || 0
+    const completedSteps = message.completedSteps || 0
+    const failedSteps = message.failedSteps || 0
+    const failedStepDetails = message.failedStepDetails || []
+    
+    if (status === 'failed') {
+      // Show detailed error message
+      const firstFailed = failedStepDetails[0]
+      if (firstFailed) {
+        const stepName = firstFailed.stepName || firstFailed.stepId
+        const errorMsg = firstFailed.error ? `: ${firstFailed.error}` : ` (HTTP ${firstFailed.statusCode})`
+        toast.error(`Journey failed at "${stepName}"${errorMsg}`)
+      } else {
+        toast.error(`Journey execution failed - ${failedSteps} of ${totalSteps} steps failed`)
+      }
+    } else if (status === 'completed') {
+      toast.success(`Journey executed successfully! (${completedSteps} steps)`)
+    } else {
+      toast.info(`Journey execution ${status}`)
+    }
   }
 }
 

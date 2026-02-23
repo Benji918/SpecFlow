@@ -145,6 +145,7 @@ async def execute_journey_ws(websocket: WebSocket, journey_id: str):
                 nodes = data.get("nodes", journey.nodes)
                 edges = data.get("edges", journey.edges)
                 results = []
+                failed_steps = []
                 
                 for node in nodes:
                     # Send step start event
@@ -159,6 +160,16 @@ async def execute_journey_ws(websocket: WebSocket, journey_id: str):
                         result = executor._inject_error(node, error_injections[step_id])
                     else:
                         result = await executor._execute_step(node, session_data)
+                    
+                    # Track failed steps
+                    status_code = result.get("statusCode", 0)
+                    if status_code >= 400 or result.get("error"):
+                        failed_steps.append({
+                            "stepId": step_id,
+                            "stepName": node.get("data", {}).get("summary") or node.get("data", {}).get("path", "Unknown"),
+                            "statusCode": status_code,
+                            "error": result.get("error")
+                        })
                     
                     # Send step result
                     await websocket.send_json({
@@ -175,24 +186,29 @@ async def execute_journey_ws(websocket: WebSocket, journey_id: str):
                     await db.commit()
                     
                     # Stop on error if needed
-                    status_code = result.get("statusCode", 0)
                     continue_on_error = node.get("data", {}).get("continueOnError", False)
                     
                     if status_code >= 400 and not continue_on_error:
                         execution.status = "failed"
                         break
                 
-                # Mark execution complete
-                if execution.status == "running":
+                # Mark execution status based on failures
+                if failed_steps:
+                    execution.status = "failed"
+                elif execution.status == "running":
                     execution.status = "completed"
                 execution.completed_at = datetime.utcnow()
                 await db.commit()
                 
-                # Send completion event
+                # Send completion event with details
                 await websocket.send_json({
                     "type": "execution_complete",
                     "executionId": str(execution.id),
-                    "status": execution.status
+                    "status": execution.status,
+                    "totalSteps": len(nodes),
+                    "completedSteps": len(results),
+                    "failedSteps": len(failed_steps),
+                    "failedStepDetails": failed_steps
                 })
             finally:
                 await executor.close()
