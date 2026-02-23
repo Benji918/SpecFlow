@@ -14,8 +14,8 @@ class Spec(Base):
     name = Column(String, nullable=False)
     version = Column(String)
     content = Column(JSON, nullable=False)  # Full OpenAPI spec
-    endpoints = Column(JSON, nullable=False)  # Parsed endpoint list
-    schemas = Column(JSON, nullable=False)  # Component schemas
+    endpoints = Column(JSON, nullable=True)  # Parsed endpoint list
+    schemas = Column(JSON, nullable=True)  # Component schemas
     uploaded_at = Column(DateTime, default=datetime.utcnow)
 
     # Relationships

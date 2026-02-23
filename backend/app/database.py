@@ -30,7 +30,7 @@ class AsyncEngineWithRetry:
             pool_size=5, 
             max_overflow=5,  # Allow more overflow connections during high load
             pool_pre_ping=True,
-            pool_timeout=30,  # Reduced timeout for faster failure detection
+            pool_timeout=60,  # Reduced timeout for faster failure detection
             pool_recycle=1800,  # Recycle connections every 30 minutes
             connect_args={
                 "statement_cache_size": 100,  
