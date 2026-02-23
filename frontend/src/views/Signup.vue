@@ -209,6 +209,12 @@ async function handleSignup() {
     return
   }
 
+  // Security check: Ensure is_admin is not being sent
+  if ('is_admin' in formData.value) {
+    console.error('Security alert: unauthorized field detected')
+    delete formData.value.is_admin
+  }
+
 
   loading.value = true
 

@@ -40,6 +40,10 @@ class UserBase(BaseModel):
     email: EmailStr
     name: Optional[str] = None
 
+    model_config = {
+        "extra": "forbid"
+    }
+
     @field_validator("email")
     @classmethod
     def validate_email(cls, v: str) -> str:

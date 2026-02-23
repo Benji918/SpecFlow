@@ -188,16 +188,16 @@
             <div class="orbit-card kpi-widget indigo">
               <div class="widget-header">
                 <div class="widget-title">
-                  <div class="icon-box"><ShieldCheck :size="18" /></div>
-                  System Reliability
+                  <div class="icon-box"><Activity :size="18" /></div>
+                  Execution Success Rate
                 </div>
-                <div class="trend" :class="stats.executions.success_rate >= 80 ? 'positive' : 'negative'" title="Reliability Trend">
-                  {{ stats.executions.success_rate }}% Accuracy
+                <div class="trend" :class="stats.executions.success_rate >= 80 ? 'positive' : 'negative'" title="Performance Trend">
+                  {{ stats.executions.success_rate }}% Stability
                 </div>
               </div>
               <div class="widget-value-group">
                 <div class="widget-value">{{ stats.executions.success_rate }}%</div>
-                <div class="widget-sub-label">Integrity Score</div>
+                <div class="widget-sub-label">Pass Rate</div>
               </div>
               <div class="widget-footer">
                 <span class="text-green-400 font-bold">{{ stats.executions.successful }}</span> Passed / 
