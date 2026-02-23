@@ -19,7 +19,7 @@ router = APIRouter(prefix="/api/auth", tags=["auth"])
 
 def get_cookie_settings():
     """Get appropriate cookie settings based on environment."""
-
+    
     cookie_config = {
         "httponly": True,
         "max_age": settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,

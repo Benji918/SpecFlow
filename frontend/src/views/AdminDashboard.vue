@@ -1,282 +1,499 @@
 <template>
-  <div class="admin-root">
-    <!-- Sidebar -->
-    <aside class="sidebar">
-      <div class="sidebar-logo">
-        <img src="https://www.glaido.com/images/glaido-main-white.svg" alt="SpecFlow" class="logo-img" />
-        <span class="admin-badge">ADMIN</span>
+  <div class="admin-wrapper" :class="{ 'sidebar-collapsed': sidebarCollapsed }">
+    <!-- Left Sidebar -->
+    <aside class="admin-sidebar">
+      <div class="sidebar-header">
+        <RouterLink to="/" class="flex items-center space-x-2 group pl-2">
+          <div class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center transform rotate-12 group-hover:rotate-0 transition-transform">
+            <Zap :size="20" class="text-black fill-current" />
+          </div>
+          <span class="text-xl font-black tracking-tighter text-white" v-if="!sidebarCollapsed">
+            Spec<span class="text-primary">Flow</span>
+            <span class="admin-label">ADMIN</span>
+          </span>
+        </RouterLink>
       </div>
-      <nav class="sidebar-nav">
+
+      <nav class="sidebar-content">
+        <div class="nav-section" v-if="!sidebarCollapsed">Dashboard</div>
         <button
-          v-for="tab in tabs"
+          v-for="tab in tabs.slice(0, 3)"
           :key="tab.id"
-          class="nav-item"
+          class="nav-link"
           :class="{ active: activeTab === tab.id }"
           @click="activeTab = tab.id"
         >
-          <span class="nav-icon" v-html="tab.icon"></span>
-          <span>{{ tab.label }}</span>
+          <component :is="tab.icon" :size="20" class="nav-icon" />
+          <span v-if="!sidebarCollapsed">{{ tab.label }}</span>
+          <div v-show="activeTab === tab.id" class="active-indicator"></div>
+        </button>
+
+        <div class="nav-divider"></div>
+        <div class="nav-section" v-if="!sidebarCollapsed">Platform</div>
+        <button
+          v-for="tab in tabs.slice(3)"
+          :key="tab.id"
+          class="nav-link"
+          :class="{ active: activeTab === tab.id }"
+          @click="activeTab = tab.id"
+        >
+          <component :is="tab.icon" :size="20" class="nav-icon" />
+          <span v-if="!sidebarCollapsed">{{ tab.label }}</span>
         </button>
       </nav>
+
       <div class="sidebar-footer">
-        <div class="admin-profile">
-          <div class="avatar">{{ authStore.user?.name?.[0]?.toUpperCase() || 'A' }}</div>
-          <div class="profile-info">
-            <div class="profile-name">{{ authStore.user?.name || 'Admin' }}</div>
-            <div class="profile-role">Super Admin</div>
+        <div class="user-profile-summary" v-if="!sidebarCollapsed">
+          <div class="avatar-ring">
+            <div class="avatar-inner">{{ authStore.user?.name?.[0]?.toUpperCase() }}</div>
+            <div class="status-dot"></div>
+          </div>
+          <div class="user-details">
+            <div class="user-name">{{ authStore.user?.name }}</div>
+            <div class="user-role">Super Admin</div>
           </div>
         </div>
-        <router-link to="/dashboard" class="back-btn">← App</router-link>
+        <button @click="sidebarCollapsed = !sidebarCollapsed" class="collapse-toggle">
+          <ChevronLeft v-if="!sidebarCollapsed" :size="18" />
+          <ChevronRight v-else :size="18" />
+          <span v-if="!sidebarCollapsed" class="ml-2">Collapse</span>
+        </button>
       </div>
     </aside>
 
-    <!-- Main Content -->
-    <main class="main-content">
-      <!-- Header -->
-      <header class="top-header">
-        <div>
-          <h1 class="page-title">{{ currentTab?.label }}</h1>
-          <p class="page-sub">{{ currentTab?.description }}</p>
+    <!-- Main Content Area -->
+    <main class="admin-main">
+      <!-- Sticky Top Header -->
+      <header class="admin-header">
+        <div class="header-search">
+          <Search :size="18" class="search-icon" />
+          <input type="text" placeholder="Search analytics, users..." v-model="searchQuery" />
         </div>
-        <div class="header-right">
-          <div class="last-updated">Last updated: {{ lastUpdated }}</div>
-          <button class="refresh-btn" @click="loadAll" :disabled="loading">
-            <span :class="{ spinning: loading }">↻</span> Refresh
-          </button>
+
+        <div class="header-actions">
+          <div class="action-icons">
+            <button class="icon-btn" title="Refresh Data" @click="loadAll" :disabled="loading">
+              <RefreshCw :size="20" :class="{ spinning: loading }" />
+            </button>
+            <button class="icon-btn" title="Notifications">
+              <Bell :size="20" />
+              <div class="notification-badge"></div>
+            </button>
+            <button class="icon-btn" title="Redirect to App" @click="router.push('/dashboard')">
+              <LayoutDashboard :size="20" />
+            </button>
+          </div>
+          <div class="user-dropdown" @click="activeTab = 'settings'">
+            <div class="dropdown-trigger">
+              <div class="user-info text-right mr-3 hidden sm:block">
+                <div class="text-sm font-bold text-white">{{ authStore.user?.name }}</div>
+                <div class="text-[10px] text-primary/80 font-black tracking-widest uppercase">Online</div>
+              </div>
+              <div class="mini-avatar">{{ authStore.user?.name?.[0]?.toUpperCase() }}</div>
+              <Settings :size="16" class="ml-2 text-gray-500 cursor-pointer hover:text-primary transition-colors" />
+            </div>
+          </div>
         </div>
       </header>
 
-      <!-- Loading overlay -->
-      <div v-if="loading && !stats" class="loading-overlay">
-        <div class="loader-ring"></div>
-        <p>Loading analytics…</p>
-      </div>
-
-      <!-- ===== OVERVIEW TAB ===== -->
-      <div v-if="activeTab === 'overview' && stats" class="tab-content">
-        <!-- KPI Cards Row 1 -->
-        <div class="kpi-grid">
-          <div class="kpi-card kpi-blue">
-            <div class="kpi-icon">👥</div>
-            <div class="kpi-body">
-              <div class="kpi-value">{{ stats.users.total.toLocaleString() }}</div>
-              <div class="kpi-label">Registered Users</div>
-              <div class="kpi-delta positive">+{{ stats.users.new_7d }} this week</div>
-            </div>
+      <!-- Dashboard View -->
+      <div class="admin-container scrollbar-hide">
+        <!-- Page Title & Refresh Info -->
+        <div class="container-header">
+          <div class="title-group">
+            <h2>{{ currentTab?.label }}</h2>
+            <p>{{ currentTab?.description }}</p>
           </div>
-          <div class="kpi-card kpi-green">
-            <div class="kpi-icon">📄</div>
-            <div class="kpi-body">
-              <div class="kpi-value">{{ stats.specs.total.toLocaleString() }}</div>
-              <div class="kpi-label">Specs Uploaded</div>
-              <div class="kpi-delta positive">+{{ stats.specs.new_7d }} this week</div>
-            </div>
-          </div>
-          <div class="kpi-card kpi-yellow">
-            <div class="kpi-icon">🗺️</div>
-            <div class="kpi-body">
-              <div class="kpi-value">{{ stats.journeys.total.toLocaleString() }}</div>
-              <div class="kpi-label">Journeys Created</div>
-              <div class="kpi-delta neutral">{{ stats.journeys.ai_generated }} AI / {{ stats.journeys.manual }} Manual</div>
-            </div>
-          </div>
-          <div class="kpi-card" :class="stats.executions.success_rate >= 80 ? 'kpi-green' : stats.executions.success_rate >= 50 ? 'kpi-yellow' : 'kpi-red'">
-            <div class="kpi-icon">⚡</div>
-            <div class="kpi-body">
-              <div class="kpi-value">{{ stats.executions.success_rate }}%</div>
-              <div class="kpi-label">Execution Success Rate</div>
-              <div class="kpi-delta" :class="stats.executions.success_rate >= 80 ? 'positive' : 'negative'">
-                {{ stats.executions.total }} total runs
-              </div>
-            </div>
+          <div class="time-group">
+            <span class="last-sync">Last updated: {{ lastUpdated }}</span>
           </div>
         </div>
 
-        <!-- Execution Breakdown -->
-        <div class="section-row">
-          <div class="card exec-status-card">
-            <h3 class="card-title">Execution Status Breakdown</h3>
-            <div class="status-bars">
-              <div class="status-bar-row">
-                <span class="status-label">✅ Successful</span>
-                <div class="bar-track">
-                  <div class="bar-fill bar-green" :style="{ width: execSuccessWidth + '%' }"></div>
+        <!-- Overview Content -->
+        <template v-if="activeTab === 'overview' && stats">
+          <!-- KPI Cards Row -->
+          <div class="kpi-row">
+            <div class="orbit-card kpi-widget purple">
+              <div class="widget-header">
+                <div class="widget-title">
+                  <div class="icon-box"><Users :size="18" /></div>
+                  Users
                 </div>
-                <span class="status-count green-text">{{ stats.executions.successful }}</span>
+                <div class="trend positive">+{{ stats.users.new_7d }}%</div>
               </div>
-              <div class="status-bar-row">
-                <span class="status-label">❌ Failed</span>
-                <div class="bar-track">
-                  <div class="bar-fill bar-red" :style="{ width: execFailWidth + '%' }"></div>
+              <div class="widget-value">{{ stats.users.total.toLocaleString() }}</div>
+              <div class="widget-footer">From last month</div>
+              <div class="widget-spark">
+                <canvas id="sparkUsers"></canvas>
+              </div>
+            </div>
+
+            <div class="orbit-card kpi-widget cyan">
+              <div class="widget-header">
+                <div class="widget-title">
+                  <div class="icon-box"><FileCode2 :size="18" /></div>
+                  Specs
                 </div>
-                <span class="status-count red-text">{{ stats.executions.failed }}</span>
+                <div class="trend positive">+{{ stats.specs.new_7d }}%</div>
               </div>
-              <div class="status-bar-row">
-                <span class="status-label">⏳ Running</span>
-                <div class="bar-track">
-                  <div class="bar-fill bar-yellow" :style="{ width: execRunWidth + '%' }"></div>
+              <div class="widget-value">{{ stats.specs.total.toLocaleString() }}</div>
+              <div class="widget-footer">From last month</div>
+              <div class="widget-spark">
+                <canvas id="sparkSpecs"></canvas>
+              </div>
+            </div>
+
+            <div class="orbit-card kpi-widget lime">
+              <div class="widget-header">
+                <div class="widget-title">
+                  <div class="icon-box"><Map :size="18" /></div>
+                  AI Journeys
                 </div>
-                <span class="status-count yellow-text">{{ stats.executions.running }}</span>
+                <div class="trend positive">+{{ stats.journeys.total ? Math.round((stats.journeys.ai_generated / stats.journeys.total) * 100) : 0 }}%</div>
+              </div>
+              <div class="widget-value">{{ stats.journeys.ai_generated.toLocaleString() }}</div>
+              <div class="widget-footer">AI Generated</div>
+              <div class="widget-spark">
+                <canvas id="sparkJourneys"></canvas>
+              </div>
+            </div>
+
+            <div class="orbit-card kpi-widget cyan">
+              <div class="widget-header">
+                <div class="widget-title">
+                  <div class="icon-box"><Activity :size="18" /></div>
+                  Manual Journeys
+                </div>
+                <div class="trend positive">{{ stats.journeys.manual.toLocaleString() }}</div>
+              </div>
+              <div class="widget-value">{{ stats.journeys.manual.toLocaleString() }}</div>
+              <div class="widget-footer">Created Manually</div>
+              <div class="widget-spark">
+                <canvas id="sparkManual"></canvas>
+              </div>
+            </div>
+
+            <div class="orbit-card kpi-widget rose">
+              <div class="widget-header">
+                <div class="widget-title">
+                  <div class="icon-box"><Zap :size="18" /></div>
+                  Success
+                </div>
+                <div class="trend" :class="stats.executions.success_rate >= 80 ? 'positive' : 'negative'">
+                  {{ stats.executions.success_rate }}%
+                </div>
+              </div>
+              <div class="widget-value">{{ stats.executions.success_rate }}%</div>
+              <div class="widget-footer">{{ stats.executions.total }} executions</div>
+              <div class="widget-spark">
+                <canvas id="sparkSuccess"></canvas>
               </div>
             </div>
           </div>
 
-          <div class="card plan-donut-card">
-            <h3 class="card-title">Users by Plan</h3>
-            <div class="donut-wrap">
-              <canvas id="planDonutChart" width="200" height="200"></canvas>
-            </div>
-            <div class="plan-legend">
-              <div v-for="(plan, idx) in planLegend" :key="plan.name" class="legend-row">
-                <span class="legend-dot" :style="{ background: plan.color }"></span>
-                <span class="legend-name">{{ plan.name }}</span>
-                <span class="legend-val">{{ plan.value }}</span>
+          <!-- Main Grid (Charts) -->
+          <div class="dashboard-grid">
+            <div class="orbit-card main-chart-card">
+              <div class="card-header">
+                <h3>User Growth Rate</h3>
+                <div class="chart-labels">
+                  <span class="legend-item"><div class="dot lime"></div> Current</span>
+                  <span class="legend-item"><div class="dot gray"></div> Previous</span>
+                </div>
+                <select class="period-select" @change="e => setGrowthDays(parseInt(e.target.value))">
+                  <option value="7">7 Days</option>
+                  <option value="30" selected>30 Days</option>
+                  <option value="90">90 Days</option>
+                </select>
+              </div>
+              <div class="chart-content">
+                <canvas id="userGrowthChart"></canvas>
               </div>
             </div>
-          </div>
-        </div>
 
-        <!-- Growth Charts -->
-        <div class="card chart-card">
-          <div class="chart-header">
-            <h3 class="card-title">User Growth</h3>
-            <div class="time-tabs">
-              <button v-for="d in [7,14,30]" :key="d" class="time-btn" :class="{ active: growthDays === d }" @click="setGrowthDays(d)">{{ d }}d</button>
-            </div>
-          </div>
-          <canvas id="userGrowthChart" height="80"></canvas>
-        </div>
-
-        <div class="two-col-charts">
-          <div class="card chart-card">
-            <h3 class="card-title">Spec Uploads Over Time</h3>
-            <canvas id="specChart" height="100"></canvas>
-          </div>
-          <div class="card chart-card">
-            <h3 class="card-title">Execution Results Over Time</h3>
-            <canvas id="execChart" height="100"></canvas>
-          </div>
-        </div>
-      </div>
-
-      <!-- ===== USERS TAB ===== -->
-      <div v-if="activeTab === 'users'" class="tab-content">
-        <div class="users-toolbar">
-          <div class="plan-filters">
-            <button v-for="p in ['all','free','starter','team','pro']" :key="p"
-              class="plan-filter-btn" :class="{ active: userPlanFilter === p }"
-              @click="setUserFilter(p)">
-              {{ p.charAt(0).toUpperCase() + p.slice(1) }}
-            </button>
-          </div>
-          <button class="primary-btn" @click="showAdminModal = true">+ Create Admin</button>
-        </div>
-
-        <div class="card table-card">
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Plan</th>
-                <th>Admin</th>
-                <th>Joined</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="u in users" :key="u.id">
-                <td>
-                  <div class="user-cell">
-                    <div class="user-avatar">{{ u.name?.[0]?.toUpperCase() || '?' }}</div>
-                    {{ u.name || '—' }}
+            <div class="orbit-card side-chart-card">
+              <div class="card-header">
+                <h3>Plan Distribution</h3>
+                <button class="more-btn"><MoreVertical :size="16" /></button>
+              </div>
+              <div class="donut-content">
+                <canvas id="planDonutChart"></canvas>
+                <div class="donut-center">
+                  <div class="total-val">{{ stats.users.total }}</div>
+                  <div class="total-label">Subscribers</div>
+                </div>
+              </div>
+              <div class="plan-list">
+                <div v-for="plan in planLegend" :key="plan.name" class="plan-item">
+                  <div class="plan-info">
+                    <div class="plan-dot" :style="{ background: plan.color }"></div>
+                    <span class="plan-name">{{ plan.name }}</span>
                   </div>
-                </td>
-                <td class="muted">{{ u.email }}</td>
-                <td><span class="plan-badge" :class="'badge-' + u.plan">{{ u.plan }}</span></td>
-                <td>
-                  <span v-if="u.is_admin" class="admin-chip">Admin</span>
-                  <span v-else class="muted">—</span>
-                </td>
-                <td class="muted">{{ formatDate(u.created_at) }}</td>
-              </tr>
-              <tr v-if="users.length === 0">
-                <td colspan="5" class="empty-row">No users found.</td>
-              </tr>
-            </tbody>
-          </table>
-          <div class="pagination">
-            <button class="page-btn" :disabled="userPage <= 1" @click="userPage--;loadUsers()">← Prev</button>
-            <span class="page-info">Page {{ userPage }}</span>
-            <button class="page-btn" :disabled="users.length < 20" @click="userPage++;loadUsers()">Next →</button>
+                  <span class="plan-count">{{ plan.value }}</span>
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
+
+          <!-- Secondary Bottom Grid -->
+          <div class="dashboard-grid-secondary">
+             <div class="orbit-card bottom-chart">
+                <div class="card-header">
+                  <h3>Spec Upload Activity</h3>
+                  <div class="trend-summary positive">
+                    <TrendingUp :size="14" class="mr-1" />
+                    <span>Active uploads detected</span>
+                  </div>
+                </div>
+                <div class="chart-box-sm">
+                  <canvas id="specChart"></canvas>
+                </div>
+             </div>
+             <div class="orbit-card bottom-chart">
+                <div class="card-header">
+                  <h3>Execution Performance</h3>
+                  <div class="trend-summary" :class="stats.executions.success_rate >= 80 ? 'positive' : 'negative'">
+                    <TrendingDown v-if="stats.executions.success_rate < 80" :size="14" class="mr-1" />
+                    <TrendingUp v-else :size="14" class="mr-1" />
+                    <span>Stability: {{ stats.executions.success_rate >= 80 ? 'High' : 'Moderate' }}</span>
+                  </div>
+                </div>
+                <div class="chart-box-sm">
+                  <canvas id="execChart"></canvas>
+                </div>
+             </div>
+          </div>
+        </template>
+
+        <!-- Users Tab Content -->
+        <template v-else-if="activeTab === 'users'">
+          <div class="table-container">
+            <div class="card-header user-table-header">
+              <h3>Registered Users</h3>
+              <div class="action-group">
+                <div class="filter-pill-container">
+                  <button v-for="p in ['all','free','starter','team','pro']" :key="p"
+                    class="filter-pill" :class="{ active: userPlanFilter === p }"
+                    @click="setUserFilter(p)">
+                    {{ p }}
+                  </button>
+                </div>
+                <button class="btn-primary-modern create-admin-btn" @click="showAdminModal = true">
+                  <Plus :size="16" class="mr-1" />
+                  Create Admin
+                </button>
+              </div>
+            </div>
+            
+            <div class="orbit-card table-card p-0">
+              <table class="modern-table">
+                <thead>
+                  <tr>
+                    <th>User</th>
+                    <th>Email Address</th>
+                    <th>Sub Plan</th>
+                    <th>Role</th>
+                    <th>Date Joined</th>
+                    <th class="text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="u in users" :key="u.id">
+                    <td>
+                      <div class="user-row">
+                        <div class="user-avatar-modern">{{ u.name?.[0]?.toUpperCase() }}</div>
+                        <span class="font-bold text-white">{{ u.name || 'Anonymous' }}</span>
+                      </div>
+                    </td>
+                    <td class="text-gray-400">{{ u.email }}</td>
+                    <td><span class="plan-pill" :class="u.plan">{{ u.plan }}</span></td>
+                    <td>
+                      <div class="role-badge" :class="{ admin: u.is_admin }">
+                        <ShieldCheck v-if="u.is_admin" :size="12" class="mr-1" />
+                        {{ u.is_admin ? 'Admin' : 'User' }}
+                      </div>
+                    </td>
+                    <td class="text-gray-500">{{ formatDate(u.created_at) }}</td>
+                    <td class="text-right">
+                      <div class="table-actions">
+                        <button class="t-btn" title="Toggle Admin" @click="toggleAdmin(u)">
+                          <ShieldCheck :size="16" :class="u.is_admin ? 'text-primary' : 'text-gray-400'" />
+                        </button>
+                        <select :value="u.plan" @change="e => changePlan(u, e.target.value)" class="t-select">
+                          <option v-for="p in ['free','starter','team','pro']" :key="p" :value="p">{{ p }}</option>
+                        </select>
+                        <button class="t-btn delete" title="Delete User" @click="confirmDeleteUser(u)">
+                          <Trash2 :size="16" class="text-red-500/80" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+              <div class="table-footer">
+                <div class="pagination-modern">
+                  <button :disabled="userPage <= 1" @click="userPage--;loadUsers()" class="p-btn">Prev</button>
+                  <span class="p-info">Page {{ userPage }}</span>
+                  <button :disabled="users.length < 20" @click="userPage++;loadUsers()" class="p-btn">Next</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </template>
+
+        <!-- Activity Tab Content -->
+        <template v-else-if="activeTab === 'activity'">
+          <div class="table-container">
+            <div class="card-header mb-6">
+              <h3>Recent System Activity</h3>
+              <p class="text-xs text-gray-500 mt-1">Real-time execution logs and user interactions</p>
+            </div>
+            
+            <div class="orbit-card table-card p-0">
+              <table class="modern-table">
+                <thead>
+                  <tr>
+                    <th>Status</th>
+                    <th>Journey Name</th>
+                    <th>Executed By</th>
+                    <th>Time Started</th>
+                    <th>Duration</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="a in activity" :key="a.execution_id">
+                    <td>
+                      <div class="status-marker" :class="a.status">
+                        <div class="status-dot-inner"></div>
+                        {{ a.status }}
+                      </div>
+                    </td>
+                    <td class="font-medium text-gray-300">{{ a.journey_name }}</td>
+                    <td>
+                      <div class="user-row">
+                        <div class="user-avatar-modern sm">{{ a.user_name?.[0]?.toUpperCase() }}</div>
+                        <div class="flex flex-col">
+                          <span class="text-xs font-bold">{{ a.user_name }}</span>
+                          <span class="text-[10px] text-gray-500">{{ a.user_email }}</span>
+                        </div>
+                      </div>
+                    </td>
+                    <td class="text-gray-500">{{ formatDateTime(a.started_at) }}</td>
+                    <td class="text-gray-500 font-mono text-xs">
+                      {{ a.completed_at ? '2.4s' : 'Running...' }}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </template>
+
+        <!-- Settings Tab Content -->
+        <template v-else-if="activeTab === 'settings'">
+          <div class="settings-container">
+            <div class="orbit-card settings-card">
+              <div class="settings-section">
+                <h3>Admin Profile</h3>
+                <p class="section-desc">Manage your administrator account details</p>
+                
+                <div class="profile-form mt-8">
+                  <div class="form-field">
+                    <label>Display Name</label>
+                    <input v-model="adminUpdateData.name" type="text" :placeholder="authStore.user?.name" />
+                  </div>
+                  <div class="form-field">
+                    <label>Email Address</label>
+                    <input v-model="adminUpdateData.email" type="email" :placeholder="authStore.user?.email" />
+                  </div>
+                  <div class="settings-actions">
+                    <button class="btn-primary-modern" @click="updateSelf" :disabled="updatingProfile">
+                      {{ updatingProfile ? 'Saving...' : 'Update Profile' }}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="nav-divider"></div>
+
+              <div class="settings-section">
+                <h3>System Preferences</h3>
+                <div class="preference-item mt-6">
+                  <div class="pref-info">
+                    <div class="pref-label">Display Theme</div>
+                    <div class="pref-desc">Switch between light and dark dashboard modes</div>
+                  </div>
+                  <button class="theme-toggle-btn" @click="toggleTheme">
+                    <Sun v-if="theme === 'dark'" :size="20" />
+                    <Moon v-else :size="20" />
+                    <span class="ml-2">{{ theme === 'dark' ? 'Light Mode' : 'Dark Mode' }}</span>
+                  </button>
+                </div>
+              </div>
+
+              <div class="nav-divider"></div>
+
+              <div class="settings-section danger">
+                <h3>Danger Zone</h3>
+                <div class="preference-item mt-6">
+                  <div class="pref-info">
+                    <div class="pref-label">Disable Admin Access</div>
+                    <div class="pref-desc">Remove your administrative privileges (cannot be undone)</div>
+                  </div>
+                  <button class="btn-ghost text-red-500 hover:bg-red-500/10" @click="confirmSelfDemote">
+                    Revoke Access
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </template>
       </div>
 
-      <!-- ===== ACTIVITY TAB ===== -->
-      <div v-if="activeTab === 'activity'" class="tab-content">
-        <div class="card table-card">
-          <h3 class="card-title">Recent Execution Activity</h3>
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>Status</th>
-                <th>Journey</th>
-                <th>User</th>
-                <th>Started</th>
-                <th>Completed</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="a in activity" :key="a.execution_id">
-                <td>
-                  <span class="status-chip" :class="'chip-' + a.status">
-                    {{ a.status === 'completed' ? '✅ Success' : a.status === 'failed' ? '❌ Failed' : '⏳ Running' }}
-                  </span>
-                </td>
-                <td>{{ a.journey_name }}</td>
-                <td>
-                  <div class="user-cell">
-                    <div class="user-avatar sm">{{ a.user_name?.[0]?.toUpperCase() || '?' }}</div>
-                    <span>{{ a.user_name }}<br/><small class="muted">{{ a.user_email }}</small></span>
-                  </div>
-                </td>
-                <td class="muted">{{ formatDateTime(a.started_at) }}</td>
-                <td class="muted">{{ a.completed_at ? formatDateTime(a.completed_at) : '—' }}</td>
-              </tr>
-              <tr v-if="activity.length === 0">
-                <td colspan="5" class="empty-row">No recent activity.</td>
-              </tr>
-            </tbody>
-          </table>
+      <!-- Loading State Cover -->
+      <div v-if="loading && !stats" class="global-loader">
+        <div class="loader-ripple">
+          <div></div><div></div>
         </div>
+        <p class="mt-4 font-black tracking-widest text-primary text-xs uppercase">Syncing Platform Data...</p>
       </div>
     </main>
 
-    <!-- Create Admin Modal -->
-    <Transition name="modal">
-      <div v-if="showAdminModal" class="modal-overlay" @click.self="showAdminModal = false">
-        <div class="modal-box">
-          <h2 class="modal-title">Create Admin Account</h2>
-          <p class="modal-sub">New admin will have full dashboard access and pro plan.</p>
-          <form @submit.prevent="createAdmin" class="admin-form">
-            <div class="form-group">
+    <!-- Modal for Admin Creation -->
+    <Transition name="fade-scale">
+      <div v-if="showAdminModal" class="orbit-modal-overlay" @click.self="showAdminModal = false">
+        <div class="orbit-modal-box">
+          <div class="modal-glow"></div>
+          <h2 class="text-2xl font-black mb-2">Create Admin Access</h2>
+          <p class="text-sm text-gray-500 mb-8">Grant privileged access to the platform analytics and user management.</p>
+          
+          <form @submit.prevent="createAdmin" class="space-y-6">
+            <div class="form-field">
               <label>Full Name</label>
-              <input v-model="newAdmin.name" type="text" placeholder="Jane Smith" required />
+              <input v-model="newAdmin.name" type="text" placeholder="Alex Rivera" required />
             </div>
-            <div class="form-group">
-              <label>Email Address</label>
-              <input v-model="newAdmin.email" type="email" placeholder="admin@example.com" required />
+            <div class="form-field">
+              <label>Email ID</label>
+              <input v-model="newAdmin.email" type="email" placeholder="alex@specflow.com" required />
             </div>
-            <div class="form-group">
-              <label>Password</label>
-              <input v-model="newAdmin.password" type="password" placeholder="Min. 8 characters" required minlength="8" />
+            <div class="form-field">
+              <label>Secure Password</label>
+              <div class="relative">
+                <input v-model="newAdmin.password" :type="showPassword ? 'text' : 'password'" placeholder="••••••••" required minlength="8" />
+                <button type="button" @click="showPassword = !showPassword" class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500">
+                  <Eye v-if="!showPassword" :size="18" />
+                  <EyeOff v-else :size="18" />
+                </button>
+              </div>
             </div>
-            <div v-if="adminFormError" class="form-error">{{ adminFormError }}</div>
-            <div v-if="adminFormSuccess" class="form-success">{{ adminFormSuccess }}</div>
-            <div class="modal-actions">
-              <button type="button" class="secondary-btn" @click="showAdminModal = false">Cancel</button>
-              <button type="submit" class="primary-btn" :disabled="creatingAdmin">
-                {{ creatingAdmin ? 'Creating…' : 'Create Admin' }}
+            
+            <div v-if="adminFormError" class="error-msg">{{ adminFormError }}</div>
+            <div v-if="adminFormSuccess" class="success-msg">{{ adminFormSuccess }}</div>
+            
+            <div class="modal-footer flex justify-between items-center pt-6">
+              <button type="button" class="btn-ghost" @click="showAdminModal = false">Cancel</button>
+              <button type="submit" class="btn-primary-modern px-8" :disabled="creatingAdmin">
+                {{ creatingAdmin ? 'Provisioning...' : 'Provision Admin' }}
               </button>
             </div>
           </form>
@@ -290,14 +507,36 @@
 import { ref, computed, onMounted, nextTick, watch } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import apiClient from '@/api/client'
+import { 
+  Users, 
+  FileCode2, 
+  Map, 
+  Zap, 
+  Activity, 
+  LayoutDashboard, 
+  Settings, 
+  Bell, 
+  Search, 
+  RefreshCw,
+  MoreVertical,
+  TrendingUp,
+  TrendingDown,
+  ChevronLeft,
+  Eye,
+  EyeOff,
+  Sun,
+  Moon,
+  Plus
+} from 'lucide-vue-next'
 
 const authStore = useAuthStore()
 
 // ── Tabs ──────────────────────────────────────────────────────────
 const tabs = [
-  { id: 'overview', label: 'Overview', description: 'Platform-wide analytics and growth metrics', icon: '📊' },
-  { id: 'users',    label: 'Users',    description: 'Registered users and plan distribution',     icon: '👥' },
-  { id: 'activity', label: 'Activity', description: 'Recent execution and journey activity',       icon: '⚡' },
+  { id: 'overview', label: 'Overview', description: 'Platform-wide analytics', icon: LayoutDashboard },
+  { id: 'users',    label: 'Users',    description: 'Registered accounts',   icon: Users },
+  { id: 'activity', label: 'Activity', description: 'Execution logs',        icon: Activity },
+  { id: 'settings', label: 'Settings', description: 'Platform config',       icon: Settings },
 ]
 const activeTab = ref('overview')
 const currentTab = computed(() => tabs.find(t => t.id === activeTab.value))
@@ -312,12 +551,31 @@ const growthDays  = ref(30)
 const userPage    = ref(1)
 const userPlanFilter = ref('all')
 const lastUpdated = ref('—')
+const searchQuery = ref('')
+const sidebarCollapsed = ref(false)
+const showPassword = ref(false)
+const theme = ref('dark')
+
+const adminUpdateData = ref({ 
+  name: authStore.user?.name || '', 
+  email: authStore.user?.email || '' 
+})
+const updatingProfile = ref(false)
+
+// Mini Chart (Sparkline) logic
+const sparklineData = ref({
+  users: [30, 45, 32, 60, 55, 70, 65],
+  specs: [10, 20, 15, 25, 30, 28, 35],
+  journeys: [5, 12, 8, 15, 20, 18, 25],
+  success: [80, 85, 82, 88, 90, 89, 92]
+})
 
 // Chart instances
 let planChart = null
 let userGrowthChartInst = null
 let specChartInst = null
 let execChartInst = null
+let sparkCharts = {}
 
 // Modal
 const showAdminModal  = ref(false)
@@ -415,9 +673,36 @@ const planLegend = computed(() => {
   return Object.entries(stats.value.users.by_plan).map(([name, value]) => ({
     name: name.charAt(0).toUpperCase() + name.slice(1),
     value,
-    color: planColors[name] || '#888',
+    color: planColors[name] || '#888'
   }))
 })
+
+// ── Admin Profile Actions ──────────────────────────────────────────
+async function updateSelf() {
+  updatingProfile.value = true
+  try {
+    const { data } = await apiClient.patch(`/api/admin/users/${authStore.user.id}`, adminUpdateData.value)
+    authStore.user = data
+    alert('Profile updated successfully!')
+  } catch (e) {
+    alert(e.response?.data?.detail || 'Update failed')
+  } finally {
+    updatingProfile.value = false
+  }
+}
+
+function confirmSelfDemote() {
+  if (confirm('Are you sure you want to revoke your admin status? You will lose access to this dashboard immediately.')) {
+    apiClient.patch(`/api/admin/users/${authStore.user.id}`, { is_admin: false }).then(() => {
+      window.location.href = '/dashboard'
+    })
+  }
+}
+
+function toggleTheme() {
+  theme.value = theme.value === 'dark' ? 'light' : 'dark'
+  document.documentElement.classList.toggle('light-theme')
+}
 
 // ── Charts ────────────────────────────────────────────────────────
 function destroyChart(inst) { if (inst) { inst.destroy() } }
@@ -436,6 +721,51 @@ async function renderCharts() {
   await loadChartJs()
   renderDonutChart()
   renderGrowthCharts()
+  renderSparklines()
+}
+
+function renderSparklines() {
+  const configs = [
+    { id: 'sparkUsers', color: '#A78BFA', data: sparklineData.value.users },
+    { id: 'sparkSpecs', color: '#22D3EE', data: sparklineData.value.specs },
+    { id: 'sparkJourneys', color: '#BFF549', data: sparklineData.value.journeys },
+    { id: 'sparkManual', color: '#60A5FA', data: [12, 18, 15, 22, 19, 25, 21] },
+    { id: 'sparkSuccess', color: '#F43F5E', data: sparklineData.value.success }
+  ]
+
+  configs.forEach(conf => {
+    const ctx = document.getElementById(conf.id)
+    if (!ctx) return
+    
+    if (sparkCharts[conf.id]) sparkCharts[conf.id].destroy()
+
+    sparkCharts[conf.id] = new window.Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: conf.data.map((_, i) => i),
+        datasets: [{
+          data: conf.data,
+          borderColor: conf.color,
+          borderWidth: 2,
+          pointRadius: 0,
+          fill: true,
+          backgroundColor: conf.color + '10',
+          tension: 0.4
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false }, tooltip: { enabled: false } },
+        scales: { 
+          x: { display: false }, 
+          y: { display: false, beginAtZero: true } 
+        },
+        animation: { duration: 800 },
+        events: []
+      }
+    })
+  })
 }
 
 function renderDonutChart() {
@@ -476,10 +806,33 @@ function renderGrowthCharts() {
   const textColor  = '#99A1AF'
   const baseOpts = {
     responsive: true,
-    plugins: { legend: { labels: { color: textColor, font: { family: 'Inter' } } } },
+    maintainAspectRatio: false,
+    plugins: { 
+      legend: { 
+        position: 'top',
+        align: 'start',
+        labels: { 
+          color: textColor, 
+          usePointStyle: true,
+          pointStyle: 'circle',
+          padding: 20,
+          font: { family: 'Inter', size: 11 } 
+        } 
+      } 
+    },
     scales: {
-      x: { ticks: { color: textColor, maxTicksLimit: 8, font: { family: 'Inter', size: 11 } }, grid: { color: gridColor } },
-      y: { ticks: { color: textColor, font: { family: 'Inter', size: 11 } }, grid: { color: gridColor }, beginAtZero: true }
+      x: { 
+        ticks: { color: textColor, maxTicksLimit: 8, font: { family: 'Inter', size: 10 } }, 
+        grid: { color: gridColor, drawTicks: false } 
+      },
+      y: { 
+        ticks: { color: textColor, font: { family: 'Inter', size: 10 }, padding: 10 }, 
+        grid: { color: gridColor, drawTicks: false }, 
+        beginAtZero: true 
+      }
+    },
+    layout: {
+      padding: { top: 10, right: 10, bottom: 0, left: 0 }
     },
     animation: { duration: 500 }
   }
@@ -585,458 +938,556 @@ onMounted(loadAll)
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap');
 
-/* ── Root layout ── */
-.admin-root {
+/* ── Root Layout ── */
+.admin-wrapper {
   display: flex;
   height: 100vh;
-  background: #050505;
-  color: #e8e8e8;
-  font-family: 'Inter', system-ui, sans-serif;
+  background: #000000;
+  color: #ffffff;
+  font-family: 'Outfit', sans-serif;
   overflow: hidden;
 }
 
 /* ── Sidebar ── */
-.sidebar {
-  width: 240px;
-  min-width: 240px;
-  background: #0a0a0a;
-  border-right: 1px solid rgba(255,255,255,0.07);
+.admin-sidebar {
+  width: 280px;
+  background: #000000;
+  border-right: 1px solid rgba(255, 255, 255, 0.05);
   display: flex;
   flex-direction: column;
-  padding: 0;
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  flex-shrink: 0;
+  z-index: 50;
 }
+.sidebar-collapsed .admin-sidebar { width: 80px; }
 
-.sidebar-logo {
-  padding: 24px 20px 20px;
+.sidebar-header {
+  padding: 32px 24px;
+  height: 100px;
   display: flex;
   align-items: center;
-  gap: 10px;
-  border-bottom: 1px solid rgba(255,255,255,0.06);
 }
-.logo-img { height: 26px; }
-.admin-badge {
+.admin-label {
+  font-size: 10px;
   background: #BFF549;
   color: #000;
-  font-size: 9px;
-  font-weight: 800;
-  padding: 2px 7px;
-  border-radius: 99px;
-  letter-spacing: 0.08em;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-left: 8px;
+  font-weight: 900;
+  letter-spacing: 0.05em;
 }
 
-.sidebar-nav {
-  padding: 16px 12px;
+.sidebar-content {
   flex: 1;
+  padding: 0 16px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 8px;
 }
-.nav-item {
+.nav-section {
+  color: #444;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding: 24px 12px 8px;
+}
+.nav-link {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
-  border-radius: 8px;
+  gap: 16px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  color: #888;
+  font-size: 15px;
+  font-weight: 500;
+  transition: all 0.2s;
   background: transparent;
   border: none;
-  color: #888;
-  font-size: 14px;
-  font-family: 'Inter', sans-serif;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.18s ease;
   width: 100%;
-  text-align: left;
-}
-.nav-item:hover { background: rgba(255,255,255,0.05); color: #e8e8e8; }
-.nav-item.active { background: rgba(191,245,73,0.12); color: #BFF549; }
-.nav-icon { font-size: 16px; }
-
-.sidebar-footer {
-  padding: 16px;
-  border-top: 1px solid rgba(255,255,255,0.06);
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-.admin-profile { display: flex; align-items: center; gap: 10px; }
-.avatar {
-  width: 34px; height: 34px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #BFF549, #82b800);
-  color: #000;
-  font-weight: 700;
-  font-size: 14px;
-  display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0;
-}
-.profile-name { font-size: 13px; font-weight: 600; color: #e8e8e8; }
-.profile-role { font-size: 11px; color: #BFF549; }
-.back-btn {
-  font-size: 12px;
-  color: #888;
-  text-decoration: none;
-  padding: 6px 10px;
-  border-radius: 6px;
-  border: 1px solid rgba(255,255,255,0.1);
-  text-align: center;
-  transition: all 0.15s;
-}
-.back-btn:hover { color: #BFF549; border-color: #BFF549; }
-
-/* ── Main ── */
-.main-content {
-  flex: 1;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-}
-.main-content::-webkit-scrollbar { width: 6px; }
-.main-content::-webkit-scrollbar-track { background: transparent; }
-.main-content::-webkit-scrollbar-thumb { background: #2a2a2a; border-radius: 3px; }
-
-/* ── Header ── */
-.top-header {
-  padding: 28px 32px 20px;
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  border-bottom: 1px solid rgba(255,255,255,0.05);
-  position: sticky;
-  top: 0;
-  background: rgba(5,5,5,0.95);
-  backdrop-filter: blur(12px);
-  z-index: 10;
-}
-.page-title { font-size: 22px; font-weight: 700; color: #fff; margin: 0 0 4px; }
-.page-sub { font-size: 13px; color: #666; margin: 0; }
-.header-right { display: flex; align-items: center; gap: 14px; }
-.last-updated { font-size: 12px; color: #555; }
-.refresh-btn {
-  display: flex; align-items: center; gap: 6px;
-  padding: 8px 16px;
-  background: rgba(255,255,255,0.06);
-  border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 8px;
-  color: #ccc;
-  font-size: 13px;
-  font-family: inherit;
   cursor: pointer;
-  transition: all 0.15s;
+  position: relative;
 }
-.refresh-btn:hover:not(:disabled) { background: rgba(191,245,73,0.1); border-color: #BFF549; color: #BFF549; }
-.refresh-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-.spinning { display: inline-block; animation: spin 1s linear infinite; }
-@keyframes spin { to { transform: rotate(360deg); } }
+.nav-link:hover { color: #fff; background: rgba(255,255,255,0.05); }
+.nav-link.active { color: #BFF549; background: rgba(191,245,73,0.08); font-weight: 600; }
+.active-indicator {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 20px;
+  background: #BFF549;
+  border-radius: 3px 0 0 3px;
+  box-shadow: 0 0 10px #BFF549;
+}
+.nav-divider { height: 1px; background: rgba(255,255,255,0.05); margin: 16px 12px; }
 
-/* ── Loading ── */
-.loading-overlay {
+.sidebar-footer { padding: 24px; border-top: 1px solid rgba(255,255,255,0.05); }
+.user-profile-summary { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+.avatar-ring { position: relative; width: 42px; height: 42px; }
+.avatar-inner {
+  width: 100%; height: 100%; border-radius: 14px;
+  background: linear-gradient(135deg, #222, #111);
+  border: 1px solid rgba(255,255,255,0.1);
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; color: #BFF549;
+}
+.status-dot {
+  position: absolute; bottom: -2px; right: -2px;
+  width: 12px; height: 12px; border-radius: 50%;
+  background: #BFF549; border: 3px solid #000;
+}
+.user-name { font-size: 14px; font-weight: 700; color: #fff; }
+.user-role { font-size: 11px; color: #555; }
+.collapse-toggle {
+  width: 100%; padding: 8px; border-radius: 8px;
+  background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05);
+  color: #666; font-size: 12px; font-weight: 600; cursor: pointer;
+  transition: all 0.2s;
+}
+.collapse-toggle:hover { color: #fff; background: rgba(255,255,255,0.08); }
+
+/* ── Main Content Area ── */
+.admin-main {
   flex: 1;
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
-  gap: 20px; color: #666;
-}
-.loader-ring {
-  width: 48px; height: 48px;
-  border: 3px solid rgba(191,245,73,0.2);
-  border-top-color: #BFF549;
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-}
-
-/* ── Tab Content ── */
-.tab-content {
-  padding: 28px 32px 40px;
   display: flex;
   flex-direction: column;
-  gap: 24px;
-}
-
-/* ── KPI Grid ── */
-.kpi-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
-}
-.kpi-card {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 22px 20px;
-  border-radius: 14px;
-  background: #0f0f0f;
-  border: 1px solid rgba(255,255,255,0.07);
-  transition: transform 0.2s, box-shadow 0.2s;
-}
-.kpi-card:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(0,0,0,0.4); }
-.kpi-blue  { border-left: 3px solid #60A5FA; }
-.kpi-green { border-left: 3px solid #4ade80; }
-.kpi-yellow{ border-left: 3px solid #fbbf24; }
-.kpi-red   { border-left: 3px solid #f87171; }
-.kpi-icon  { font-size: 28px; }
-.kpi-value { font-size: 28px; font-weight: 800; color: #fff; line-height: 1; }
-.kpi-label { font-size: 12px; color: #888; margin: 4px 0; }
-.kpi-delta { font-size: 12px; font-weight: 500; }
-.kpi-delta.positive { color: #4ade80; }
-.kpi-delta.negative { color: #f87171; }
-.kpi-delta.neutral  { color: #99A1AF; }
-
-/* ── Cards ── */
-.card {
-  background: #0f0f0f;
-  border: 1px solid rgba(255,255,255,0.07);
-  border-radius: 14px;
-  padding: 24px;
-}
-.card-title {
-  font-size: 15px;
-  font-weight: 600;
-  color: #e8e8e8;
-  margin: 0 0 20px;
-}
-
-/* ── Section row ── */
-.section-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-
-/* ── Exec Status Bars ── */
-.status-bars { display: flex; flex-direction: column; gap: 16px; }
-.status-bar-row { display: flex; align-items: center; gap: 12px; }
-.status-label { width: 110px; font-size: 13px; color: #aaa; flex-shrink: 0; }
-.bar-track {
-  flex: 1;
-  height: 10px;
-  background: rgba(255,255,255,0.06);
-  border-radius: 99px;
+  background: #000;
+  position: relative;
   overflow: hidden;
 }
-.bar-fill {
-  height: 100%;
-  border-radius: 99px;
-  transition: width 0.8s cubic-bezier(.4,0,.2,1);
-}
-.bar-green  { background: linear-gradient(90deg, #22c55e, #4ade80); box-shadow: 0 0 10px rgba(74,222,128,0.4); }
-.bar-red    { background: linear-gradient(90deg, #dc2626, #f87171); box-shadow: 0 0 10px rgba(248,113,113,0.4); }
-.bar-yellow { background: linear-gradient(90deg, #d97706, #fbbf24); box-shadow: 0 0 10px rgba(251,191,36,0.4); }
-.status-count { width: 40px; font-size: 13px; font-weight: 600; text-align: right; }
-.green-text  { color: #4ade80; }
-.red-text    { color: #f87171; }
-.yellow-text { color: #fbbf24; }
 
-/* ── Donut ── */
-.plan-donut-card { display: flex; flex-direction: column; }
-.donut-wrap { display: flex; justify-content: center; margin-bottom: 16px; }
-.plan-legend { display: flex; flex-direction: column; gap: 8px; }
-.legend-row { display: flex; align-items: center; gap: 10px; font-size: 13px; }
-.legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
-.legend-name { flex: 1; color: #aaa; }
-.legend-val { font-weight: 600; color: #e8e8e8; }
-
-/* ── Charts ── */
-.chart-card { padding: 24px; }
-.chart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-.chart-header .card-title { margin: 0; }
-.time-tabs { display: flex; gap: 6px; }
-.time-btn {
-  padding: 5px 12px;
-  font-size: 12px;
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 6px;
-  color: #888;
-  cursor: pointer;
-  font-family: inherit;
-  transition: all 0.15s;
-}
-.time-btn.active, .time-btn:hover { background: rgba(191,245,73,0.12); border-color: #BFF549; color: #BFF549; }
-.two-col-charts { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-
-/* ── Users tab ── */
-.users-toolbar { display: flex; justify-content: space-between; align-items: center; }
-.plan-filters { display: flex; gap: 6px; flex-wrap: wrap; }
-.plan-filter-btn {
-  padding: 6px 14px;
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 99px;
-  color: #888;
-  font-size: 13px;
-  font-family: inherit;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-.plan-filter-btn.active, .plan-filter-btn:hover { background: rgba(191,245,73,0.12); border-color: #BFF549; color: #BFF549; }
-
-/* ── Table ── */
-.table-card { padding: 0; overflow: hidden; }
-.table-card .card-title { padding: 20px 24px 0; }
-.data-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 13px;
-}
-.data-table th {
-  padding: 12px 16px;
-  text-align: left;
-  font-size: 11px;
-  font-weight: 600;
-  color: #555;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  border-bottom: 1px solid rgba(255,255,255,0.06);
-  background: rgba(255,255,255,0.02);
-}
-.data-table td {
-  padding: 13px 16px;
-  border-bottom: 1px solid rgba(255,255,255,0.04);
-  color: #ccc;
-  vertical-align: middle;
-}
-.data-table tr:last-child td { border-bottom: none; }
-.data-table tr:hover td { background: rgba(255,255,255,0.025); }
-.muted { color: #666 !important; }
-.user-cell { display: flex; align-items: center; gap: 10px; }
-.user-avatar {
-  width: 30px; height: 30px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #BFF549, #82b800);
-  color: #000;
-  font-size: 12px;
-  font-weight: 700;
-  display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0;
-}
-.user-avatar.sm { width: 24px; height: 24px; font-size: 10px; }
-.empty-row { text-align: center; color: #444; padding: 32px !important; }
-
-/* ── Badges / Chips ── */
-.plan-badge {
-  display: inline-block;
-  padding: 3px 10px;
-  border-radius: 99px;
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-}
-.badge-free    { background: rgba(153,161,175,0.15); color: #99A1AF; }
-.badge-starter { background: rgba(96,165,250,0.15);  color: #60A5FA; }
-.badge-team    { background: rgba(191,245,73,0.15);  color: #BFF549; }
-.badge-pro     { background: rgba(167,139,250,0.15); color: #a78bfa; }
-
-.admin-chip {
-  display: inline-block;
-  padding: 3px 10px;
-  border-radius: 99px;
-  font-size: 11px;
-  font-weight: 600;
-  background: rgba(191,245,73,0.15);
-  color: #BFF549;
-}
-
-.status-chip {
-  display: inline-block;
-  padding: 4px 12px;
-  border-radius: 99px;
-  font-size: 12px;
-  font-weight: 500;
-}
-.chip-completed { background: rgba(74,222,128,0.12); color: #4ade80; }
-.chip-failed    { background: rgba(248,113,113,0.12); color: #f87171; }
-.chip-running   { background: rgba(251,191,36,0.12); color: #fbbf24; }
-
-/* ── Pagination ── */
-.pagination {
+/* ── Top Header ── */
+.admin-header {
+  height: 100px;
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 14px 20px;
-  border-top: 1px solid rgba(255,255,255,0.06);
-  justify-content: flex-end;
+  justify-content: space-between;
+  padding: 0 40px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  background: rgba(0,0,0,0.8);
+  backdrop-filter: blur(10px);
+  z-index: 40;
 }
-.page-btn {
-  padding: 6px 14px;
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 6px;
-  color: #aaa;
-  font-size: 12px;
-  font-family: inherit;
-  cursor: pointer;
-  transition: all 0.15s;
+.header-search {
+  display: flex;
+  align-items: center;
+  background: rgba(255,255,255,0.04);
+  padding: 0 20px;
+  border-radius: 14px;
+  width: 320px;
+  border: 1px solid rgba(255,255,255,0.05);
+  transition: all 0.2s;
 }
-.page-btn:hover:not(:disabled) { border-color: #BFF549; color: #BFF549; }
-.page-btn:disabled { opacity: 0.3; cursor: not-allowed; }
-.page-info { font-size: 12px; color: #555; }
-
-/* ── Buttons ── */
-.primary-btn {
-  padding: 9px 20px;
-  background: #BFF549;
-  color: #000;
-  border: none;
-  border-radius: 99px;
-  font-size: 13px;
-  font-weight: 700;
-  font-family: inherit;
-  cursor: pointer;
-  transition: all 0.15s;
-  box-shadow: 0 0 40px -10px rgba(191,245,73,0.5);
+.header-search:focus-within { border-color: #BFF549; background: rgba(255,255,255,0.07); width: 400px; }
+.search-icon { color: #555; margin-right: 12px; }
+.header-search input {
+  background: transparent; border: none; color: #fff;
+  padding: 12px 0; font-size: 14px; width: 100%; outline: none;
 }
-.primary-btn:hover:not(:disabled) { background: #d4ff55; box-shadow: 0 0 50px -8px rgba(191,245,73,0.7); }
-.primary-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-.secondary-btn {
-  padding: 9px 20px;
-  background: rgba(255,255,255,0.06);
-  color: #ccc;
-  border: 1px solid rgba(255,255,255,0.12);
-  border-radius: 99px;
-  font-size: 13px;
-  font-family: inherit;
-  cursor: pointer;
-  transition: all 0.15s;
+.header-actions { display: flex; align-items: center; gap: 32px; }
+.action-icons { display: flex; align-items: center; gap: 12px; }
+.icon-btn {
+  width: 42px; height: 42px; border-radius: 12px;
+  background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05);
+  color: #888; cursor: pointer; display: flex; align-items: center; justify-content: center;
+  position: relative; transition: all 0.2s;
 }
-.secondary-btn:hover { border-color: #BFF549; color: #BFF549; }
-
-/* ── Modal ── */
-.modal-overlay {
-  position: fixed; inset: 0;
-  background: rgba(0,0,0,0.7);
-  backdrop-filter: blur(6px);
+.icon-btn:hover { background: rgba(255,255,255,0.08); color: #fff; transform: translateY(-2px); }
+.notification-badge {
+  position: absolute; top: 10px; right: 10px;
+  width: 8px; height: 8px; background: #BFF549;
+  border-radius: 50%; border: 2px solid #000;
+}
+.user-dropdown { padding-left: 20px; border-left: 1px solid rgba(255,255,255,0.05); }
+.dropdown-trigger { display: flex; align-items: center; cursor: pointer; }
+.mini-avatar {
+  width: 36px; height: 36px; border-radius: 10px;
+  background: #BFF549; color: #000; font-weight: 800;
   display: flex; align-items: center; justify-content: center;
-  z-index: 1000;
 }
-.modal-box {
-  background: #121212;
-  border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 18px;
-  padding: 36px;
-  width: 440px;
-  max-width: 95vw;
-  box-shadow: 0 30px 80px rgba(0,0,0,0.6);
-}
-.modal-title { font-size: 20px; font-weight: 700; color: #fff; margin: 0 0 6px; }
-.modal-sub { font-size: 13px; color: #666; margin: 0 0 28px; }
-.admin-form { display: flex; flex-direction: column; gap: 16px; }
-.form-group { display: flex; flex-direction: column; gap: 6px; }
-.form-group label { font-size: 12px; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: 0.06em; }
-.form-group input {
-  padding: 11px 14px;
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 8px;
-  color: #e8e8e8;
-  font-size: 14px;
-  font-family: inherit;
-  outline: none;
-  transition: border-color 0.15s;
-}
-.form-group input:focus { border-color: #BFF549; background: rgba(191,245,73,0.04); }
-.form-error { font-size: 13px; color: #f87171; background: rgba(248,113,113,0.1); padding: 10px 14px; border-radius: 8px; }
-.form-success { font-size: 13px; color: #4ade80; background: rgba(74,222,128,0.1); padding: 10px 14px; border-radius: 8px; }
-.modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 8px; }
 
-/* ── Modal transition ── */
-.modal-enter-active, .modal-leave-active { transition: all 0.2s ease; }
-.modal-enter-from, .modal-leave-to { opacity: 0; transform: scale(0.95); }
+/* ── Container ── */
+.admin-container {
+  flex: 1;
+  padding: 40px;
+  overflow-y: auto;
+}
+.container-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 40px;
+}
+.title-group h2 { font-size: 32px; font-weight: 900; margin: 0; }
+.title-group p { color: #666; font-size: 15px; margin-top: 4px; }
+.last-sync { color: #444; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; }
+
+/* ── Cards & Widgets ── */
+.orbit-card {
+  background: #0A0A0A;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 24px;
+  padding: 24px;
+}
+
+.kpi-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
+  margin-bottom: 24px;
+}
+.kpi-widget {
+  position: relative;
+  overflow: hidden;
+  height: 180px;
+  display: flex;
+  flex-direction: column;
+}
+.widget-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+.widget-title { display: flex; align-items: center; gap: 12px; font-size: 13px; font-weight: 700; color: #888; }
+.icon-box {
+  width: 34px; height: 34px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(255,255,255,0.03);
+}
+.widget-value { font-size: 36px; font-weight: 900; color: #fff; margin-bottom: 4px; }
+.widget-footer { font-size: 11px; color: #444; font-weight: 700; text-transform: uppercase; }
+.trend { font-size: 12px; font-weight: 800; padding: 4px 8px; border-radius: 8px; }
+.trend.positive { background: rgba(191,245,73,0.1); color: #BFF549; }
+.trend.negative { background: rgba(248,113,113,0.1); color: #F87171; }
+
+.widget-spark {
+  position: absolute; bottom: 0; left: 0; right: 0; height: 60px;
+  opacity: 0.4; pointer-events: none;
+}
+
+/* Colored Accents */
+.kpi-widget.purple .icon-box { color: #A78BFA; }
+.kpi-widget.cyan .icon-box { color: #22D3EE; }
+.kpi-widget.lime .icon-box { color: #BFF549; }
+.kpi-widget.rose .icon-box { color: #F43F5E; }
+
+/* ── Charts Grid ── */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 2.5fr 1fr;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+.card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+.card-header h3 { font-size: 18px; font-weight: 800; }
+
+.chart-labels { display: flex; gap: 16px; }
+.legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #555; font-weight: 700; }
+.dot { width: 8px; height: 8px; border-radius: 50%; }
+.dot.lime { background: #BFF549; box-shadow: 0 0 10px #BFF549; }
+.dot.gray { background: #333; }
+
+.period-select {
+  background: #111; border: 1px solid #222; color: #888;
+  padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 700; outline: none;
+}
+
+.chart-content { height: 350px; }
+
+/* Side Chart (Donut) */
+.donut-content { position: relative; height: 200px; margin-bottom: 24px; }
+.donut-center {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+.total-val { font-size: 32px; font-weight: 900; line-height: 1; margin-bottom: 2px; }
+.total-label { font-size: 10px; color: #555; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; }
+
+.plan-list { display: flex; flex-direction: column; gap: 12px; }
+.plan-item { display: flex; justify-content: space-between; align-items: center; }
+.plan-info { display: flex; align-items: center; gap: 10px; }
+.plan-dot { width: 10px; height: 10px; border-radius: 3px; }
+.plan-name { font-size: 13px; font-weight: 600; color: #888; }
+.plan-count { font-size: 13px; font-weight: 800; color: #fff; }
+
+/* Bottom Charts */
+.dashboard-grid-secondary {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+.trend-summary { display: flex; align-items: center; font-size: 11px; font-weight: 800; text-transform: uppercase; }
+.trend-summary.positive { color: #BFF549; }
+.trend-summary.negative { color: #F87171; }
+.chart-box-sm { height: 180px; }
+
+/* ── Tables ── */
+.table-container { margin-top: 20px; }
+.filter-pill-container {
+  display: flex; background: #0A0A0A; padding: 4px;
+  border-radius: 12px; border: 1px solid #222;
+}
+.filter-pill {
+  padding: 6px 16px; border-radius: 8px; font-size: 12px; font-weight: 700;
+  color: #555; border: none; background: transparent; cursor: pointer; transition: all 0.2s;
+}
+.filter-pill.active { background: #BFF549; color: #000; box-shadow: 0 4px 12px rgba(191,245,73,0.3); }
+
+.modern-table { width: 100%; border-collapse: collapse; }
+.modern-table th {
+  text-align: left; padding: 20px 24px; font-size: 12px; color: #444;
+  font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em;
+  border-bottom: 1px solid #111;
+}
+.modern-table td { padding: 18px 24px; vertical-align: middle; border-bottom: 1px solid #0D0D0D; }
+.modern-table tr:hover { background: rgba(255,255,255,0.01); }
+
+.user-row { display: flex; align-items: center; gap: 12px; }
+.user-avatar-modern {
+  width: 36px; height: 36px; border-radius: 10px;
+  background: #111; color: #fff; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  border: 1px solid #222;
+}
+.user-avatar-modern.sm { width: 30px; height: 30px; font-size: 10px; }
+
+.plan-pill {
+  padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 800;
+  text-transform: uppercase; letter-spacing: 0.05em;
+}
+.plan-pill.free { background: #222; color: #888; }
+.plan-pill.pro { background: rgba(167,139,250,0.1); color: #A78BFA; }
+.plan-pill.team { background: rgba(191,245,73,0.1); color: #BFF549; }
+
+.role-badge {
+  display: inline-flex; align-items: center; padding: 4px 10px; border-radius: 20px;
+  font-size: 10px; font-weight: 800; color: #444; background: #111;
+}
+.role-badge.admin { color: #BFF549; background: rgba(191,245,73,0.1); }
+
+.table-actions { display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
+.t-btn {
+  width: 32px; height: 32px; border-radius: 8px; background: #111; border: 1px solid #222;
+  color: #666; cursor: pointer; display: flex; align-items: center; justify-content: center;
+}
+.t-btn:hover { border-color: #BFF549; color: #BFF549; }
+.t-btn.delete:hover { border-color: #F87171; }
+.t-select {
+  background: #111; border: 1px solid #222; color: #888;
+  padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: 700;
+}
+
+.table-footer { padding: 24px; border-top: 1px solid #111; }
+.pagination-modern { display: flex; justify-content: flex-end; align-items: center; gap: 16px; }
+.p-btn {
+  padding: 8px 16px; border-radius: 8px; background: #111; border: 1px solid #222;
+  color: #888; font-weight: 700; cursor: pointer;
+}
+.p-btn:hover:not(:disabled) { border-color: #BFF549; color: #fff; }
+.p-info { font-size: 12px; color: #444; font-weight: 700; }
+
+/* Status Marker */
+.status-marker {
+  display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px;
+  border-radius: 20px; font-size: 11px; font-weight: 800; text-transform: capitalize;
+}
+.status-marker.completed { background: rgba(191,245,73,0.1); color: #BFF549; }
+.status-marker.failed { background: rgba(248,113,113,0.1); color: #F87171; }
+.status-marker.running { background: rgba(251,191,36,0.1); color: #FBBF24; }
+.status-dot-inner { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+/* ── Global Loader ── */
+.global-loader {
+  position: absolute; inset: 0; background: #000; z-index: 100;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+}
+.loader-ripple {
+  position: relative; width: 80px; height: 80px;
+}
+.loader-ripple div {
+  position: absolute; border: 4px solid #BFF549; opacity: 1; border-radius: 50%;
+  animation: loader-ripple 1s cubic-bezier(0, 0.2, 0.8, 1) infinite;
+}
+.loader-ripple div:nth-child(2) { animation-delay: -0.5s; }
+@keyframes loader-ripple {
+  0% { top: 36px; left: 36px; width: 0; height: 0; opacity: 1; }
+  100% { top: 0px; left: 0px; width: 72px; height: 72px; opacity: 0; }
+}
+
+/* ── Modals ── */
+.orbit-modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(10px);
+  z-index: 200; display: flex; align-items: center; justify-content: center;
+}
+.orbit-modal-box {
+  width: 440px; background: #0A0A0A; border-radius: 32px; padding: 40px;
+  border: 1px solid rgba(255,255,255,0.08); position: relative; overflow: hidden;
+}
+.modal-glow {
+  position: absolute; top: -50%; right: -50%; width: 200px; height: 200px;
+  background: radial-gradient(circle, rgba(191,245,73,0.15) 0%, transparent 70%);
+}
+
+.form-field { margin-bottom: 20px; }
+.form-field label { display: block; font-size: 11px; font-weight: 800; color: #444; text-transform: uppercase; margin-bottom: 8px; }
+.form-field input {
+  width: 100%; background: #111; border: 1px solid #222; border-radius: 14px;
+  padding: 14px 20px; color: #fff; font-size: 14px; transition: all 0.2s;
+}
+.form-field input:focus { border-color: #BFF549; outline: none; background: #151515; }
+
+.btn-primary-modern {
+  background: #BFF549; color: #000; border: none; padding: 14px 28px;
+  border-radius: 14px; font-weight: 800; font-size: 14px; cursor: pointer;
+  box-shadow: 0 8px 24px rgba(191,245,73,0.3); transition: all 0.2s;
+}
+.btn-primary-modern:hover { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(191,245,73,0.4); }
+
+.btn-ghost { background: transparent; border: none; color: #555; font-weight: 700; cursor: pointer; }
+.btn-ghost:hover { color: #fff; }
+
+.btn-primary-sm {
+  background: #BFF549; color: #000; border: none; padding: 8px 16px;
+  border-radius: 10px; font-weight: 800; font-size: 12px; cursor: pointer;
+}
+
+/* Animations */
+.spinning { animation: spin 1s linear infinite; }
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+.fade-scale-enter-active, .fade-scale-leave-active { transition: all 0.3s ease; }
+.fade-scale-enter-from, .fade-scale-leave-to { opacity: 0; transform: scale(0.95); }
+
+/* Scrollbar Hide */
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* ── Tab Layout Fixes ── */
+.user-table-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+.user-table-header h3 { font-size: 20px; font-weight: 900; }
+.action-group {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.create-admin-btn {
+  padding: 10px 18px;
+  font-size: 13px;
+  box-shadow: 0 4px 12px rgba(191,245,73,0.2);
+}
+
+/* ── Settings View ── */
+.settings-container { max-width: 800px; margin: 0 auto; }
+.settings-card { padding: 40px; }
+.settings-section h3 { font-size: 20px; font-weight: 900; margin-bottom: 8px; }
+.section-desc { font-size: 14px; color: #666; margin-bottom: 24px; }
+.preference-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+}
+.pref-label { font-size: 15px; font-weight: 700; color: #fff; }
+.pref-desc { font-size: 13px; color: #555; }
+.theme-toggle-btn {
+  display: flex;
+  align-items: center;
+  background: #111;
+  border: 1px solid #222;
+  color: #fff;
+  padding: 10px 20px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.theme-toggle-btn:hover { border-color: #BFF549; color: #BFF549; }
+.settings-actions { margin-top: 24px; }
+
+/* ── Light Mode Support ── */
+:root.light-theme {
+  --bg: #f8f9fa;
+  --card: #ffffff;
+  --border: rgba(0,0,0,0.05);
+  --text: #1a1a1a;
+  --muted: #666;
+}
+.light-theme .admin-wrapper { background: #f0f2f5; color: #1a1a1a; }
+.light-theme .admin-sidebar, 
+.light-theme .admin-main,
+.light-theme .admin-header { background: #fff; color: #1a1a1a; border-color: rgba(0,0,0,0.08); }
+.light-theme .orbit-card { background: #fff; border-color: rgba(0,0,0,0.1); box-shadow: 0 4px 20px rgba(0,0,0,0.03); }
+.light-theme .text-white,
+.light-theme h2,
+.light-theme h3,
+.light-theme .widget-value,
+.light-theme .total-val,
+.light-theme .user-name,
+.light-theme .plan-count,
+.light-theme .pref-label { color: #1a1a1a !important; }
+.light-theme .text-gray-400,
+.light-theme .section-desc,
+.light-theme .total-label,
+.light-theme .pref-desc { color: #555 !important; }
+.light-theme .text-gray-500 { color: #888 !important; }
+.light-theme .nav-link:not(.active) { color: #555; }
+.light-theme .nav-link:hover { background: rgba(0,0,0,0.03); }
+.light-theme .form-field input,
+.light-theme .t-select,
+.light-theme .period-select { background: #f8f9fa; border-color: rgba(0,0,0,0.1); color: #1a1a1a; }
+.light-theme .icon-btn { background: #f8f9fa; border-color: rgba(0,0,0,0.08); }
+.light-theme .mini-avatar { box-shadow: 0 4px 10px rgba(191,245,73,0.3); }
+
+/* ── Mobile Responsiveness ── */
+@media (max-width: 1024px) {
+  .admin-sidebar { width: 80px; }
+  .sidebar-header { padding: 24px 16px; justify-content: center; }
+  .sidebar-content { padding: 0 10px; }
+  .user-profile-summary { display: none; }
+  .kpi-row { grid-template-columns: repeat(2, 1fr); }
+  .dashboard-grid { grid-template-columns: 1fr; }
+  .dashboard-grid-secondary { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 768px) {
+  .admin-header { padding: 0 20px; height: 80px; }
+  .header-search { display: none; }
+  .admin-container { padding: 20px; }
+  .container-header { flex-direction: column; align-items: flex-start; gap: 16px; }
+  .title-group h2 { font-size: 24px; }
+  .kpi-row { grid-template-columns: 1fr; }
+  .admin-wrapper { flex-direction: column; }
+  .admin-sidebar { 
+    width: 100%; 
+    height: auto; 
+    flex-direction: row; 
+    border-right: none; 
+    border-bottom: 1px solid rgba(255,255,255,0.05); 
+  }
+  .sidebar-header { height: 60px; padding: 0 15px; border-bottom: none; }
+  .sidebar-content { flex-direction: row; padding: 0 15px; overflow-x: auto; height: 60px; align-items: center; }
+  .nav-link { width: auto; padding: 8px 12px; font-size: 13px; }
+  .nav-section, .nav-divider, .sidebar-footer { display: none; }
+  .admin-main { height: calc(100vh - 120px); }
+  .table-card { overflow-x: auto; }
+  .modern-table { min-width: 600px; }
+  .settings-card { padding: 20px; }
+}
+
+@media (max-width: 480px) {
+  .action-group { flex-direction: column; align-items: stretch; }
+  .filter-pill-container { overflow-x: auto; white-space: nowrap; padding-bottom: 8px; }
+  .icon-btn { width: 36px; height: 36px; }
+  .header-actions { gap: 15px; }
+}
+
 </style>

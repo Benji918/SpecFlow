@@ -106,3 +106,9 @@ class UserUpdate(BaseModel):
     @classmethod
     def validate_name(cls, v: Optional[str]) -> Optional[str]:
         return sanitize_name_logic(v)
+
+
+class AdminUserUpdate(UserUpdate):
+    """Schema for admins to update any user's properties."""
+    plan: Optional[str] = None
+    is_admin: Optional[bool] = None

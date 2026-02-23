@@ -4,13 +4,14 @@ from sqlalchemy import select, func, cast, Date, and_, extract
 from datetime import datetime, timedelta, date
 from typing import List, Optional
 from collections import defaultdict
+import uuid
 
 from app.database import get_db
 from app.models.user import User
 from app.models.spec import Spec
 from app.models.journey import Journey
 from app.models.execution import Execution
-from app.schemas.user import UserCreate, UserResponse, AdminCreate
+from app.schemas.user import UserCreate, UserResponse, AdminCreate, AdminUserUpdate
 from app.services.auth import get_current_user, get_password_hash
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
@@ -267,3 +268,87 @@ async def get_recent_activity(
         })
 
     return activity
+
+
+@router.patch("/users/{user_id}", response_model=UserResponse)
+async def update_user(
+    user_id: str,
+    user_data: AdminUserUpdate,
+    admin: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """Update a user's details, plan, or admin status."""
+    try:
+        user_uuid = uuid.UUID(user_id)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid user ID format",
+        )
+
+    result = await db.execute(select(User).where(User.id == user_uuid))
+    user = result.scalar_one_or_none()
+    
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found",
+        )
+
+    # Update fields if provided
+    if user_data.name is not None:
+        user.name = user_data.name
+    if user_data.email is not None:
+        # Check if email is already taken
+        if user_data.email != user.email:
+            existing = await db.execute(select(User).where(User.email == user_data.email))
+            if existing.scalar_one_or_none():
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Email already registered",
+                )
+        user.email = user_data.email
+    if user_data.plan is not None:
+        user.plan = user_data.plan
+    if user_data.is_admin is not None:
+        user.is_admin = user_data.is_admin
+
+    await db.commit()
+    await db.refresh(user)
+    return UserResponse.model_validate(user)
+
+
+@router.delete("/users/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_user(
+    user_id: str,
+    admin: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """Delete a user account."""
+    try:
+        user_uuid = uuid.UUID(user_id)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid user ID format",
+        )
+
+    # Don't let admins delete themselves
+    if user_uuid == admin.id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="You cannot delete your own admin account",
+        )
+
+    result = await db.execute(select(User).where(User.id == user_uuid))
+    user = result.scalar_one_or_none()
+    
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found",
+        )
+
+    await db.delete(user)
+    await db.commit()
+    return None
