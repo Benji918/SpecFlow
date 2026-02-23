@@ -417,6 +417,7 @@ import { useSpecStore } from '@/stores/spec'
 import { useJourneyStore } from '@/stores/journey'
 import { useAuthStore } from '@/stores/auth'
 import { useToast } from 'vue-toastification'
+import apiClient from '@/api/client'
 import {
   ArrowLeft,
   Trash2,
@@ -509,6 +510,18 @@ async function reconnectToGeneration(specId, sessionId) {
   generationMessage.value = 'Reconnecting...'
   generationError.value = null
 
+  // Fetch WebSocket token first (since HttpOnly cookie can't be accessed via JS)
+  generationMessage.value = 'Authenticating...'
+  const token = await getWsToken()
+  
+  if (!token) {
+    generationError.value = 'Authentication failed'
+    generationMessage.value = 'Failed to authenticate'
+    generatingJourneys.value = false
+    toast.error('Failed to authenticate - please try logging in again')
+    return
+  }
+
   const wsUrl = getWsUrl(specId)
   console.log('Reconnecting to WebSocket:', wsUrl)
 
@@ -518,7 +531,6 @@ async function reconnectToGeneration(specId, sessionId) {
     console.log('WebSocket reconnected')
     generationMessage.value = 'Reconnected to server'
     
-    const token = authStore.token
     ws.value.send(JSON.stringify({
       token: token,
       strategy: 'ai',
@@ -692,6 +704,17 @@ function handleLogout() {
 const selectedEndpoints = ref([])
 const newJourneyName = ref('')
 const journeyNameError = ref('')
+
+// Fetch WebSocket token from the server
+async function getWsToken() {
+  try {
+    const response = await apiClient.get('/api/auth/me-with-token')
+    return response.data.token
+  } catch (error) {
+    console.error('Failed to get WebSocket token:', error)
+    return null
+  }
+}
 
 // Generate a random name for manual journey
 function generateRandomJourneyName() {
@@ -1005,6 +1028,18 @@ async function generateJourneys() {
   const specId = route.params.id
   const sessionId = generateSessionId()
   
+  // Fetch WebSocket token first (since HttpOnly cookie can't be accessed via JS)
+  generationMessage.value = 'Authenticating...'
+  const token = await getWsToken()
+  
+  if (!token) {
+    generationError.value = 'Authentication failed'
+    generationMessage.value = 'Failed to authenticate'
+    generatingJourneys.value = false
+    toast.error('Failed to authenticate - please try logging in again')
+    return
+  }
+  
   // Set timeout for 5 minutes (300000ms)
   const timeoutId = setTimeout(() => {
     if (generatingJourneys.value) {
@@ -1040,7 +1075,6 @@ async function generateJourneys() {
     generationMessage.value = 'Connected to server'
     
     // Send token and strategy
-    const token = authStore.token
     ws.value.send(JSON.stringify({
       token: token,
       strategy: 'ai',

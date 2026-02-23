@@ -121,8 +121,11 @@
                 </div>
                 <div class="trend positive">+{{ stats.users.new_7d }}%</div>
               </div>
-              <div class="widget-value">{{ stats.users.total.toLocaleString() }}</div>
-              <div class="widget-footer">From last month</div>
+              <div class="widget-value-group">
+                <div class="widget-value">{{ stats.users.total.toLocaleString() }}</div>
+                <div class="widget-sub-label">Total Records</div>
+              </div>
+              <div class="widget-footer">Active Accounts</div>
               <div class="widget-spark">
                 <canvas id="sparkUsers"></canvas>
               </div>
@@ -136,8 +139,11 @@
                 </div>
                 <div class="trend positive">+{{ stats.specs.new_7d }}%</div>
               </div>
-              <div class="widget-value">{{ stats.specs.total.toLocaleString() }}</div>
-              <div class="widget-footer">From last month</div>
+              <div class="widget-value-group">
+                <div class="widget-value">{{ stats.specs.total.toLocaleString() }}</div>
+                <div class="widget-sub-label">Active Definitions</div>
+              </div>
+              <div class="widget-footer">Validated OpenAPI</div>
               <div class="widget-spark">
                 <canvas id="sparkSpecs"></canvas>
               </div>
@@ -151,8 +157,11 @@
                 </div>
                 <div class="trend positive">+{{ stats.journeys.total ? Math.round((stats.journeys.ai_generated / stats.journeys.total) * 100) : 0 }}%</div>
               </div>
-              <div class="widget-value">{{ stats.journeys.ai_generated.toLocaleString() }}</div>
-              <div class="widget-footer">AI Generated</div>
+              <div class="widget-value-group">
+                <div class="widget-value">{{ stats.journeys.ai_generated.toLocaleString() }}</div>
+                <div class="widget-sub-label">Neural Insights</div>
+              </div>
+              <div class="widget-footer">AI Generated Paths</div>
               <div class="widget-spark">
                 <canvas id="sparkJourneys"></canvas>
               </div>
@@ -166,25 +175,34 @@
                 </div>
                 <div class="trend positive">{{ stats.journeys.manual.toLocaleString() }}</div>
               </div>
-              <div class="widget-value">{{ stats.journeys.manual.toLocaleString() }}</div>
-              <div class="widget-footer">Created Manually</div>
+              <div class="widget-value-group">
+                <div class="widget-value">{{ stats.journeys.manual.toLocaleString() }}</div>
+                <div class="widget-sub-label">Curated Flows</div>
+              </div>
+              <div class="widget-footer">Manually Designed</div>
               <div class="widget-spark">
                 <canvas id="sparkManual"></canvas>
               </div>
             </div>
 
-            <div class="orbit-card kpi-widget rose">
+            <div class="orbit-card kpi-widget indigo">
               <div class="widget-header">
                 <div class="widget-title">
-                  <div class="icon-box"><Zap :size="18" /></div>
-                  Success
+                  <div class="icon-box"><ShieldCheck :size="18" /></div>
+                  System Reliability
                 </div>
-                <div class="trend" :class="stats.executions.success_rate >= 80 ? 'positive' : 'negative'">
-                  {{ stats.executions.success_rate }}%
+                <div class="trend" :class="stats.executions.success_rate >= 80 ? 'positive' : 'negative'" title="Reliability Trend">
+                  {{ stats.executions.success_rate }}% Accuracy
                 </div>
               </div>
-              <div class="widget-value">{{ stats.executions.success_rate }}%</div>
-              <div class="widget-footer">{{ stats.executions.total }} executions</div>
+              <div class="widget-value-group">
+                <div class="widget-value">{{ stats.executions.success_rate }}%</div>
+                <div class="widget-sub-label">Integrity Score</div>
+              </div>
+              <div class="widget-footer">
+                <span class="text-green-400 font-bold">{{ stats.executions.successful }}</span> Passed / 
+                <span class="text-red-400 font-bold">{{ stats.executions.failed }}</span> Failed
+              </div>
               <div class="widget-spark">
                 <canvas id="sparkSuccess"></canvas>
               </div>
@@ -278,6 +296,14 @@
                     {{ p }}
                   </button>
                 </div>
+                <!-- Role Filter -->
+                <div class="filter-pill-container">
+                  <button v-for="r in ['all', 'admin', 'normal']" :key="r"
+                    class="filter-pill" :class="{ active: userRoleFilter === r }"
+                    @click="setRoleFilter(r)">
+                    {{ r }}
+                  </button>
+                </div>
                 <button class="btn-primary-modern create-admin-btn" @click="showAdminModal = true">
                   <Plus :size="16" class="mr-1" />
                   Create Admin
@@ -310,7 +336,7 @@
                     <td>
                       <div class="role-badge" :class="{ admin: u.is_admin }">
                         <ShieldCheck v-if="u.is_admin" :size="12" class="mr-1" />
-                        {{ u.is_admin ? 'Admin' : 'User' }}
+                        {{ u.is_admin ? 'Admin' : 'Normal User' }}
                       </div>
                     </td>
                     <td class="text-gray-500">{{ formatDate(u.created_at) }}</td>
@@ -526,7 +552,9 @@ import {
   EyeOff,
   Sun,
   Moon,
-  Plus
+  Plus,
+  ShieldCheck,
+  Trash2
 } from 'lucide-vue-next'
 
 const authStore = useAuthStore()
@@ -550,6 +578,7 @@ const activity    = ref([])
 const growthDays  = ref(30)
 const userPage    = ref(1)
 const userPlanFilter = ref('all')
+const userRoleFilter = ref('all')
 const lastUpdated = ref('—')
 const searchQuery = ref('')
 const sidebarCollapsed = ref(false)
@@ -609,7 +638,11 @@ async function loadGrowth() {
 
 async function loadUsers() {
   const plan = userPlanFilter.value === 'all' ? '' : `&plan=${userPlanFilter.value}`
-  const { data } = await apiClient.get(`/api/admin/users?page=${userPage.value}&limit=20${plan}`)
+  let roleParam = ''
+  if (userRoleFilter.value === 'admin') roleParam = '&is_admin=true'
+  else if (userRoleFilter.value === 'normal') roleParam = '&is_admin=false'
+  
+  const { data } = await apiClient.get(`/api/admin/users?page=${userPage.value}&limit=20${plan}${roleParam}`)
   users.value = data
 }
 
@@ -627,6 +660,12 @@ async function setGrowthDays(d) {
 
 async function setUserFilter(p) {
   userPlanFilter.value = p
+  userPage.value = 1
+  await loadUsers()
+}
+
+async function setRoleFilter(r) {
+  userRoleFilter.value = r
   userPage.value = 1
   await loadUsers()
 }
@@ -1137,7 +1176,7 @@ onMounted(loadAll)
 
 .kpi-row {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: 24px;
   margin-bottom: 24px;
 }
@@ -1155,8 +1194,10 @@ onMounted(loadAll)
   display: flex; align-items: center; justify-content: center;
   background: rgba(255,255,255,0.03);
 }
-.widget-value { font-size: 36px; font-weight: 900; color: #fff; margin-bottom: 4px; }
-.widget-footer { font-size: 11px; color: #444; font-weight: 700; text-transform: uppercase; }
+.widget-value-group { display: flex; align-items: baseline; gap: 8px; margin-bottom: 2px; }
+.widget-sub-label { font-size: 10px; color: #555; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; }
+.widget-value { font-size: 32px; font-weight: 900; color: #fff; line-height: 1; }
+.widget-footer { font-size: 11px; color: #444; font-weight: 700; text-transform: uppercase; margin-top: auto; }
 .trend { font-size: 12px; font-weight: 800; padding: 4px 8px; border-radius: 8px; }
 .trend.positive { background: rgba(191,245,73,0.1); color: #BFF549; }
 .trend.negative { background: rgba(248,113,113,0.1); color: #F87171; }
@@ -1171,6 +1212,7 @@ onMounted(loadAll)
 .kpi-widget.cyan .icon-box { color: #22D3EE; }
 .kpi-widget.lime .icon-box { color: #BFF549; }
 .kpi-widget.rose .icon-box { color: #F43F5E; }
+.kpi-widget.indigo .icon-box { color: #6366F1; }
 
 /* ── Charts Grid ── */
 .dashboard-grid {

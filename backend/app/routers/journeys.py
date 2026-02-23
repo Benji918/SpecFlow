@@ -118,6 +118,7 @@ async def websocket_generate_journeys(websocket: WebSocket, spec_id: uuid.UUID):
             for cookie in cookie_header.split(";"):
                 if "access_token" in cookie:
                     token = cookie.split("=")[1].strip()
+                    print(token)
                     break
         
         # Get strategy from client message
@@ -127,6 +128,7 @@ async def websocket_generate_journeys(websocket: WebSocket, spec_id: uuid.UUID):
             # If no token from cookie, try getting from message
             if not token and auth_data.get("token"):
                 token = auth_data.get("token")
+                print(token)
         except:
             strategy = "ai"
         

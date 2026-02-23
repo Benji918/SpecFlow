@@ -33,26 +33,26 @@ async def get_dashboard_stats(
     db: AsyncSession = Depends(get_db),
 ):
     """Get high-level platform statistics for the admin dashboard."""
-    # Total users
-    total_users = await db.scalar(select(func.count(User.id)))
-    free_users = await db.scalar(select(func.count(User.id)).where(User.plan == "free"))
+    # Total users (excluding admins)
+    total_users = await db.scalar(select(func.count(User.id)).where(User.is_admin == False))
+    free_users = await db.scalar(select(func.count(User.id)).where(User.plan == "free", User.is_admin == False))
     paid_users = total_users - free_users
 
-    # Users by plan breakdown
+    # Users by plan breakdown (excluding admins)
     plan_counts = {}
     for plan in ["free", "starter", "team", "pro"]:
-        count = await db.scalar(select(func.count(User.id)).where(User.plan == plan))
+        count = await db.scalar(select(func.count(User.id)).where(User.plan == plan, User.is_admin == False))
         plan_counts[plan] = count
 
-    # New users in last 7d & 30d
+    # New users in last 7d & 30d (excluding admins)
     now = datetime.utcnow()
     week_ago = now - timedelta(days=7)
     month_ago = now - timedelta(days=30)
     new_users_7d = await db.scalar(
-        select(func.count(User.id)).where(User.created_at >= week_ago)
+        select(func.count(User.id)).where(User.created_at >= week_ago, User.is_admin == False)
     )
     new_users_30d = await db.scalar(
-        select(func.count(User.id)).where(User.created_at >= month_ago)
+        select(func.count(User.id)).where(User.created_at >= month_ago, User.is_admin == False)
     )
 
     # Specs
@@ -134,10 +134,10 @@ async def get_growth_metrics(
 
     since = datetime.utcnow() - timedelta(days=days)
 
-    # --- Users per day ---
+    # --- Users per day (excluding admins) ---
     user_rows = await db.execute(
         select(cast(User.created_at, Date).label("day"), func.count(User.id).label("count"))
-        .where(User.created_at >= since)
+        .where(User.created_at >= since, User.is_admin == False)
         .group_by(cast(User.created_at, Date))
         .order_by(cast(User.created_at, Date))
     )
@@ -189,13 +189,16 @@ async def list_users(
     page: int = 1,
     limit: int = 20,
     plan: Optional[str] = None,
+    is_admin: Optional[bool] = None,
     admin: User = Depends(require_admin),
     db: AsyncSession = Depends(get_db),
 ):
-    """List all users with optional plan filter."""
+    """List all users with optional plan and admin filter."""
     query = select(User).order_by(User.created_at.desc())
     if plan:
         query = query.where(User.plan == plan)
+    if is_admin is not None:
+        query = query.where(User.is_admin == is_admin)
     query = query.offset((page - 1) * limit).limit(limit)
     result = await db.execute(query)
     users = result.scalars().all()
