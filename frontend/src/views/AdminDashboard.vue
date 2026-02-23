@@ -1339,8 +1339,16 @@ onMounted(loadAll)
 }
 .sidebar-collapsed .collapse-toggle {
   width: 44px;
-  padding: 10px 0;
+  padding: 12px 0;
   margin: 0 auto;
+  background: #BFF549;
+  color: #000;
+  border-color: #BFF549;
+  box-shadow: 0 4px 15px rgba(191,245,73,0.4);
+}
+.sidebar-collapsed .collapse-toggle:hover {
+  transform: scale(1.1);
+  box-shadow: 0 6px 20px rgba(191,245,73,0.6);
 }
 .collapse-toggle:hover { 
   color: #000; background: #BFF549; 
@@ -1797,6 +1805,11 @@ onMounted(loadAll)
   background: #f8f9fa; 
   border-color: rgba(0,0,0,0.1); 
   color: #555; 
+}
+.light-theme.sidebar-collapsed .collapse-toggle {
+  background: #BFF549;
+  color: #000;
+  border-color: #BFF549;
 }
 .light-theme .collapse-toggle:hover {
   background: #BFF549;
