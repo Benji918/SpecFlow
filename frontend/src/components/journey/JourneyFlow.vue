@@ -180,42 +180,26 @@ function autoLayout() {
   const nodeHeight = 120
   const nodeSpacing = 120
   
+  // Sort nodes topologically so they follow the execution flow
+  const sortedNodes = getSortedNodes(nodes.value, edges.value)
+  
   // Create new array to ensure reactivity
-  const newNodes = [...nodes.value]
-  newNodes.forEach((node, index) => {
-    node.position = {
+  const newNodes = sortedNodes.map((node, index) => ({
+    ...node,
+    position: {
       x: 300, // Centered
       y: index * (nodeHeight + nodeSpacing),
     }
-  })
+  }))
+  
   nodes.value = newNodes
-
-  // Recreate edges to ensure they're connected properly with automatic mapping
-  const newEdges = []
-  for (let i = 0; i < nodes.value.length - 1; i++) {
-    const sourceNode = nodes.value[i]
-    const targetNode = nodes.value[i + 1]
-    const detectedMappings = detectMappings(sourceNode, targetNode)
-    
-    newEdges.push({
-      id: `e${i}-${i + 1}`,
-      source: sourceNode.id,
-      target: targetNode.id,
-      type: 'mapping',
-      animated: true,
-      data: {
-        dataMapping: detectedMappings
-      }
-    })
-  }
-  edges.value = newEdges
 
   // Fit viewport
   setTimeout(() => {
     fitView({ padding: 0.2, duration: 300 })
   }, 100)
 
-  toast.success('Layout updated with auto-mapping')
+  toast.success('Layout updated')
 }
 
 function clearAllMappings() {

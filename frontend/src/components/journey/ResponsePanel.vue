@@ -47,15 +47,18 @@
       <div v-if="activeTab === 'config'" class="space-y-6">
         <div>
           <div class="flex items-center justify-between mb-2">
-            <div class="flex items-center space-x-2">
-              <h4 class="text-sm font-semibold text-gray-400">Request Body (JSON)</h4>
-              <span v-if="isBodyFromSchema" class="text-[10px] text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded">Schema Preview</span>
+            <div class="flex items-center space-x-3 overflow-hidden">
+              <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider shrink-0">Request Body</h4>
+              <div v-if="isBodyFromSchema" class="flex items-center space-x-1.5 px-2 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/20 whitespace-nowrap">
+                <div class="w-1 h-1 rounded-full bg-blue-400 animate-pulse"></div>
+                <span class="text-[9px] font-black text-blue-400 uppercase tracking-widest">Auto Preview</span>
+              </div>
             </div>
             <button
               @click="generateMock"
-              class="text-xs text-primary hover:underline flex items-center"
+              class="text-[10px] font-bold text-primary hover:text-white flex items-center bg-primary/5 hover:bg-primary/20 px-2 py-1 rounded-lg border border-primary/10 transition-all"
             >
-              <Sparkles :size="12" class="mr-1" />
+              <Sparkles :size="10" class="mr-1.5" />
               Generate Mock
             </button>
           </div>
@@ -258,7 +261,7 @@
 import { ref, computed, watch } from 'vue'
 import { useToast } from 'vue-toastification'
 import { Copy, Sparkles, Loader, AlertCircle, X, ChevronRight, Link as LinkIcon, ArrowRight } from 'lucide-vue-next'
-import { generateEndpointMock } from '@/utils/mockGenerator'
+import { generateEndpointMock, generateMockFromSchema } from '@/utils/mockGenerator'
 
 const props = defineProps({
   result: {
@@ -293,7 +296,7 @@ watch(() => props.node, (newNode) => {
       // First set the editable body from the schema before emitting update
       const schema = newNode.data.requestBody.content?.['application/json']?.schema
       if (schema) {
-        editableBody.value = JSON.stringify(extractExampleFromSchema(schema), null, 2)
+        editableBody.value = JSON.stringify(generateMockFromSchema(schema), null, 2)
       }
       
       // Then emit update to normalize the node data
@@ -304,8 +307,10 @@ watch(() => props.node, (newNode) => {
       // Don't return early - continue to set up parameters
     }
 
-    // First priority: Show saved request body value if it exists
-    if (newNode.data.requestBody) {
+    // First priority: Show saved request body value if it exists AND has actual content
+    // Note: requestBody can be an empty object {} from backend, which should be treated as "no content"
+    const hasRequestBodyContent = newNode.data.requestBody && typeof newNode.data.requestBody === 'object' && Object.keys(newNode.data.requestBody).length > 0
+    if (hasRequestBodyContent) {
       editableBody.value = JSON.stringify(newNode.data.requestBody, null, 2)
     } 
     // Second priority: Show request body schema if available (from endpoint spec)
@@ -313,7 +318,7 @@ watch(() => props.node, (newNode) => {
       // Extract example from schema to show as preview
       const schema = newNode.data.requestBodySpec.content?.['application/json']?.schema
       if (schema) {
-        editableBody.value = JSON.stringify(extractExampleFromSchema(schema), null, 2)
+        editableBody.value = JSON.stringify(generateMockFromSchema(schema), null, 2)
       } else {
         editableBody.value = ''
       }
@@ -389,8 +394,9 @@ const statusClass = computed(() => {
 // Track if current body is from schema (preview) vs user-entered
 const isBodyFromSchema = computed(() => {
   if (!props.node?.data) return false
-  // If there's no saved requestBody but there's a requestBodySpec, it's from schema
-  return !props.node.data.requestBody && props.node.data.requestBodySpec
+  // If there's no saved requestBody with actual content but there's a requestBodySpec, it's from schema
+  const hasRequestBodyContent = props.node.data.requestBody && typeof props.node.data.requestBody === 'object' && Object.keys(props.node.data.requestBody).length > 0
+  return !hasRequestBodyContent && props.node.data.requestBodySpec
 })
 
 function handleBodyInput() {
@@ -451,55 +457,6 @@ function formatJSON(data) {
   return JSON.stringify(data, null, 2)
 }
 
-// Extract an example from JSON schema to show as preview
-function extractExampleFromSchema(schema, visited = new WeakSet()) {
-  if (!schema || visited.has(schema)) return null
-  visited.add(schema)
-
-  // If there's an example, use it
-  if (schema.example) return schema.example
-  
-  // If there's a default, use it
-  if (schema.default !== undefined) return schema.default
-
-  // Handle different schema types
-  switch (schema.type) {
-    case 'object':
-      if (schema.properties) {
-        const obj = {}
-        for (const [key, prop] of Object.entries(schema.properties)) {
-          obj[key] = extractExampleFromSchema(prop, visited)
-        }
-        return obj
-      }
-      return {}
-
-    case 'array':
-      const itemExample = extractExampleFromSchema(schema.items, visited)
-      return itemExample !== null ? [itemExample] : []
-
-    case 'string':
-      if (schema.enum) return schema.enum[0]
-      if (schema.format === 'date-time') return '2024-01-01T00:00:00Z'
-      if (schema.format === 'date') return '2024-01-01'
-      if (schema.format === 'email') return 'user@example.com'
-      if (schema.format === 'uri') return 'https://example.com'
-      if (schema.format === 'uuid') return '550e8400-e29b-41d4-a716-446655440000'
-      return '<string>'
-
-    case 'number':
-    case 'integer':
-      if (schema.enum) return schema.enum[0]
-      if (schema.minimum !== undefined) return schema.minimum
-      return 0
-
-    case 'boolean':
-      return false
-
-    default:
-      return null
-  }
-}
 
 async function copyResult() {
   try {

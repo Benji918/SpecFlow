@@ -54,8 +54,8 @@
           </div>
         </div>
         <button @click="sidebarCollapsed = !sidebarCollapsed" class="collapse-toggle" :class="{ 'is-collapsed': sidebarCollapsed }">
-          <ChevronLeft v-if="!sidebarCollapsed" :size="20" />
-          <ChevronRight v-else :size="20" />
+          <ArrowLeft v-if="!sidebarCollapsed" :size="20" />
+          <ArrowRight v-else :size="20" />
           <span v-if="!sidebarCollapsed" class="ml-2">Collapse</span>
         </button>
       </div>
@@ -616,7 +616,8 @@ import {
   MoreVertical,
   TrendingUp,
   TrendingDown,
-  ChevronLeft,
+  ArrowLeft,
+  ArrowRight,
   Eye,
   EyeOff,
   Sun,
@@ -1344,7 +1345,7 @@ onMounted(loadAll)
   background: #BFF549;
   color: #000;
   border-color: #BFF549;
-  box-shadow: 0 4px 15px rgba(191,245,73,0.4);
+  box-shadow: 0 0 20px rgba(191,245,73,0.4);
 }
 .sidebar-collapsed .collapse-toggle:hover {
   transform: scale(1.1);
@@ -1462,7 +1463,7 @@ onMounted(loadAll)
   background: rgba(255,255,255,0.03);
 }
 .widget-value-group { display: flex; align-items: baseline; gap: 8px; margin-bottom: 2px; }
-.widget-sub-label { font-size: 10px; color: #555; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; }
+.widget-sub-label { font-size: 10px; color: #888; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; }
 .widget-value { font-size: 32px; font-weight: 900; color: #fff; line-height: 1; }
 .widget-footer { font-size: 11px; color: #444; font-weight: 700; text-transform: uppercase; margin-top: auto; }
 .trend { font-size: 12px; font-weight: 800; padding: 4px 8px; border-radius: 8px; }
