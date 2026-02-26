@@ -15,7 +15,7 @@ export const useSpecStore = defineStore('spec', () => {
         error.value = null
 
         try {
-            const response = await apiClient.get('/api/specs')
+            const response = await apiClient.get('/api/specs', { timeout: 120000 })
             specs.value = response.data
             return { success: true }
         } catch (err) {
@@ -31,7 +31,7 @@ export const useSpecStore = defineStore('spec', () => {
         error.value = null
 
         try {
-            const response = await apiClient.get(`/api/specs/${specId}`)
+            const response = await apiClient.get(`/api/specs/${specId}`, { timeout: 120000 })
             // console.log('Spec API response:', response.data)
             currentSpec.value = response.data
             return { success: true, data: response.data }
@@ -49,7 +49,7 @@ export const useSpecStore = defineStore('spec', () => {
         error.value = null
 
         try {
-            const response = await apiClient.post('/api/specs', {
+            const response = await apiClient.post('/api/specs', { timeout: 120000 }, {
                 name,
                 content,
             })
@@ -69,7 +69,7 @@ export const useSpecStore = defineStore('spec', () => {
         error.value = null
 
         try {
-            const response = await apiClient.patch(`/api/specs/${specId}`, updates)
+            const response = await apiClient.patch(`/api/specs/${specId}`, { timeout: 120000 }, updates)
 
             // Update in list
             const index = specs.value.findIndex((s) => s.id === specId)
@@ -96,7 +96,7 @@ export const useSpecStore = defineStore('spec', () => {
         error.value = null
 
         try {
-            await apiClient.delete(`/api/specs/${specId}`)
+            await apiClient.delete(`/api/specs/${specId}`, { timeout: 120000 })
 
             // Remove from list
             specs.value = specs.value.filter((s) => s.id !== specId)
@@ -120,7 +120,7 @@ export const useSpecStore = defineStore('spec', () => {
         error.value = null
 
         try {
-            const response = await apiClient.put(`/api/specs/${specId}/resync`, {
+            const response = await apiClient.put(`/api/specs/${specId}/resync`, { timeout: 120000 }, {
                 content,
             })
 

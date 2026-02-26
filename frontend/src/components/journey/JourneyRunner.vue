@@ -249,10 +249,21 @@ async function startExecution() {
   statusMessages.value = []
   journeyStore.resetExecution()
 
-  // Connect to WebSocket
-  const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-  const wsHost = window.location.host.replace(':5173', ':8000')
-  const wsUrl = `${wsProtocol}//${wsHost}/api/ws/journey/${props.journeyId}/execute`
+  // Build WebSocket URL - use environment variable if available, otherwise derive from current location
+  const wsBaseUrl = import.meta.env.VITE_WS_URL || ''
+  let wsUrl
+  
+  if (wsBaseUrl) {
+    // Use explicit WebSocket URL from environment variable (for deployed apps)
+    wsUrl = `${wsBaseUrl}/api/ws/journey/${props.journeyId}/execute`
+  } else {
+    // Derive from current location (for local development)
+    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+    const wsHost = window.location.host.replace(':5173', ':8000')
+    wsUrl = `${wsProtocol}//${wsHost}/api/ws/journey/${props.journeyId}/execute`
+  }
+
+  console.log('Connecting to WebSocket:', wsUrl)
 
   try {
     ws.value = new WebSocket(wsUrl)

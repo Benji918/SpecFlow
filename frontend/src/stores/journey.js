@@ -23,7 +23,7 @@ export const useJourneyStore = defineStore('journey', () => {
         error.value = null
 
         try {
-            const response = await apiClient.get('/api/journeys')
+            const response = await apiClient.get('/api/journeys', { timeout: 120000 })
             journeys.value = response.data
             return { success: true }
         } catch (err) {
@@ -98,7 +98,7 @@ export const useJourneyStore = defineStore('journey', () => {
         error.value = null
 
         try {
-            const response = await apiClient.post('/api/journeys', journeyData)
+            const response = await apiClient.post('/api/journeys', journeyData, { timeout: 120000 })
 
             journeys.value.unshift(response.data)
             return { success: true, data: response.data }
@@ -115,7 +115,7 @@ export const useJourneyStore = defineStore('journey', () => {
         error.value = null
 
         try {
-            const response = await apiClient.put(`/api/journeys/${journeyId}`, updates)
+            const response = await apiClient.put(`/api/journeys/${journeyId}`, updates, { timeout: 120000 })
 
             // Update in list
             const index = journeys.value.findIndex((j) => j.id === journeyId)
@@ -142,7 +142,7 @@ export const useJourneyStore = defineStore('journey', () => {
         error.value = null
 
         try {
-            await apiClient.delete(`/api/journeys/${journeyId}`)
+            await apiClient.delete(`/api/journeys/${journeyId}`, { timeout: 120000 })
 
             // Remove from list
             journeys.value = journeys.value.filter((j) => j.id !== journeyId)
@@ -170,8 +170,8 @@ export const useJourneyStore = defineStore('journey', () => {
         error.value = null
 
         try {
-            const response = await apiClient.delete('/api/journeys/bulk-delete', {
-                data: journeyIds
+            const response = await apiClient.delete('/api/journeys/bulk-delete', { timeout: 120000 }, {
+                data: journeyIds, 
             })
 
             // Remove deleted journeys from list
