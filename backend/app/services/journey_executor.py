@@ -4,6 +4,7 @@ from datetime import datetime
 import re
 
 
+
 class JourneyExecutor:
     """Executes API journey tests."""
 
@@ -14,7 +15,14 @@ class JourneyExecutor:
             base_url: Base URL of the API to test
         """
         self.base_url = base_url.rstrip("/")
-        self.client = httpx.AsyncClient(timeout=30.0, follow_redirects=True)
+        # Configure httpx client with SSL verification disabled for flexibility
+        # This allows connecting to APIs with self-signed certificates or SSL issues
+        # In production, you might want to set this to True and properly configure certificates
+        self.client = httpx.AsyncClient(
+            timeout=30.0,
+            follow_redirects=True,
+            verify=False  # Disable SSL verification to allow connections to various APIs
+        )
 
     async def execute_journey(
         self,
@@ -85,6 +93,9 @@ class JourneyExecutor:
 
         # Build headers
         headers = self._build_headers(data, session_data)
+
+        # Add User-Agent to make requests look more legitimate (some APIs block requests without it)
+        headers["User-Agent"] = "SpecFlow/1.0 API Tester"
 
         # Build request body
         body = self._build_body(data, session_data)
