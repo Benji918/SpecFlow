@@ -10,7 +10,7 @@ class Spec(Base):
     __tablename__ = "specs"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete='CASCADE'), nullable=False, index=True)
     name = Column(String, nullable=False)
     version = Column(String)
     content = Column(JSON, nullable=False)  # Full OpenAPI spec

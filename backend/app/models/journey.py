@@ -10,8 +10,8 @@ class Journey(Base):
     __tablename__ = "journeys"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True)
-    spec_id = Column(UUID(as_uuid=True), ForeignKey("specs.id"), nullable=False, index=True)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete='CASCADE'), nullable=False, index=True)
+    spec_id = Column(UUID(as_uuid=True), ForeignKey("specs.id", ondelete='CASCADE'), nullable=False, index=True)
     name = Column(String, nullable=False)
     nodes = Column(JSON, nullable=False)  # VueFlow nodes
     edges = Column(JSON, nullable=False)  # VueFlow edges
