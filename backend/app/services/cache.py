@@ -7,6 +7,7 @@ class CacheService:
     def __init__(self):
         # Upstash Redis requires TLS connection - use rediss:// protocol
         # Also add connection pooling and better error handling
+        
         self.redis = redis.from_url(
             settings.REDIS_URL.replace('redis://', 'rediss://') if 'rediss://' in settings.REDIS_URL else settings.REDIS_URL,  # Force TLS
             decode_responses=True,
