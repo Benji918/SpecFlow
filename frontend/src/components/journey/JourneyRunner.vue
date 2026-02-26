@@ -256,6 +256,7 @@ async function startExecution() {
   if (wsBaseUrl) {
     // Use explicit WebSocket URL from environment variable (for deployed apps)
     wsUrl = `${wsBaseUrl}/api/ws/journey/${props.journeyId}/execute`
+    
   } else {
     // Derive from current location (for local development)
     const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
