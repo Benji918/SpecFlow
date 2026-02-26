@@ -170,8 +170,8 @@ export const useJourneyStore = defineStore('journey', () => {
         error.value = null
 
         try {
-            const response = await apiClient.delete('/api/journeys/bulk-delete', { timeout: 120000 }, {
-                data: journeyIds, 
+            const response = await apiClient.delete('/api/journeys/bulk-delete', {
+                data: { journey_ids: journeyIds }
             })
 
             // Remove deleted journeys from list

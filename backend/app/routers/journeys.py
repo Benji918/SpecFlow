@@ -14,6 +14,7 @@ from app.schemas.journey import (
     JourneyResponse,
     JourneyUpdate,
     GenerateJourneysRequest,
+    BulkDeleteRequest,
 )
 from app.services.auth import get_current_user, verify_token
 from app.services.spec_parser import SpecParser, EndpointInfo
@@ -479,11 +480,12 @@ async def update_journey(
 
 @router.delete("/journeys/bulk-delete", status_code=status.HTTP_200_OK)
 async def bulk_delete_journeys(
-    journey_ids: List[str],
+    request: BulkDeleteRequest,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """Delete multiple journeys efficiently in a single request."""
+    journey_ids = request.journey_ids
     if not journey_ids:
         return {"deleted": 0, "message": "No journey IDs provided"}
     

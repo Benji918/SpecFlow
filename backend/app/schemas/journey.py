@@ -34,3 +34,7 @@ class JourneyUpdate(BaseModel):
 
 class GenerateJourneysRequest(BaseModel):
     strategy: str = "ai"  # 'ai' or 'manual'
+
+
+class BulkDeleteRequest(BaseModel):
+    journey_ids: List[str]
