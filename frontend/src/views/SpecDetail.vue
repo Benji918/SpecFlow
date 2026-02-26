@@ -939,6 +939,12 @@ onMounted(async () => {
 // Watch for route changes to refetch spec when navigating between specs
 watch(() => route.params.id, async (newId, oldId) => {
   if (newId && newId !== oldId) {
+    // Only fetch spec if we're still on the spec detail page
+    // (i.e., the route path still contains '/spec/'), otherwise we're navigating away
+    if (!route.path.includes('/spec/')) {
+      return
+    }
+    
     // Clear current state
     selectedJourneyIds.value.clear()
     selectedEndpoints.value = []

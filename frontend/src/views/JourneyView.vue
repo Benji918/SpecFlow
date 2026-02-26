@@ -418,7 +418,10 @@ async function fetchJourney() {
     toast.error('Failed to load journey')
   } else {
     // Load the spec as well for "Add Step" functionality
-    await specStore.fetchSpec(result.data.spec_id)
+    const specResult = await specStore.fetchSpec(result.data.spec_id)
+    if (!specResult.success) {
+      console.warn('Failed to load specification:', specResult.error)
+    }
   }
   loading.value = false
 }
