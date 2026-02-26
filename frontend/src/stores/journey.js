@@ -39,7 +39,7 @@ export const useJourneyStore = defineStore('journey', () => {
         error.value = null
 
         try {
-            const response = await apiClient.get(`/api/journeys/${journeyId}`)
+            const response = await apiClient.get(`/api/journeys/${journeyId}`, { timeout: 120000 })
             activeJourney.value = response.data
             return { success: true, data: response.data }
         } catch (err) {
