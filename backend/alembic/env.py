@@ -4,6 +4,7 @@ from sqlalchemy import engine_from_config, pool
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from alembic import context
+from app.database import Base
 from app.models import *
 from app.config import settings
 
@@ -25,9 +26,7 @@ config.set_main_option("sqlalchemy.url", db_url)
 
 # add your model's MetaData object here
 # for 'autogenerate' support
-# from myapp import mymodel
-# target_metadata = mymodel.Base.metadata
-# target_metadata = BaseTableModel.metadata
+target_metadata = Base.metadata
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
@@ -50,7 +49,7 @@ def run_migrations_offline() -> None:
     url = config.get_main_option("sqlalchemy.url")
     context.configure(
         url=url,
-        # target_metadata=target_metadata,
+        target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
     )
@@ -75,7 +74,7 @@ async def run_async_migrations() -> None:
 def do_run_migrations(connection):
     context.configure(
         connection=connection,
-        # target_metadata=target_metadata,
+        target_metadata=target_metadata,
     )
 
     with context.begin_transaction():
@@ -97,7 +96,7 @@ def run_migrations_online() -> None:
     with connectable.connect() as connection:
         context.configure(
             connection=connection,
-            # target_metadata=target_metadata,
+            target_metadata=target_metadata,
         )
 
         with context.begin_transaction():
