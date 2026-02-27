@@ -2,6 +2,7 @@ import httpx
 from typing import Dict, List, Any, Optional
 from datetime import datetime
 import re
+import time
 
 
 
@@ -91,34 +92,54 @@ class JourneyExecutor:
         url = self.base_url + data.get("path", "")
         url = self._interpolate_path_params(url, session_data)
 
+        # Build parameters (query, header, etc.)
+        query_params = {}
+        header_params = {}
+        used_params = {}
+
+        for p in data.get("parameters", []):
+            param_name = p.get("name")
+            param_in = p.get("in", "query") 
+            val = p.get("value")
+            
+            if val is None or val == "":
+                # Resolve from session if not explicitly set
+                val = session_data.get(f"pathParams.{param_name}") or session_data.get(param_name)
+            
+            if val is not None and val != "":
+                # Convert boolean to standard API string format (True -> "true")
+                if isinstance(val, bool):
+                    val = str(val).lower()
+                else:
+                    val = str(val)
+
+                used_params[param_name] = val
+                if param_in == "query":
+                    query_params[param_name] = val
+                elif param_in == "header":
+                    header_params[param_name] = val
+
         # Build headers
         headers = self._build_headers(data, session_data)
-
-        # Add User-Agent to make requests look more legitimate (some APIs block requests without it)
+        headers.update(header_params)
+        
+        # Add User-Agent
         headers["User-Agent"] = "SpecFlow/1.0 API Tester"
-
+        
         # Build request body
         body = self._build_body(data, session_data)
 
         # Execute request
         method = data.get("method", "GET")
-
-        # Capture used params for potential mapping in next steps
-        used_params = {}
-        for p in data.get("parameters", []):
-            val = p.get("value")
-            if val is None or val == "":
-                # Resolve from session if not explicitly set in the node
-                val = session_data.get(f"pathParams.{p['name']}") or session_data.get(p["name"])
-            
-            if val is not None:
-                used_params[p["name"]] = val
         
         try:
-            start_time = datetime.utcnow()
+            start_time = time.perf_counter()
 
             # Determine how to send the body
             req_kwargs = {}
+            if query_params:
+                req_kwargs["params"] = query_params
+                
             if method in ["POST", "PUT", "PATCH"] and body:
                 content_type = self._determine_content_type(data, body)
                 
@@ -189,7 +210,7 @@ class JourneyExecutor:
                 **req_kwargs
             )
 
-            duration = (datetime.utcnow() - start_time).total_seconds() * 1000
+            duration = (time.perf_counter() - start_time) * 1000
 
             # Try to parse JSON response
             try:
@@ -206,7 +227,7 @@ class JourneyExecutor:
                 "timestamp": datetime.utcnow().isoformat(),
                 "request": {
                     "method": method,
-                    "url": url,
+                    "url": str(response.url),
                     "headers": headers,
                     "body": body,
                     "params": used_params,

@@ -233,7 +233,11 @@ const statusMessages = ref([])
 const ws = ref(null)
 
 const canStart = computed(() => {
-  return !isRunning.value && baseUrl.value.trim() !== ''
+  const hasBaseUrl = baseUrl.value.trim() !== ''
+  const hasNodes = props.nodes && props.nodes.length > 0
+  const hasEdges = props.edges && props.edges.length > 0 // A journey needs connections
+  
+  return !isRunning.value && hasBaseUrl && hasNodes && hasEdges
 })
 
 const progress = computed(() => {

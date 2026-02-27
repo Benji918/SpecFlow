@@ -8,6 +8,18 @@
       </div>
       <div class="flex space-x-1">
         <button
+          @click="runIndependentStep"
+          :disabled="!canRunStep"
+          :class="[
+            'p-2 rounded transition-all',
+            canRunStep ? 'text-primary hover:text-white hover:bg-gray-800' : 'text-gray-600 cursor-not-allowed opacity-50'
+          ]"
+          :title="canRunStep ? 'Run Step Independently (Postman Mode)' : 'Set Base URL or run predecessors first'"
+        >
+          <Play v-if="!isRunningStep" :size="18" />
+          <Loader v-else :size="18" class="animate-spin" />
+        </button>
+        <button
           v-if="result"
           @click="copyResult"
           class="p-2 text-gray-400 hover:text-white rounded hover:bg-gray-800"
@@ -22,6 +34,12 @@
           <X :size="20" />
         </button>
       </div>
+    </div>
+
+    <!-- Independent Execution Progress Bar -->
+    <div v-if="isRunningStep" class="relative h-0.5 w-full bg-gray-900 overflow-hidden -mt-4 mb-4">
+      <div class="absolute inset-0 bg-primary/20"></div>
+      <div class="absolute h-full bg-primary shadow-[0_0_10px_rgba(191,245,73,0.8)] animate-premium-progress"></div>
     </div>
 
     <!-- Tabs -->
@@ -112,46 +130,82 @@
         </div>
 
         <!-- Data Mappings Section -->
-        <div v-if="incomingMappings.length || outgoingMappings.length" class="space-y-4">
+        <div class="space-y-4">
           <div class="flex items-center space-x-2">
             <LinkIcon :size="14" class="text-primary" />
-            <h4 class="text-sm font-bold text-gray-400 uppercase tracking-wider">Intelligence Data Links</h4>
+            <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider">Intelligence Data Links</h4>
           </div>
           
-          <!-- Incoming Mappings -->
-          <div v-if="incomingMappings.length" class="space-y-2">
-            <div class="text-[9px] text-gray-500 uppercase font-black tracking-widest pl-1">Incoming Context</div>
+          <!-- Quick Map From Sources (Prevents clicking wires) -->
+          <div v-if="incomingEdges.length" class="space-y-2">
+            <div class="text-[9px] text-gray-500 uppercase font-black tracking-widest pl-1">Available Context Sources</div>
             <div class="space-y-1.5">
-              <div v-for="(m, i) in incomingMappings" :key="i" class="p-3 bg-black/40 border border-gray-800/80 rounded-xl group transition-all hover:border-primary/30">
-                <div class="flex items-center text-[10px] font-mono">
-                  <div class="px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 truncate max-w-[120px]" :title="m.from">
-                    {{ m.from.split('.').pop() }}
-                  </div>
-                  <ArrowRight :size="10" class="mx-2 text-gray-600" />
-                  <div class="px-1.5 py-0.5 rounded bg-primary/10 text-primary border border-primary/20 truncate" :title="m.to">
-                    {{ m.to.split('.').pop() }}
+              <div 
+                v-for="edge in incomingEdges" 
+                :key="edge.id" 
+                class="p-2.5 bg-black/40 border border-gray-800/80 rounded-xl flex items-center justify-between group hover:border-primary/30 transition-all shadow-sm"
+              >
+                <div class="flex items-center min-w-0">
+                  <div :class="['w-1.5 h-1.5 rounded-full mr-2 shrink-0', edge.data?.dataMapping?.length ? 'bg-primary' : 'bg-gray-700']"></div>
+                  <div class="min-w-0">
+                    <div class="text-[10px] font-bold text-gray-300 truncate">
+                      {{ getSourceNode(edge.source)?.data?.summary || 'Previous Step' }}
+                    </div>
                   </div>
                 </div>
+                
+                <button 
+                  @click="$emit('select-edge', edge)"
+                  class="px-2 py-0.5 bg-primary/10 hover:bg-primary text-primary hover:text-black rounded text-[9px] font-black border border-primary/20 transition-all flex items-center uppercase"
+                >
+                  <ArrowRight :size="10" class="mr-1" />
+                  Map
+                </button>
               </div>
             </div>
           </div>
 
-          <!-- Outgoing Mappings -->
-          <div v-if="outgoingMappings.length" class="space-y-2">
-            <div class="text-[9px] text-gray-500 uppercase font-black tracking-widest pl-1">Outgoing Injection</div>
-            <div class="space-y-1.5">
-              <div v-for="(m, i) in outgoingMappings" :key="i" class="p-3 bg-black/40 border border-gray-800/80 rounded-xl group transition-all hover:border-primary/30">
-                <div class="flex items-center text-[10px] font-mono">
-                  <div class="px-1.5 py-0.5 rounded bg-primary/10 text-primary border border-primary/20 truncate max-w-[120px]" :title="m.from">
-                    {{ m.from.split('.').pop() }}
-                  </div>
-                  <ArrowRight :size="10" class="mx-2 text-gray-600" />
-                  <div class="px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 truncate" :title="m.to">
-                    {{ m.to.split('.').pop() }}
+          <!-- Active Mappings View -->
+          <div v-if="incomingMappings.length || outgoingMappings.length" class="space-y-4 pt-2 border-t border-gray-800/50">
+            <!-- Incoming Mappings -->
+            <div v-if="incomingMappings.length" class="space-y-2">
+              <div class="text-[9px] text-gray-500 uppercase font-black tracking-widest pl-1">Active Incoming Data</div>
+              <div class="space-y-1.5">
+                <div v-for="(m, i) in incomingMappings" :key="i" class="p-2.5 bg-black/20 border border-gray-800/50 rounded-lg">
+                  <div class="flex items-center text-[10px] font-mono justify-between">
+                    <div class="px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 truncate max-w-[120px]">
+                      {{ m.from.split('.').pop() }}
+                    </div>
+                    <ArrowRight :size="10" class="mx-2 text-gray-700" />
+                    <div class="px-1.5 py-0.5 rounded bg-primary/10 text-primary border border-primary/20 truncate">
+                      {{ m.to.split('.').pop() }}
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
+
+            <!-- Outgoing Mappings -->
+            <div v-if="outgoingMappings.length" class="space-y-2">
+              <div class="text-[9px] text-gray-500 uppercase font-black tracking-widest pl-1">Providing Data To Next Steps</div>
+              <div class="space-y-1.5">
+                <div v-for="(m, i) in outgoingMappings" :key="i" class="p-2.5 bg-black/20 border border-gray-800/50 rounded-lg">
+                  <div class="flex items-center text-[10px] font-mono justify-between">
+                    <div class="px-1.5 py-0.5 rounded bg-primary/10 text-primary border border-primary/20 truncate max-w-[120px]">
+                      {{ m.from.split('.').pop() }}
+                    </div>
+                    <ArrowRight :size="10" class="mx-2 text-gray-700" />
+                    <div class="px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 truncate">
+                      {{ m.to.split('.').pop() }}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div v-else-if="!incomingEdges.length" class="p-4 bg-black/20 border border-dashed border-gray-800 rounded-xl text-center">
+            <p class="text-[10px] text-gray-600 font-bold uppercase tracking-widest">No Intelligence Links</p>
           </div>
         </div>
 
@@ -187,8 +241,8 @@
           >
             {{ result.statusCode || 'Error' }}
           </div>
-          <div v-if="result.duration" class="text-sm text-gray-400">
-            {{ Math.round(result.duration) }}ms
+          <div v-if="result.duration" class="text-[11px] text-gray-400 font-bold uppercase tracking-widest bg-white/5 px-2 py-1 rounded">
+            • {{ Math.round(result.duration) }}ms
           </div>
         </div>
 
@@ -260,7 +314,18 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
 import { useToast } from 'vue-toastification'
-import { Copy, Sparkles, Loader, AlertCircle, X, ChevronRight, Link as LinkIcon, ArrowRight } from 'lucide-vue-next'
+import { useJourneyStore } from '@/stores/journey'
+import { 
+  Copy, 
+  Sparkles, 
+  Loader, 
+  AlertCircle, 
+  X, 
+  ChevronRight, 
+  Link as LinkIcon, 
+  ArrowRight,
+  Play
+} from 'lucide-vue-next'
 import { generateEndpointMock, generateMockFromSchema } from '@/utils/mockGenerator'
 
 const props = defineProps({
@@ -280,8 +345,31 @@ const props = defineProps({
 
 const emit = defineEmits(['update-node', 'close'])
 
+const journeyStore = useJourneyStore()
 const toast = useToast()
 const activeTab = ref('config')
+const isRunningStep = ref(false)
+
+const canRunStep = computed(() => {
+  if (isRunningStep.value || journeyStore.executionState === 'running') return false
+  if (!journeyStore.runnerConfig?.baseUrl) return false
+  
+  // POSTMAN MODE LOGIC:
+  // 1. If we already have a result, we can definitely re-run it
+  if (props.result) return true
+  
+  // 2. If we have authentication context, we can run almost any step
+  if (journeyStore.sessionData?.auth_token || journeyStore.sessionData?.token || journeyStore.sessionData?.['headers.Authorization']) return true
+  
+  // 3. Root nodes are always runnable
+  const hasIncoming = props.edges?.some(e => e.target === props.node.id)
+  if (!hasIncoming) return true
+  
+  // 4. If we've run any steps successfully, we might have context
+  if (Object.keys(journeyStore.sessionData).length > 0) return true
+  
+  return false
+})
 
 const editableBody = ref('')
 const editableParams = ref({})
@@ -332,7 +420,9 @@ watch(() => props.node, (newNode) => {
     const params = {}
     if (newNode.data.parameters) {
       newNode.data.parameters.forEach(p => {
-        params[p.name] = p.value || ''
+        // Fix: Handle falsey values like boolean false correctly
+        params[p.name] = (p.value !== undefined && p.value !== null) ? p.value : ''
+        
       })
     }
     editableParams.value = params
@@ -360,6 +450,15 @@ const outgoingMappings = computed(() => {
     .filter(e => e.source === props.node.id)
     .flatMap(e => e.data?.dataMapping || [])
 })
+
+const incomingEdges = computed(() => {
+  if (!props.node || !props.edges) return []
+  return props.edges.filter(e => e.target === props.node.id)
+})
+
+function getSourceNode(sourceId) {
+  return props.nodes?.find(n => n.id === sourceId)
+}
 
 const hasBinaryField = computed(() => {
   const spec = props.node?.data?.requestBodySpec?.content
@@ -467,4 +566,80 @@ async function copyResult() {
     toast.error('Failed to copy')
   }
 }
+
+async function runIndependentStep() {
+  if (isRunningStep.value) return
+  
+  const baseUrl = journeyStore.runnerConfig.baseUrl
+  if (!baseUrl) {
+    toast.warning('Please set a Base URL in the Journey Runner first')
+    return
+  }
+
+  isRunningStep.value = true
+  
+  // Build WebSocket URL
+  const wsBaseUrl = import.meta.env.VITE_WS_URL || ''
+  let wsUrl
+  
+  if (wsBaseUrl) {
+    wsUrl = `${wsBaseUrl}/api/ws/journey/${journeyStore.activeJourney.id}/execute`
+  } else {
+    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+    const wsHost = window.location.host.replace(':5173', ':8000')
+    wsUrl = `${wsProtocol}//${wsHost}/api/ws/journey/${journeyStore.activeJourney.id}/execute`
+  }
+
+  try {
+    const ws = new WebSocket(wsUrl)
+    
+    ws.onopen = () => {
+      ws.send(JSON.stringify({
+        baseUrl: baseUrl,
+        sessionData: journeyStore.sessionData,
+        singleStepId: props.node.id,
+        nodes: journeyStore.activeJourney.nodes,
+        edges: journeyStore.activeJourney.edges
+      }))
+    }
+
+    ws.onmessage = (event) => {
+      const message = JSON.parse(event.data)
+      
+      if (message.type === 'step_result') {
+        journeyStore.saveStepResult(message.result.stepId, message.result)
+        toast.success(`Step executed: ${message.result.statusCode}`)
+        activeTab.value = 'response'
+      } else if (message.type === 'error') {
+        toast.error(message.message)
+      } else if (message.type === 'execution_complete') {
+        isRunningStep.value = false
+        ws.close()
+      }
+    }
+
+    ws.onerror = () => {
+      toast.error('Execution failed')
+      isRunningStep.value = false
+    }
+
+    ws.onclose = () => {
+      isRunningStep.value = false
+    }
+  } catch (error) {
+    toast.error('Failed to connect to executor')
+    isRunningStep.value = false
+  }
+}
 </script>
+
+<style scoped>
+@keyframes premium-progress {
+  0% { left: -40%; width: 40%; }
+  100% { left: 100%; width: 40%; }
+}
+
+.animate-premium-progress {
+  animation: premium-progress 1.5s infinite ease-in-out;
+}
+</style>

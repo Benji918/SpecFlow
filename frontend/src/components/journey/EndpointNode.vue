@@ -111,7 +111,7 @@
 <script setup>
 import { computed } from 'vue'
 import { Handle, Position, useVueFlow } from '@vue-flow/core'
-import { X, CheckCircle, AlertCircle } from 'lucide-vue-next'
+import { X, CheckCircle, AlertCircle, Database } from 'lucide-vue-next'
 
 const props = defineProps({
   id: {

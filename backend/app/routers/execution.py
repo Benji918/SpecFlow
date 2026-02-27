@@ -104,6 +104,7 @@ async def execute_journey_ws(websocket: WebSocket, journey_id: str):
             base_url = data.get("baseUrl")
             session_data = data.get("sessionData", {})
             error_injections = data.get("errorInjections", {})
+            single_step_id = data.get("singleStepId") # Support for independent step execution
             
             if not base_url:
                 await websocket.send_json({
@@ -144,6 +145,17 @@ async def execute_journey_ws(websocket: WebSocket, journey_id: str):
                 # Execute journey - use nodes/edges from client if provided (for unsaved mock data)
                 nodes = data.get("nodes", journey.nodes)
                 edges = data.get("edges", journey.edges)
+                
+                # If single_step_id is provided, filter nodes to just that one
+                if single_step_id:
+                    nodes = [n for n in nodes if n["id"] == single_step_id]
+                    if not nodes:
+                        await websocket.send_json({
+                            "type": "error",
+                            "message": f"Step {single_step_id} not found in this journey"
+                        })
+                        return
+
                 results = []
                 failed_steps = []
                 
