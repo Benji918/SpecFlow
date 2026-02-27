@@ -115,7 +115,9 @@
                 :result="selectedResult"
                 :node="selectedNode"
                 :edges="journey.edges"
+                :nodes="journey.nodes"
                 @update-node="handleNodeUpdate"
+                @select-edge="handleEdgeSelected"
                 @close="selectedNode = null; selectedResult = null"
               />
 

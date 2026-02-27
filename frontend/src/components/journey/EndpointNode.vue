@@ -61,6 +61,14 @@
             </span>
           </div>
         </div>
+
+        <!-- Data Link Indicator -->
+        <div v-if="data.dataMapping?.length" class="flex items-center space-x-1 px-2 py-1 rounded bg-primary/10 border border-primary/20 w-fit">
+          <Database :size="10" class="text-primary" />
+          <span class="text-[9px] font-black text-primary uppercase tracking-widest">
+            {{ data.dataMapping.length }} Data Links
+          </span>
+        </div>
       </div>
     </div>
 

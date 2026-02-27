@@ -11,6 +11,7 @@ class Settings(BaseSettings):
 
     # Database
     DATABASE_URL: str = os.getenv("DATABASE_URL")
+    DIRECT_DATABASE_URL: str = os.getenv("DIRECT_DATABASE_URL", os.getenv("DATABASE_URL"))
 
     # Redis
     REDIS_URL: str = os.getenv("REDIS_URL", "redis://localhost:6379/0")

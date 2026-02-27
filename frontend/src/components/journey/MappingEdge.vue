@@ -7,7 +7,7 @@ export default {
 <script setup>
 import { computed, inject } from 'vue'
 import { BaseEdge, EdgeLabelRenderer, getBezierPath, useVueFlow } from '@vue-flow/core'
-import { Database, ArrowUpRight } from 'lucide-vue-next'
+import { Database, ArrowUpRight, Plus } from 'lucide-vue-next'
 
 const props = defineProps({
   id: {
@@ -98,10 +98,16 @@ const mappings = computed(() => {
 })
 
 const labelText = computed(() => {
-  if (!mappings.value || mappings.value.length === 0) return null
+  if (!mappings.value || mappings.value.length === 0) {
+    return {
+      text: 'LINK DATA',
+      type: 'empty'
+    }
+  }
+  
   if (mappings.value.length === 1) {
     const m = mappings.value[0]
-    // Clean up keys for display: remove 'response.', 'request.' prefixes, replace _ with space, uppercase
+    // Clean up keys for display
     const cleanFrom = (m.from || '').split('.').pop().replace(/_/g, ' ').replace(/id$/i, 'ID').toUpperCase()
     const cleanTo = (m.to || '').split('.').pop().replace(/_/g, ' ').replace(/id$/i, 'ID').toUpperCase()
     
@@ -110,6 +116,7 @@ const labelText = computed(() => {
       type: (m.from || '').startsWith('request') ? 'request' : 'response'
     }
   }
+  
   return {
     text: `${mappings.value.length} LINKS`,
     type: 'multiple'
@@ -134,27 +141,33 @@ const labelText = computed(() => {
     />
   </g>
 
-  <EdgeLabelRenderer v-if="labelText">
+  <EdgeLabelRenderer>
     <div
       :style="{
         position: 'absolute',
         transform: `translate(-50%, -50%) translate(${path[1]}px,${path[2]}px)`,
         pointerEvents: 'all',
+        zIndex: 100,
       }"
       class="nodrag nopan"
     >
       <div 
         :class="[
-          'px-3 py-1.5 rounded-full text-[10px] font-black border transition-all cursor-pointer flex items-center space-x-2 backdrop-blur-md shadow-lg',
+          'px-3 py-1.5 rounded-full text-[10px] font-black border transition-all cursor-pointer flex items-center space-x-2 backdrop-blur-md shadow-lg group',
           selected 
             ? 'bg-primary text-black border-primary scale-110 shadow-[0_0_20px_rgba(191,245,73,0.6)]' 
-            : 'bg-primary text-black border-primary/50 hover:scale-105 hover:shadow-[0_0_15px_rgba(191,245,73,0.3)]'
+            : labelText?.type === 'empty'
+              ? 'bg-black/80 text-gray-400 border-gray-700 hover:text-primary hover:border-primary hover:bg-black'
+              : 'bg-surface/90 text-primary border-primary/30 hover:scale-105 hover:bg-black hover:border-primary'
         ]"
         @click.stop="handleLabelClick"
       >
-        <Database v-if="labelText?.type === 'response'" :size="12" />
-        <ArrowUpRight v-if="labelText?.type === 'request'" :size="12" />
-        <span class="tracking-widest uppercase">{{ labelText?.text }}</span>
+        <Plus v-if="labelText?.type === 'empty'" :size="12" class="group-hover:rotate-90 transition-transform" />
+        <Database v-else-if="labelText?.type === 'response'" :size="12" />
+        <ArrowUpRight v-else-if="labelText?.type === 'request'" :size="12" />
+        <Database v-else-if="labelText?.type === 'multiple'" :size="12" />
+        
+        <span class="tracking-widest uppercase font-black">{{ labelText?.text }}</span>
       </div>
     </div>
   </EdgeLabelRenderer>

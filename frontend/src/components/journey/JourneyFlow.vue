@@ -140,16 +140,50 @@ watch([nodes, edges], () => {
     hasChanges.value = currentState !== originalState.value
 }, { deep: true })
 
-// Sync from props if they change externally
+// Sync from props if they change externally (e.g. initial load or add node)
+// We use a non-destructive sync to avoid resetting positions when just data changes
 watch(() => props.initialNodes, (newNodes) => {
-    nodes.value = [...newNodes]
-    originalState.value = JSON.stringify({ nodes: nodes.value, edges: edges.value })
+    if (!newNodes || newNodes.length === 0) return
+    
+    // If our current nodes are empty, this is likely the initial load
+    if (nodes.value.length === 0) {
+      nodes.value = [...newNodes]
+      originalState.value = JSON.stringify({ nodes: nodes.value, edges: edges.value })
+      return
+    }
+
+    // Otherwise, we selectively update to avoid position jumping
+    const existingIds = new Set(nodes.value.map(n => n.id))
+    
+    newNodes.forEach(newNode => {
+      const index = nodes.value.findIndex(n => n.id === newNode.id)
+      if (index !== -1) {
+        // Update data but PRESERVE current flow position
+        nodes.value[index].data = { ...newNode.data }
+      } else {
+        // Truly new node (e.g. added from modal)
+        nodes.value.push(newNode)
+      }
+    })
+    
+    // Handle removals if necessary (optional depending on UX)
+    // nodes.value = nodes.value.filter(n => newNodes.some(nn => nn.id === n.id))
 }, { deep: true })
 
 watch(() => props.initialEdges, (newEdges) => {
-    // Ensure all edges are updatable when loaded
-    edges.value = newEdges.map(e => ({ ...e, updatable: true }))
-    originalState.value = JSON.stringify({ nodes: nodes.value, edges: edges.value })
+    // Only update if the number of edges changed or on initial load
+    if (edges.value.length === 0 || edges.value.length !== newEdges.length) {
+      edges.value = newEdges.map(e => ({ ...e, updatable: true }))
+    } else {
+      // Just update data/labels for existing edges
+      newEdges.forEach(newEdge => {
+        const edge = edges.value.find(e => e.id === newEdge.id)
+        if (edge) {
+          edge.data = { ...newEdge.data }
+          edge.label = newEdge.label
+        }
+      })
+    }
 }, { deep: true })
 
 function onNodesChange(changes) {
