@@ -357,7 +357,7 @@
                 <div class="pagination-modern">
                   <button :disabled="userPage <= 1" @click="userPage--;loadUsers()" class="p-btn">Prev</button>
                   <span class="p-info">Page {{ userPage }}</span>
-                  <button :disabled="users.length < 20" @click="userPage++;loadUsers()" class="p-btn">Next</button>
+                  <button :disabled="users.length < 10" @click="userPage++;loadUsers()" class="p-btn">Next</button>
                 </div>
               </div>
             </div>
@@ -443,6 +443,13 @@
                   </tr>
                 </tbody>
               </table>
+              <div class="table-footer">
+                <div class="pagination-modern">
+                  <button :disabled="activityPage <= 1" @click="activityPage--;loadActivity()" class="p-btn">Prev</button>
+                  <span class="p-info">Page {{ activityPage }}</span>
+                  <button :disabled="activity.length < 10" @click="activityPage++;loadActivity()" class="p-btn">Next</button>
+                </div>
+              </div>
             </div>
           </div>
         </template>
@@ -649,6 +656,7 @@ const users       = ref([])
 const activity    = ref([])
 const growthDays  = ref(30)
 const userPage    = ref(1)
+const activityPage = ref(1)
 const userPlanFilter = ref('all')
 const userRoleFilter = ref('all')
 const lastUpdated = ref('—')
@@ -728,12 +736,12 @@ async function loadUsers() {
   if (userRoleFilter.value === 'admin') roleParam = '&is_admin=true'
   else if (userRoleFilter.value === 'normal') roleParam = '&is_admin=false'
   
-  const { data } = await apiClient.get(`/api/admin/users?page=${userPage.value}&limit=20${plan}${roleParam}`)
+  const { data } = await apiClient.get(`/api/admin/users?page=${userPage.value}&limit=10${plan}${roleParam}`)
   users.value = data
 }
 
 async function loadActivity() {
-  const { data } = await apiClient.get('/api/admin/recent-activity?limit=100')
+  const { data } = await apiClient.get(`/api/admin/recent-activity?page=${activityPage.value}&limit=10`)
   activity.value = data
 }
 

@@ -106,14 +106,15 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, onMounted } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useToast } from 'vue-toastification'
 import { Eye, EyeOff, Zap } from 'lucide-vue-next'
 import MailChecker from 'mailchecker'
 
 const router = useRouter()
+const route = useRoute()
 const authStore = useAuthStore()
 const toast = useToast()
 
@@ -137,6 +138,12 @@ function sanitize(str) {
 function isValidEmail(email) {
   return MailChecker.isValid(email)
 }
+
+onMounted(() => {
+  if (route.query.logout === 'success') {
+    toast.success('Successfully logged out!')
+  }
+})
 
 async function handleLogin() {
   // Reset error

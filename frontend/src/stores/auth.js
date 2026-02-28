@@ -65,15 +65,17 @@ export const useAuthStore = defineStore('auth', () => {
         }
     }
 
-    async function logout() {
-        try {
-            await apiClient.post('/api/auth/logout')
-        } catch (error) {
-            console.error('Logout failed', error)
-        } finally {
-            user.value = null
-            window.location.href = '/login'
-        }
+    function logout() {
+        // Clear state immediately
+        user.value = null
+
+        // Perform API call in background
+        apiClient.post('/api/auth/logout').catch(error => {
+            console.error('Logout API failed in background', error)
+        })
+
+        // Immediate redirect
+        window.location.href = '/login?logout=success'
     }
 
     async function refreshToken() {

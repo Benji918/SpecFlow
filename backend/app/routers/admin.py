@@ -187,7 +187,7 @@ async def get_growth_metrics(
 @router.get("/users", response_model=List[UserResponse])
 async def list_users(
     page: int = 1,
-    limit: int = 20,
+    limit: int = 10,
     plan: Optional[str] = None,
     is_admin: Optional[bool] = None,
     admin: User = Depends(require_admin),
@@ -234,6 +234,7 @@ async def create_admin_account(
 
 @router.get("/recent-activity")
 async def get_recent_activity(
+    page: int = 1,
     limit: int = 10,
     admin: User = Depends(require_admin),
     db: AsyncSession = Depends(get_db),
@@ -242,6 +243,7 @@ async def get_recent_activity(
     exec_result = await db.execute(
         select(Execution)
         .order_by(Execution.started_at.desc())
+        .offset((page - 1) * limit)
         .limit(limit)
     )
     executions = exec_result.scalars().all()
