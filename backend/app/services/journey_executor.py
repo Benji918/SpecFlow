@@ -88,6 +88,22 @@ class JourneyExecutor:
         data = node.get("data", {})
         step_id = node["id"]
 
+        # Check for localhost URLs and provide helpful error
+        if any(term in self.base_url.lower() for term in ['localhost', '127.0.0.1', '0.0.0.0']):
+            return {
+                "stepId": step_id,
+                "statusCode": 0,
+                "error": "Localhost URL detected. When running SpecFlow in the cloud, you cannot test local servers. Please run SpecFlow locally on your machine to test localhost APIs.",
+                "timestamp": datetime.utcnow().isoformat(),
+                "request": {
+                    "method": data.get("method", "GET"),
+                    "url": self.base_url + data.get("path", ""),
+                    "headers": {},
+                    "body": {},
+                    "params": {},
+                },
+            }
+
         # Build URL
         url = self.base_url + data.get("path", "")
         url = self._interpolate_path_params(url, session_data)

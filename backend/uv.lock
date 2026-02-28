@@ -1264,6 +1264,18 @@ wheels = [
 ]
 
 [[package]]
+name = "pyngrok"
+version = "7.5.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pyyaml" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/f6/7c/788a44567ffbad7c2d838e79a388ae5045520410f953c5097ad664d4763d/pyngrok-7.5.0.tar.gz", hash = "sha256:2fe91cba2c2531ecfb124b5071f377808b61a68a14ca3c99fcb7f3fdae05278f", size = 43149, upload-time = "2025-11-17T17:36:50.463Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/bf/60/ab93dfb5721ba65f36bb6c2e07adfa21a8ac6525760b60f2ad6d31f7d098/pyngrok-7.5.0-py3-none-any.whl", hash = "sha256:1e50e71a59f1086f59e12e3d186f07ae2cbdccaf6f523678ef7ce3a180aba5c4", size = 24785, upload-time = "2025-11-17T17:36:49.372Z" },
+]
+
+[[package]]
 name = "pytest"
 version = "9.0.2"
 source = { registry = "https://pypi.org/simple" }
@@ -1664,6 +1676,7 @@ dependencies = [
     { name = "psycopg2" },
     { name = "pydantic", extra = ["email"] },
     { name = "pydantic-settings" },
+    { name = "pyngrok" },
     { name = "python-jose", extra = ["cryptography"] },
     { name = "python-multipart" },
     { name = "redis" },
@@ -1694,6 +1707,7 @@ requires-dist = [
     { name = "psycopg2", specifier = ">=2.9.11" },
     { name = "pydantic", extras = ["email"], specifier = ">=2.0.0" },
     { name = "pydantic-settings", specifier = ">=2.0.0" },
+    { name = "pyngrok", specifier = ">=6.0.0" },
     { name = "python-jose", extras = ["cryptography"], specifier = ">=3.3.0" },
     { name = "python-multipart", specifier = ">=0.0.6" },
     { name = "redis", specifier = ">=5.0.0" },

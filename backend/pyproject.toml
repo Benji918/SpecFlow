@@ -23,6 +23,7 @@ dependencies = [
     "python-multipart>=0.0.6",
     "argon2-cffi>=23.1.0",
     "psycopg2>=2.9.11",
+    "pyngrok>=6.0.0",
 ]
 
 [build-system]

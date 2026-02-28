@@ -155,7 +155,7 @@
         <div
           v-show="showRunner"
           class="fixed bottom-0 left-0 right-0 bg-surface border-t border-gray-800 shadow-[0_-10px_40px_rgba(0,0,0,0.5)] z-20"
-          style="height: 320px;"
+          style="height: 480px;"
           @click.stop
         >
           <div class="h-full p-4">

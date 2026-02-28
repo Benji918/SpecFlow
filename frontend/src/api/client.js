@@ -29,7 +29,7 @@ client.interceptors.response.use(
             // Only redirect to login if we're not already there and not on an auth endpoint
             const isAuthEndpoint = error.config?.url?.includes('/auth/')
             const isOnAuthPage = window.location.pathname.includes('/login') || window.location.pathname.includes('/signup')
-            
+
             if (!isAuthEndpoint && !isOnAuthPage) {
                 window.location.href = '/login'
             }

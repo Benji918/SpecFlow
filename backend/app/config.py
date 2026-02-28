@@ -34,6 +34,11 @@ class Settings(BaseSettings):
     DEBUG: bool = os.getenv("DEBUG")
     CORS_ORIGINS: str = os.getenv("CORS_ORIGINS", "http://localhost:5173,http://localhost:3000")
 
+    # Ngrok
+    NGROK_ENABLED: bool = os.getenv("NGROK_ENABLED", "False").lower() == "true"
+    NGROK_AUTH_TOKEN: str = os.getenv("NGROK_AUTH_TOKEN", "")
+    NGROK_REGION: str = os.getenv("NGROK_REGION", "us")
+
     @property
     def cors_origins_list(self) -> List[str]:
         return [origin.strip() for origin in self.CORS_ORIGINS.split(",")]

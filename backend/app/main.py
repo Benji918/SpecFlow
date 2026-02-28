@@ -9,7 +9,7 @@ logging.getLogger("uvicorn.access").disabled = True
 logger = logging.getLogger("uvicorn")
 
 from app.config import settings
-from app.routers import auth, specs, journeys, execution, admin
+from app.routers import auth, specs, journeys, execution, admin, ngrok
 
 # Create FastAPI app
 app = FastAPI(
@@ -56,6 +56,14 @@ app.include_router(specs.router)
 app.include_router(journeys.router)
 app.include_router(execution.router)
 app.include_router(admin.router)
+app.include_router(ngrok.router)
+
+@app.on_event("shutdown")
+def shutdown_event():
+    """Ensure ngrok processes are killed on shutdown."""
+    from pyngrok import ngrok
+    logger.info("Shutting down ngrok tunnels...")
+    ngrok.kill()
 
 
 @app.get("/api/health")

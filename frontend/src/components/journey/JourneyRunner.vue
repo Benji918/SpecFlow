@@ -35,18 +35,18 @@
               class="input-field w-full py-2 text-xs"
               placeholder="https://api.example.com"
             />
+            <!-- Warning for localhost URLs in cloud environment -->
+            <div v-if="isLocalUrl(baseUrl) && isCloudEnvironment()" class="mt-2 p-2 bg-orange-500/20 border border-orange-500/50 rounded text-xs text-orange-400">
+              <p class="font-bold mb-1">⚠️ Localhost URLs in Cloud Environment</p>
+              <p>Requests to localhost/127.0.0.1 won't work in the cloud app.</p>
+              <p class="mt-1 text-[10px]">To test local APIs, run SpecFlow locally on your machine. See <a href="https://github.com/your-repo/specflow#local-development" target="_blank" class="text-white underline">Local Development</a>.</p>
+            </div>
           </div>
         </div>
 
-        <!-- SpecFlow Branding -->
-        <div class="flex-1 flex flex-col min-h-0">
-          <div class="h-full flex flex-col items-center justify-center bg-black/20 border border-gray-800/50 rounded-xl p-6 transition-all hover:border-primary/20 group">
-            <h1 class="text-5xl font-black uppercase tracking-tighter transition-transform duration-500 group-hover:scale-105">
-              Spec<span class="text-primary">Flow</span>
-            </h1>
-            <div class="h-1 w-12 bg-primary/30 mt-2 rounded-full transition-all duration-500 group-hover:w-24"></div>
-            <p class="text-[10px] text-gray-600 font-bold uppercase tracking-[0.4em] mt-4 opacity-50">Context-Aware API Testing</p>
-          </div>
+        <!-- Ngrok Tunnel Manager -->
+        <div class="flex-1 min-h-0">
+          <NgrokTunnelManager @use-as-base-url="val => baseUrl = val" />
         </div>
       </div>
 
@@ -198,7 +198,8 @@
 import { ref, computed } from 'vue'
 import { useJourneyStore } from '@/stores/journey'
 import { useToast } from 'vue-toastification'
-import { Play, Square, RotateCcw, Loader, Globe, X, PlayCircle } from 'lucide-vue-next'
+import { Play, Square, RotateCcw, Loader, Globe, X, PlayCircle, ChevronRight } from 'lucide-vue-next'
+import NgrokTunnelManager from './NgrokTunnelManager.vue'
 
 const props = defineProps({
   journeyId: {
@@ -236,14 +237,27 @@ const canStart = computed(() => {
   const hasBaseUrl = baseUrl.value.trim() !== ''
   const hasNodes = props.nodes && props.nodes.length > 0
   const hasEdges = props.edges && props.edges.length > 0 // A journey needs connections
+  const isLocalUrlValid = !isLocalUrl(baseUrl.value) || !isCloudEnvironment()
   
-  return !isRunning.value && hasBaseUrl && hasNodes && hasEdges
+  return !isRunning.value && hasBaseUrl && hasNodes && hasEdges && isLocalUrlValid
 })
 
 const progress = computed(() => {
   if (totalSteps.value === 0) return 0
   return (completedSteps.value / totalSteps.value) * 100
 })
+
+// Helper function to detect local URLs
+function isLocalUrl(url) {
+  if (!url) return false
+  const lowerUrl = url.toLowerCase()
+  return lowerUrl.includes('localhost') || lowerUrl.includes('127.0.0.1') || lowerUrl.includes('0.0.0.0')
+}
+
+// Helper function to detect cloud environment
+function isCloudEnvironment() {
+  return import.meta.env.MODE === 'production' || window.location.hostname.includes('code.run') || window.location.hostname.includes('vercel.app') || window.location.hostname.includes('netlify.app')
+}
 
 async function startExecution() {
   // Reset state
