@@ -152,6 +152,9 @@ const showUploader = ref(false)
 const loading = ref(true)
 
 onMounted(async () => {
+  // Fetch current user in background to ensure we have late-breaking data
+  // but don't await it to avoid blocking the initial render
+  authStore.fetchCurrentUser()
   await fetchSpecs()
 })
 

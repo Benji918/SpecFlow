@@ -22,6 +22,7 @@ export const useAuthStore = defineStore('auth', () => {
 
             const data = response.data
             user.value = data
+            isInitialLoad.value = false
             return { success: true }
         } catch (error) {
             return {
@@ -40,6 +41,7 @@ export const useAuthStore = defineStore('auth', () => {
 
             const data = response.data
             user.value = data?.user ?? data
+            isInitialLoad.value = false
             // Token is in HttpOnly cookie - no need to store it
             return { success: true }
         } catch (error) {
