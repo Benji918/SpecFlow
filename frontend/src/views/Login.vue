@@ -174,7 +174,8 @@ async function handleLogin() {
 
   if (result.success) {
     toast.success('Logged in successfully!')
-    router.push('/dashboard')
+    // Force a full page reload to ensure the cookie is properly sent with subsequent requests
+    window.location.href = '/dashboard'
   } else {
     error.value = result.error
     toast.error(result.error)

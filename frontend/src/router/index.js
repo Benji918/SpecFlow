@@ -70,15 +70,18 @@ router.beforeEach(async (to, from, next) => {
     const publicRoutes = ['/login', '/signup', '/']
     const isPublicRoute = publicRoutes.includes(to.path)
 
-    // Fetch current user on initial load when navigating to protected routes
-    if (authStore.isInitialLoad && !isPublicRoute) {
+    // If coming from login page and going to dashboard, assume user is authenticated
+    // This prevents unnecessary API call after successful login
+    const isComingFromLoginToDashboard = from.path === '/login' && to.path === '/dashboard'
+
+    if (!isPublicRoute && !isComingFromLoginToDashboard && authStore.isInitialLoad) {
         await authStore.fetchCurrentUser()
     }
 
     const requiresAuth = to.meta.requiresAuth
     const requiresAdmin = to.meta.requiresAdmin
 
-    if (requiresAuth && !authStore.isAuthenticated) {
+    if (requiresAuth && !authStore.isAuthenticated && !isComingFromLoginToDashboard) {
         // Redirect to login if route requires auth and user is not authenticated
         next('/login')
     } else if (requiresAdmin && !authStore.user?.is_admin) {

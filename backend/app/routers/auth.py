@@ -32,10 +32,6 @@ def get_cookie_settings():
     print(settings.REDIS_URL)
     print(settings.CORS_ORIGINS)
     
-    # Note: Do NOT set domain for cookies on public suffixes like .code.run
-    # The browser will use the current host automatically
-    # Setting domain=.code.run fails because code.run is a public suffix
-        
     return cookie_config
 
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)

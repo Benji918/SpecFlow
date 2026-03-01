@@ -1196,13 +1196,26 @@ async function handleDeleteSpec() {
     return
   }
 
-  const result = await specStore.deleteSpec(route.params.id)
-  if (result.success) {
-    toast.success('Specification deleted')
-    router.push('/dashboard')
-  } else {
-    toast.error(result.error)
+  // Optimistic UI update: Remove spec from store immediately
+  const specId = route.params.id
+  specStore.specs = specStore.specs.filter(s => s.id !== specId)
+  if (specStore.currentSpec?.id === specId) {
+    specStore.currentSpec = null
   }
+
+  // Redirect immediately to dashboard
+  router.push('/dashboard')
+
+  // Perform delete request in the background
+  specStore.deleteSpec(specId).then((result) => {
+    if (result.success) {
+      toast.success('Specification deleted')
+    } else {
+      // If delete fails, restore the spec (refresh specs list)
+      toast.error(result.error)
+      specStore.fetchSpecs()
+    }
+  })
 }
 
 async function handleDeleteJourney(journeyId) {

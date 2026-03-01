@@ -49,14 +49,32 @@ export const useSpecStore = defineStore('spec', () => {
         error.value = null
 
         try {
-            const response = await apiClient.post('/api/specs', { timeout: 120000 }, {
-                name,
-                content,
+            console.log('Uploading spec with:', { name, content: typeof content })
+
+            // Create the request payload
+            const requestData = {
+                name: name,
+                content: content
+            }
+
+            console.log('Request data:', requestData)
+
+            // Make the API call
+            const response = await apiClient({
+                method: 'post',
+                url: '/api/specs',
+                data: requestData,
+                timeout: 120000
             })
 
+            console.log('Response:', response)
             specs.value.unshift(response.data)
             return { success: true, data: response.data }
         } catch (err) {
+            console.error('Upload error:', err)
+            console.error('Error config:', err.config)
+            console.error('Error response:', err.response?.data)
+
             error.value = err.response?.data?.detail || 'Failed to upload spec'
             return { success: false, error: error.value }
         } finally {
@@ -69,7 +87,7 @@ export const useSpecStore = defineStore('spec', () => {
         error.value = null
 
         try {
-            const response = await apiClient.patch(`/api/specs/${specId}`, { timeout: 120000 }, updates)
+            const response = await apiClient.patch(`/api/specs/${specId}`, updates, { timeout: 120000 })
 
             // Update in list
             const index = specs.value.findIndex((s) => s.id === specId)
@@ -120,9 +138,9 @@ export const useSpecStore = defineStore('spec', () => {
         error.value = null
 
         try {
-            const response = await apiClient.put(`/api/specs/${specId}/resync`, { timeout: 120000 }, {
+            const response = await apiClient.put(`/api/specs/${specId}/resync`, {
                 content,
-            })
+            }, { timeout: 120000 })
 
             // Update in list
             const index = specs.value.findIndex((s) => s.id === specId)
