@@ -8,6 +8,7 @@ export const useSpecStore = defineStore('spec', () => {
     const currentSpec = ref(null)
     const loading = ref(false)
     const error = ref(null)
+    const deletingIds = ref(new Set())
 
     // Actions
     async function fetchSpecs() {
@@ -16,7 +17,8 @@ export const useSpecStore = defineStore('spec', () => {
 
         try {
             const response = await apiClient.get('/api/specs', { timeout: 120000 })
-            specs.value = response.data
+            // Filter out specs that are currently in the process of being deleted
+            specs.value = response.data.filter(s => !deletingIds.value.has(s.id))
             return { success: true }
         } catch (err) {
             error.value = err.response?.data?.detail || 'Failed to fetch specs'
@@ -110,14 +112,16 @@ export const useSpecStore = defineStore('spec', () => {
     }
 
     async function deleteSpec(specId) {
+        // Track ID as being deleted
+        deletingIds.value.add(specId)
+        // Optimistically remove from list
+        specs.value = specs.value.filter((s) => s.id !== specId)
+
         loading.value = true
         error.value = null
 
         try {
             await apiClient.delete(`/api/specs/${specId}`, { timeout: 120000 })
-
-            // Remove from list
-            specs.value = specs.value.filter((s) => s.id !== specId)
 
             // Clear current if it's the same
             if (currentSpec.value?.id === specId) {
@@ -126,9 +130,12 @@ export const useSpecStore = defineStore('spec', () => {
 
             return { success: true }
         } catch (err) {
+            // Restore if failed
+            await fetchSpecs()
             error.value = err.response?.data?.detail || 'Failed to delete spec'
             return { success: false, error: error.value }
         } finally {
+            deletingIds.value.delete(specId)
             loading.value = false
         }
     }
@@ -187,5 +194,6 @@ export const useSpecStore = defineStore('spec', () => {
         updateSpec,
         deleteSpec,
         resyncSpec,
+        deletingIds,
     }
 })

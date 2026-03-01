@@ -1192,30 +1192,21 @@ function cancelGeneration() {
 }
 
 async function handleDeleteSpec() {
-  if (!confirm('Delete this specification and all its journeys?')) {
+  if (!confirm('Are you sure you want to delete this specification and all associated journeys?')) {
     return
   }
 
-  // Optimistic UI update: Remove spec from store immediately
   const specId = route.params.id
-  specStore.specs = specStore.specs.filter(s => s.id !== specId)
-  if (specStore.currentSpec?.id === specId) {
-    specStore.currentSpec = null
-  }
-
   // Redirect immediately to dashboard
   router.push('/dashboard')
 
   // Perform delete request in the background
-  specStore.deleteSpec(specId).then((result) => {
-    if (result.success) {
-      toast.success('Specification deleted')
-    } else {
-      // If delete fails, restore the spec (refresh specs list)
-      toast.error(result.error)
-      specStore.fetchSpecs()
-    }
-  })
+  const result = await specStore.deleteSpec(specId)
+  if (result.success) {
+    toast.success('Specification deleted')
+  } else {
+    toast.error(result.error)
+  }
 }
 
 async function handleDeleteJourney(journeyId) {
