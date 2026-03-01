@@ -195,14 +195,18 @@ async function loadTunnels() {
 
 // Add manual tunnel
 async function addManualTunnel() {
-  const url = manualTunnelUrl.value.trim()
+  const url = manualTunnelUrl.value.trim().replace(/\/$/, '')
+  
   if (!url) {
     toast.error('Please enter an ngrok Forwarding URL')
     return
   }
 
-  if (!url.startsWith('http')) {
-    toast.error('URL must start with http:// or https://')
+  // Regex for official ngrok free/paid domains
+  const NGROK_REGEX = /^https:\/\/[a-zA-Z0-9-]+\.(ngrok-free\.app|ngrok\.io)$/
+  
+  if (!NGROK_REGEX.test(url)) {
+    toast.error('Invalid URL. Format must be: https://your-id.ngrok-free.app')
     return
   }
 
