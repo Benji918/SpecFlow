@@ -2,6 +2,9 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import JSONResponse
 from pyngrok import ngrok, conf
 from app.config import settings
+import logging
+
+logger = logging.getLogger("uvicorn")
 
 # Configure ngrok with auth token on module load
 if settings.NGROK_AUTH_TOKEN:
@@ -20,12 +23,18 @@ async def create_ngrok_tunnel(request: TunnelRequest):
     """
     Create a new ngrok tunnel to a local server.
     """
+    if not settings.NGROK_ENABLED:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Ngrok is disabled in backend configuration. Please set NGROK_ENABLED=True in your .env file."
+        )
+
     try:
         # Check for existing tunnels first
-        existing_tunnels = ngrok.get_tunnels()
+        tunnels = ngrok.get_tunnels()
         
-        if existing_tunnels:
-            tunnel = existing_tunnels[0]
+        if tunnels:
+            tunnel = tunnels[0]
             print(tunnel)
             return JSONResponse({
                 "success": True,
@@ -70,9 +79,12 @@ async def create_ngrok_tunnel(request: TunnelRequest):
     except Exception as e:
         error_msg = str(e)
         if "ERR_NGROK_108" in error_msg or "simultaneous ngrok agent sessions" in error_msg:
+            # Try to kill existing processes and suggest retry
+            logger.info("Session limit reached, attempting to kill dangling ngrok processes...")
+            ngrok.kill()
             raise HTTPException(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                detail="Ngrok session limit reached. You can only have 1 tunnel active on the free plan. Please close any existing tunnels first or upgrade to a paid plan."
+                detail="Ngrok session limit reached (ERR_NGROK_108). This often happens when the server reloads. I've attempted to reset the connection. Please wait 5 seconds and try again."
             )
         elif "authentication failed" in error_msg:
             raise HTTPException(
@@ -94,6 +106,13 @@ async def list_ngrok_tunnels():
         List of active tunnels
     """
     try:
+        if not settings.NGROK_ENABLED:
+            return JSONResponse({
+                "success": True, 
+                "tunnels": [],
+                "message": "Ngrok is disabled in configuration"
+            })
+
         tunnels = ngrok.get_tunnels()
         
         return JSONResponse({
@@ -112,7 +131,12 @@ async def list_ngrok_tunnels():
 
     except Exception as e:
         error_msg = str(e)
-        if "authentication failed" in error_msg:
+        if "ERR_NGROK_108" in error_msg or "simultaneous ngrok agent sessions" in error_msg:
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail="Ngrok session limit reached. You can only have 1 tunnel active on the free plan. Please close any existing tunnels first or upgrade to a paid plan."
+            )
+        elif "authentication failed" in error_msg:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Ngrok authentication failed. Please check your auth token in the backend .env file."
@@ -132,11 +156,13 @@ async def close_all_ngrok_tunnels():
         Status of the operation
     """
     try:
-        ngrok.kill()
+        # Force kill all ngrok processes instead of just closing tunnels
+        from pyngrok import ngrok as ngrok_process
+        ngrok_process.kill()
         
         return JSONResponse({
             "success": True,
-            "message": "All ngrok tunnels closed"
+            "message": "All ngrok tunnels closed and processes killed"
         })
 
     except Exception as e:

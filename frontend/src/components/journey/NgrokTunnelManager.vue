@@ -14,13 +14,12 @@
       
       <div class="flex items-center space-x-2">
         <button 
-          v-if="tunnels.length > 0"
           @click="closeAllTunnels"
           class="flex items-center space-x-1.5 px-2 py-1 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-md transition-all border border-red-500/20 group/kill"
-          title="Stop All Tunnels"
+          title="Reset Ngrok Infrastructure (Kill all processes)"
         >
           <X :size="10" class="group-hover/kill:rotate-90 transition-transform" />
-          <span class="text-[8px] font-black uppercase tracking-widest">Kill All</span>
+          <span class="text-[8px] font-black uppercase tracking-widest">Reset All</span>
         </button>
         <button 
           @click="loadTunnels" 
@@ -153,8 +152,13 @@
           <Globe :size="32" class="text-gray-500" />
         </div>
         <div>
-          <p class="text-[10px] font-black uppercase tracking-widest text-gray-500">Infrastructure Empty</p>
-          <p class="text-[8px] text-gray-700 mt-1">Deploy a tunnel to proxy local traffic</p>
+          <p class="text-[10px] font-black uppercase tracking-widest text-gray-500">
+            {{ isDisabled ? 'Proxy Disabled' : 'Infrastructure Empty' }}
+          </p>
+          <p v-if="isDisabled" class="text-[8px] text-gray-700 mt-1 max-w-[150px] mx-auto">
+            Enable NGROK_ENABLED in your backend .env to use proxying
+          </p>
+          <p v-else class="text-[8px] text-gray-700 mt-1">Deploy a tunnel to proxy local traffic</p>
         </div>
       </div>
     </div>
@@ -173,6 +177,7 @@ const localPort = ref(8000)
 const protocol = ref('http')
 const creatingTunnel = ref(false)
 const loading = ref(false)
+const isDisabled = ref(false)
 
 const emit = defineEmits(['use-as-base-url'])
 
@@ -188,6 +193,7 @@ async function loadTunnels() {
     const response = await client.get('/api/ngrok/tunnels')
     if (response.data.success) {
       tunnels.value = response.data.tunnels
+      isDisabled.value = response.data.message?.includes('disabled') || false
     }
   } catch (error) {
     console.error('Failed to load tunnels:', error)
@@ -242,17 +248,21 @@ async function closeTunnel(tunnelName) {
 
 // Close all tunnels
 async function closeAllTunnels() {
-  if (!confirm('Are you sure you want to stop all tunnels and kill the ngrok process?')) return
+  if (!confirm('Are you sure you want to stop all tunnels and reset the ngrok binary? This will kill any dangling ngrok processes.')) return
   
   try {
     const response = await client.delete('/api/ngrok/tunnels')
     if (response.data.success) {
-      toast.success('All tunnels closed')
+      toast.success('Ngrok infrastructure reset successfully')
       await loadTunnels()
     }
   } catch (error) {
-    console.error('Failed to close all tunnels:', error)
-    toast.error(error.response?.data?.detail || 'Failed to close all tunnels')
+    console.error('Failed to reset infrastructure:', error)
+    if (error.response?.status === 429) {
+      toast.info('Infrastructure is busy. Please wait a few seconds.')
+    } else {
+      toast.error(error.response?.data?.detail || 'Failed to reset infrastructure')
+    }
   }
 }
 
