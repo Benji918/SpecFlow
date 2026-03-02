@@ -485,6 +485,7 @@ class JourneyExecutor:
             obj: Dictionary to extract from
             path: Path (e.g., 'user.id', 'items[0].name')
             
+            
         Returns:
             Extracted value or None
         """
