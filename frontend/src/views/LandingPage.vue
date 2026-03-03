@@ -630,12 +630,12 @@
           <p class="text-gray-400 text-lg leading-relaxed">
             Have questions about integrating SpecFlow into your CI/CD pipeline or custom enterprise needs? We're here to help.
           </p>
-          <div class="space-y-4">
+          <!-- <div class="space-y-4"> -->
              <div class="flex items-center space-x-4">
-                <div class="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+                <!-- <div class="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
                   <Mail :size="20" />
-                </div>
-                <span class="text-gray-300 font-bold">benjamin_kodi@outlook.com</span>
+                </div> -->
+                <!-- <a href="mailto:benjamin_kodi@outlook.com" class="text-gray-300 font-bold hover:text-primary transition-colors">benjamin_kodi@outlook.com</a> -->
              </div>
              <!-- <div class="flex items-center space-x-4">
                 <div class="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
@@ -643,11 +643,12 @@
                 </div>
                 <span class="text-gray-300 font-bold">San Francisco, CA</span>
              </div> -->
-          </div>
+          <!-- </div> -->
         </div>
 
+        <!-- Contact Form (Commented out) -->
+        <!-- 
         <div class="bg-white/5 border border-white/10 rounded-[40px] p-8 backdrop-blur-md shadow-2xl relative overflow-hidden">
-           <!-- Form Decoration -->
            <div class="absolute -top-10 -right-10 w-32 h-32 bg-primary/20 blur-3xl rounded-full"></div>
            
            <form @submit.prevent class="space-y-6 relative z-10">
@@ -669,6 +670,50 @@
                 Send Message
               </button>
            </form>
+        </div>
+        -->
+
+        <!-- Stunning Direct Email Card -->
+        <div class="bg-gradient-to-br from-primary/20 via-primary/5 to-transparent border border-primary/20 rounded-[48px] p-12 shadow-[0_0_100px_rgba(191,245,73,0.1)] relative overflow-hidden group">
+          <!-- Animated Background mesh -->
+          <div class="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(191,245,73,0.15)_0%,transparent_70%)] opacity-50 group-hover:opacity-100 transition-opacity duration-700"></div>
+          
+          <div class="relative z-10 flex flex-col items-center text-center space-y-10">
+            <!-- Icon with Glow -->
+            <div class="relative">
+              <div class="absolute inset-0 bg-primary blur-3xl opacity-20 scale-150 animate-pulse"></div>
+              <div class="relative w-24 h-24 rounded-[32px] bg-primary/20 flex items-center justify-center text-primary group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 shadow-[0_0_40px_rgba(191,245,73,0.2)] border border-primary/30">
+                <Mail :size="48" class="animate-float" />
+              </div>
+            </div>
+
+            <div class="space-y-4">
+              <h3 class="text-4xl font-black text-white tracking-tight">Direct Access</h3>
+              <p class="text-gray-400 max-w-sm mx-auto text-lg leading-relaxed">
+                Skip the bureaucracy. Get a direct line to the founder for priority support, partnership inquiries, or custom enterprise solutions.
+              </p>
+            </div>
+
+            <!-- Mailto Link Button -->
+            <a 
+              href="mailto:benjamin_kodi@outlook.com" 
+              class="group/btn relative inline-flex items-center justify-center px-10 py-6 bg-primary text-black font-black rounded-3xl hover:bg-white transition-all duration-300 shadow-[0_20px_50px_rgba(191,245,73,0.4)] hover:shadow-primary/60 hover:-translate-y-1 active:scale-95"
+            >
+              <div class="absolute inset-0 bg-white opacity-0 group-hover/btn:opacity-20 transition-opacity rounded-3xl"></div>
+              <span class="text-xl">benjamin_kodi@outlook.com</span>
+              <ArrowRight class="ml-4 w-6 h-6 group-hover/btn:translate-x-2 transition-transform duration-300" />
+            </a>
+
+            <!-- Subtle Micro-interaction -->
+            <div class="pt-4 flex items-center space-x-2 text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">
+               <span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+               <span>Available 24/7 for you</span>
+            </div>
+          </div>
+
+          <!-- Decorative elements -->
+          <div class="absolute -bottom-10 -left-10 w-40 h-40 bg-primary/10 blur-[80px] rounded-full"></div>
+          <div class="absolute top-1/2 right-0 w-20 h-80 bg-primary/5 blur-[60px] rounded-full rotate-45 opacity-50"></div>
         </div>
       </div>
     </section>
