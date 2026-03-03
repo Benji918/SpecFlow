@@ -44,58 +44,119 @@
           </div>
         </div>
 
-        <!-- Ngrok Tunnel Manager -->
-        <div class="flex-1 min-h-0">
-          <NgrokTunnelManager @use-as-base-url="val => baseUrl = val" />
+        <!-- Ngrok Tunnel Manager (Collapsible) -->
+        <div class="flex-1 flex flex-col min-h-0 bg-white/5 border border-white/10 rounded-xl overflow-hidden">
+          <button 
+            @click="isTunnelCollapsed = !isTunnelCollapsed"
+            class="w-full px-4 py-3 flex items-center justify-between hover:bg-white/5 transition-colors group"
+          >
+            <div class="flex items-center space-x-2">
+              <Globe :size="14" :class="isTunnelCollapsed ? 'text-gray-500' : 'text-primary'" />
+              <span class="text-[10px] font-black uppercase tracking-widest text-gray-400 group-hover:text-white transition-colors">Tunnel Proxy</span>
+            </div>
+            <div class="flex items-center space-x-2">
+              <span v-if="isTunnelCollapsed" class="text-[9px] text-gray-600 font-bold uppercase">Click to expand</span>
+              <ChevronDown 
+                :size="14" 
+                class="text-gray-500 transition-transform duration-300"
+                :class="{ 'rotate-180': !isTunnelCollapsed }"
+              />
+            </div>
+          </button>
+          
+          <div 
+            v-show="!isTunnelCollapsed" 
+            class="flex-1 min-h-0 transition-all duration-500"
+          >
+            <NgrokTunnelManager @use-as-base-url="val => baseUrl = val" />
+          </div>
+
+          <!-- Collapsed State Info -->
+          <div 
+            v-if="isTunnelCollapsed" 
+            class="flex-1 flex flex-col items-center justify-center p-6 text-center space-y-4 animate-in fade-in zoom-in duration-500"
+          >
+            <div class="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-gray-600 relative group-hover/btn:border-primary/20 transition-colors">
+              <div class="absolute inset-0 bg-primary/5 blur-xl opacity-0 transition-opacity"></div>
+              <Terminal :size="32" class="relative z-10 opacity-40" />
+              <!-- Small pulsing dot to show it's "monitoring" -->
+              <div class="absolute -top-1 -right-1 w-3 h-3 bg-primary/20 rounded-full flex items-center justify-center">
+                <div class="w-1.5 h-1.5 bg-primary rounded-full animate-pulse"></div>
+              </div>
+            </div>
+            <div class="space-y-1">
+              <p class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">Service Active</p>
+              <p class="text-[9px] text-gray-600 font-bold leading-relaxed max-w-[150px]">
+                Tunneling proxy is hidden to save space. Click the header to manage your local backend connections.
+              </p>
+            </div>
+          </div>
         </div>
       </div>
 
       <!-- Section 2: Progress & Status -->
-      <div class="flex-[1.8] flex flex-col justify-center space-y-6">
+      <div class="flex-[2] flex flex-col justify-center space-y-8 h-full">
         <!-- BOLD LIVE STATUS -->
         <div :class="[
-          'flex items-center justify-center py-8 rounded-2xl border transition-all duration-500',
+          'flex items-center justify-center py-20 rounded-[32px] border transition-all duration-700 relative overflow-hidden group',
           isRunning 
-            ? 'bg-red-500/20 border-red-500 shadow-[0_0_50px_rgba(239,68,68,0.2)]' 
+            ? 'bg-red-500/10 border-red-500/50 shadow-[0_0_80px_rgba(239,68,68,0.15)]' 
             : 'bg-white/5 border-white/10'
         ]">
-          <div class="text-center">
+          <!-- Background Glow Effect (Status-based) -->
+          <div :class="[
+            'absolute inset-0 opacity-20 blur-3xl transition-colors duration-1000',
+            isRunning ? 'bg-red-500' : (executionState === 'completed' ? 'bg-primary' : 'bg-transparent')
+          ]"></div>
+
+          <div class="text-center relative z-10">
             <p :class="[
-              'text-[12px] uppercase font-black tracking-[0.4em] mb-2',
+              'text-[14px] uppercase font-black tracking-[0.6em] mb-4',
               isRunning ? 'text-red-400' : (executionState === 'failed' ? 'text-red-500' : 'text-gray-500')
             ]">
               {{ executionState === 'failed' ? 'Attention Required' : 'System Status' }}
             </p>
             <p :class="[
-              'text-5xl font-black uppercase tracking-tighter transition-all duration-300',
-              isRunning ? 'text-red-500 drop-shadow-[0_0_15px_rgba(239,68,68,0.5)]' : 
+              'text-7xl font-black uppercase tracking-tighter transition-all duration-500 scale-100 group-hover:scale-110',
+              isRunning ? 'text-red-500 drop-shadow-[0_0_30px_rgba(239,68,68,0.4)]' : 
               (executionState === 'completed' ? 'text-primary' : 
-              (executionState === 'failed' ? 'text-red-500 underline decoration-red-900/50' : 'text-gray-700'))
+              (executionState === 'failed' ? 'text-red-500 underline decoration-red-900/50' : 'text-gray-800'))
             ]">
               {{ isRunning ? 'Executing' : (executionState === 'completed' ? 'Passed' : (executionState === 'failed' ? 'Failed' : 'Ready')) }}
             </p>
-            <p v-if="executionState === 'failed'" class="text-[10px] text-red-500/70 font-bold mt-2 uppercase tracking-widest">
-              One or more steps encountered errors
-            </p>
-            <p v-else-if="executionState === 'completed'" class="text-[10px] text-primary/70 font-bold mt-2 uppercase tracking-widest">
-              All endpoints responded successfully
-            </p>
+            
+            <div class="mt-8 flex flex-col items-center">
+              <p v-if="executionState === 'failed'" class="text-[11px] text-red-500/70 font-bold uppercase tracking-[0.2em] animate-pulse">
+                One or more steps encountered errors
+              </p>
+              <p v-else-if="executionState === 'completed'" class="text-[11px] text-primary/70 font-bold uppercase tracking-[0.2em]">
+                All endpoints responded successfully
+              </p>
+              <div v-else-if="isRunning" class="flex space-x-1 mt-2">
+                <div v-for="i in 3" :key="i" class="w-1.5 h-1.5 bg-red-500 rounded-full animate-bounce" :style="{animationDelay: i*0.2 + 's'}"></div>
+              </div>
+            </div>
           </div>
         </div>
 
-        <!-- Progress Bar -->
-        <div v-if="isRunning || executionState !== 'idle'" class="px-4">
-          <div class="flex items-center justify-between mb-2">
-            <span class="text-[11px] font-bold uppercase text-gray-500 tracking-wider">Execution Progress</span>
-            <span class="text-[11px] font-mono text-primary font-bold">
+        <!-- Progress Bar (Enhanced) -->
+        <div v-if="isRunning || executionState !== 'idle'" class="px-6 space-y-4">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+              <div v-if="isRunning" class="w-2 h-2 rounded-full bg-primary animate-pulse"></div>
+              <span class="text-[11px] font-black uppercase text-gray-400 tracking-widest">Execution Progress</span>
+            </div>
+            <span class="text-[12px] font-mono text-primary font-black bg-primary/10 px-2 py-1 rounded">
               {{ completedSteps }} / {{ totalSteps }} Steps
             </span>
           </div>
-          <div class="w-full h-3 bg-gray-800 rounded-full overflow-hidden border border-gray-700/50 p-0.5">
+          <div class="w-full h-4 bg-gray-900 rounded-full border border-white/5 p-1 relative overflow-hidden">
             <div
-              class="h-full bg-gradient-to-r from-primary via-primary-light to-primary transition-all duration-500 ease-out shadow-[0_0_15px_rgba(var(--primary-rgb),0.6)] rounded-full"
+              class="h-full bg-gradient-to-r from-primary-dark via-primary to-primary-light transition-all duration-700 ease-[cubic-bezier(0.34,1.56,0.64,1)] rounded-full relative"
               :style="{ width: progress + '%' }"
-            ></div>
+            >
+               <div class="absolute inset-0 bg-[linear-gradient(45deg,rgba(255,255,255,0.2)_25%,transparent_25%,transparent_50%,rgba(255,255,255,0.2)_50%,rgba(255,255,255,0.2)_75%,transparent_75%,transparent)] bg-[length:20px_20px] animate-[loading-bar_1s_linear_infinite]"></div>
+            </div>
           </div>
         </div>
       </div>
@@ -187,7 +248,11 @@
   padding-bottom: 0.375rem;
 }
 
-/* Local primary variables as fallbacks */
+@keyframes loading-bar {
+  0% { background-position: 0 0; }
+  100% { background-position: 40px 0; }
+}
+
 :root {
   --primary-rgb: 191, 245, 73;
   --primary-light: #D4FF6B;
@@ -198,8 +263,10 @@
 import { ref, computed } from 'vue'
 import { useJourneyStore } from '@/stores/journey'
 import { useToast } from 'vue-toastification'
-import { Play, Square, RotateCcw, Loader, Globe, X, PlayCircle, ChevronRight } from 'lucide-vue-next'
+import { Play, Square, RotateCcw, Loader, Globe, X, PlayCircle, ChevronRight, ChevronDown, Terminal } from 'lucide-vue-next'
 import NgrokTunnelManager from './NgrokTunnelManager.vue'
+
+const isTunnelCollapsed = ref(false)
 
 const props = defineProps({
   journeyId: {

@@ -748,10 +748,10 @@
              <p class="text-[10px] text-gray-600 font-bold uppercase tracking-widest">
                &copy; 2026 SpecFlow Inc. All rights reserved.
              </p>
-             <div class="flex items-center space-x-6 text-[10px] text-gray-600 font-bold uppercase tracking-widest">
+             <!-- <div class="flex items-center space-x-6 text-[10px] text-gray-600 font-bold uppercase tracking-widest">
                 <a href="#" class="hover:text-white transition-colors">Privacy Policy</a>
                 <a href="#" class="hover:text-white transition-colors">Terms of Service</a>
-             </div>
+             </div> -->
           </div>
        </div>
     </footer>
