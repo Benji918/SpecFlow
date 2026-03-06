@@ -735,11 +735,16 @@
              </div>
 
              <div class="flex items-center space-x-4">
-                <a href="https://twitter.com/code_benji" class="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center hover:bg-primary hover:text-black transition-all group" target="_blank">
-                   <Twitter :size="18" class="group-hover:fill-current" />
+                <a href="https://x.com/code_benji" class="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center hover:bg-primary hover:text-black transition-all group" target="_blank">
+                   <svg viewBox="0 0 24 24" class="w-[18px] h-[18px] group-hover:fill-current fill-white transition-colors" aria-hidden="true">
+                      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"></path>
+                   </svg>
                 </a>
                 <a href="https://github.com/Benji918" class="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center hover:bg-primary hover:text-black transition-all group" target="_blank">
                    <Github :size="18" class="group-hover:fill-current" />
+                </a>
+                <a href="https://www.linkedin.com/in/ugobenjamin/" class="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center hover:bg-primary hover:text-black transition-all group" target="_blank">
+                   <Linkedin :size="18" class="group-hover:fill-current" />
                 </a>
              </div>
           </div>
@@ -775,7 +780,6 @@ import {
   ShieldAlert,
   Share2,
   Quote,
-  Twitter,
   Clock,
   Github,
   Linkedin,
