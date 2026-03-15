@@ -173,7 +173,7 @@
                   <div class="icon-box"><Activity :size="18" /></div>
                   Manual Journeys
                 </div>
-                <div class="trend positive">{{ stats.journeys.manual.toLocaleString() }}</div>
+                <!-- <div class="trend positive">{{ stats.journeys.manual.toLocaleString() }}</div> -->
               </div>
               <div class="widget-value-group">
                 <div class="widget-value">{{ stats.journeys.manual.toLocaleString() }}</div>
