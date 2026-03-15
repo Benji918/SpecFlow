@@ -454,6 +454,149 @@
           </div>
         </template>
 
+        <!-- Resources Tab Content -->
+        <template v-else-if="activeTab === 'resources'">
+          <div class="resources-layout">
+            <!-- Specs Table -->
+            <div class="table-container mb-12">
+              <div class="card-header flex-col md:flex-row gap-4">
+                <div class="title-group-sm">
+                  <div class="flex items-center gap-2">
+                    <FileCode2 :size="20" class="text-primary" />
+                    <h3 class="text-xl font-bold">Uploaded Specifications</h3>
+                  </div>
+                  <p class="text-xs text-gray-500 mt-1">OpenAPI definitions uploaded by users</p>
+                </div>
+                
+                <div class="action-group-horizontal">
+                  <div class="search-box-pill">
+                    <Search :size="16" class="text-gray-500" />
+                    <input v-model="specSearch" type="text" placeholder="Search spec name or user..." />
+                  </div>
+                </div>
+              </div>
+              
+              <div class="orbit-card table-card p-0">
+                <table class="modern-table">
+                  <thead>
+                    <tr>
+                      <th>Spec Name</th>
+                      <th>Version</th>
+                      <th>Uploaded By</th>
+                      <th>Upload Date</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="s in specs" :key="s.id">
+                      <td>
+                        <div class="flex items-center gap-2">
+                          <Zap :size="14" class="text-primary fill-current" />
+                          <span class="font-bold text-white">{{ s.name }}</span>
+                        </div>
+                      </td>
+                      <td><span class="version-badge">{{ s.version || 'v1.0' }}</span></td>
+                      <td>
+                        <div class="user-row">
+                          <div class="user-avatar-modern sm">{{ s.user_name?.[0]?.toUpperCase() }}</div>
+                          <div class="flex flex-col">
+                            <span class="text-xs font-bold text-white">{{ s.user_name }}</span>
+                            <span class="text-[10px] text-gray-500">{{ s.user_email }}</span>
+                          </div>
+                        </div>
+                      </td>
+                      <td class="text-gray-500 text-sm">{{ formatDateTime(s.uploaded_at) }}</td>
+                    </tr>
+                    <tr v-if="specs.length === 0">
+                      <td colspan="4" class="text-center py-10 text-gray-500 italic">No specifications found matching search</td>
+                    </tr>
+                  </tbody>
+                </table>
+                <div class="table-footer">
+                  <div class="pagination-modern">
+                    <button :disabled="specPage <= 1" @click="specPage--;loadSpecs()" class="p-btn">Prev</button>
+                    <span class="p-info">Page {{ specPage }}</span>
+                    <button :disabled="specs.length < 10" @click="specPage++;loadSpecs()" class="p-btn">Next</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Journeys Table -->
+            <div class="table-container">
+              <div class="card-header flex-col md:flex-row gap-4">
+                <div class="title-group-sm">
+                  <div class="flex items-center gap-2">
+                    <Map :size="20" class="text-primary" />
+                    <h3 class="text-xl font-bold">User Journeys</h3>
+                  </div>
+                  <p class="text-xs text-gray-500 mt-1">Manual and AI-generated workflow paths</p>
+                </div>
+                
+                <div class="action-group-horizontal">
+                  <div class="filter-pill-container">
+                    <button v-for="m in ['all', 'ai', 'manual']" :key="m"
+                      class="filter-pill" :class="{ active: journeyMethodFilter === m }"
+                      @click="journeyMethodFilter = m">
+                      {{ m.toUpperCase() }}
+                    </button>
+                  </div>
+                  <div class="search-box-pill">
+                    <Search :size="16" class="text-gray-500" />
+                    <input v-model="journeySearch" type="text" placeholder="Search journey or user..." />
+                  </div>
+                </div>
+              </div>
+              
+              <div class="orbit-card table-card p-0">
+                <table class="modern-table">
+                  <thead>
+                    <tr>
+                      <th>Journey Name</th>
+                      <th>Method</th>
+                      <th>Based on Spec</th>
+                      <th>Created By</th>
+                      <th>Date Created</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="j in allJourneys" :key="j.id">
+                      <td><span class="font-bold text-white">{{ j.name }}</span></td>
+                      <td>
+                        <div class="method-badge" :class="j.method">
+                          <Cpu v-if="j.method === 'ai'" :size="12" class="mr-1" />
+                          <UserCheck v-else :size="12" class="mr-1" />
+                          {{ j.method }}
+                        </div>
+                      </td>
+                      <td class="text-gray-400 text-xs">{{ j.spec_name }}</td>
+                      <td>
+                        <div class="user-row">
+                          <div class="user-avatar-modern sm">{{ j.user_name?.[0]?.toUpperCase() }}</div>
+                          <div class="flex flex-col">
+                            <span class="text-xs font-bold text-white">{{ j.user_name }}</span>
+                            <span class="text-[10px] text-gray-500">{{ j.user_email }}</span>
+                          </div>
+                        </div>
+                      </td>
+                      <td class="text-gray-500 text-sm">{{ formatDateTime(j.created_at) }}</td>
+                    </tr>
+                    <tr v-if="allJourneys.length === 0">
+                      <td colspan="5" class="text-center py-10 text-gray-500 italic">No journeys found matching search/filters</td>
+                    </tr>
+                  </tbody>
+                </table>
+                <div class="table-footer">
+                  <div class="pagination-modern">
+                    <button :disabled="journeyPage <= 1" @click="journeyPage--;loadJourneys()" class="p-btn">Prev</button>
+                    <span class="p-info">Page {{ journeyPage }}</span>
+                    <button :disabled="allJourneys.length < 10" @click="journeyPage++;loadJourneys()" class="p-btn">Next</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </template>
+
         <!-- Settings Tab Content -->
         <template v-else-if="activeTab === 'settings'">
           <div class="settings-container">
@@ -629,10 +772,11 @@ import {
   EyeOff,
   Sun,
   Moon,
-  Plus,
-  ShieldCheck,
   Trash2,
-  Pencil
+  Pencil,
+  Database,
+  Cpu,
+  UserCheck
 } from 'lucide-vue-next'
 
 const authStore = useAuthStore()
@@ -642,6 +786,7 @@ const toast = useToast()
 const tabs = [
   { id: 'overview', label: 'Overview', description: 'Platform-wide analytics', icon: LayoutDashboard },
   { id: 'users',    label: 'Users',    description: 'Registered accounts',   icon: Users },
+  { id: 'resources',label: 'Resources',description: 'Specs & Journeys',      icon: Database },
   { id: 'activity', label: 'Activity', description: 'Execution logs',        icon: Activity },
   { id: 'settings', label: 'Settings', description: 'Platform config',       icon: Settings },
 ]
@@ -664,6 +809,15 @@ const searchQuery = ref('')
 const sidebarCollapsed = ref(false)
 const showPassword = ref(false)
 const theme = ref('dark')
+
+// Resources Tab State
+const specs = ref([])
+const allJourneys = ref([])
+const specSearch = ref('')
+const journeySearch = ref('')
+const specPage = ref(1)
+const journeyPage = ref(1)
+const journeyMethodFilter = ref('all')
 
 // Activity Filtering State
 const activitySearch = ref('')
@@ -711,7 +865,14 @@ const editFormError = ref('')
 async function loadAll() {
   loading.value = true
   try {
-    await Promise.all([loadStats(), loadGrowth(), loadUsers(), loadActivity()])
+    await Promise.all([
+      loadStats(), 
+      loadGrowth(), 
+      loadUsers(), 
+      loadActivity(),
+      loadSpecs(),
+      loadJourneys()
+    ])
     lastUpdated.value = new Date().toLocaleTimeString()
     await nextTick()
     renderCharts()
@@ -744,6 +905,35 @@ async function loadActivity() {
   const { data } = await apiClient.get(`/api/admin/recent-activity?page=${activityPage.value}&limit=10`)
   activity.value = data
 }
+
+async function loadSpecs() {
+  const q = specSearch.value ? `&search=${encodeURIComponent(specSearch.value)}` : ''
+  const { data } = await apiClient.get(`/api/admin/specs?page=${specPage.value}&limit=10${q}`)
+  specs.value = data
+}
+
+async function loadJourneys() {
+  const q = journeySearch.value ? `&search=${encodeURIComponent(journeySearch.value)}` : ''
+  const m = journeyMethodFilter.value !== 'all' ? `&method=${journeyMethodFilter.value}` : ''
+  const { data } = await apiClient.get(`/api/admin/journeys?page=${journeyPage.value}&limit=10${q}${m}`)
+  allJourneys.value = data
+}
+
+// Watchers for robust search
+watch(specSearch, () => {
+  specPage.value = 1
+  loadSpecs()
+})
+
+watch(journeySearch, () => {
+  journeyPage.value = 1
+  loadJourneys()
+})
+
+watch(journeyMethodFilter, () => {
+  journeyPage.value = 1
+  loadJourneys()
+})
 
 async function setGrowthDays(d) {
   growthDays.value = d
@@ -1870,4 +2060,35 @@ onMounted(loadAll)
   .header-actions { gap: 15px; }
 }
 
+/* ── Resources Tab Styles ── */
+.resources-layout { display: flex; flex-direction: column; }
+.search-box-pill {
+  display: flex; align-items: center; gap: 10px; background: #0A0A0A;
+  border: 1px solid #222; border-radius: 12px; padding: 10px 16px; min-width: 300px;
+}
+.search-box-pill input {
+  background: transparent; border: none; color: #fff; font-size: 13px; font-weight: 500; width: 100%; outline: none;
+}
+.search-box-pill:focus-within { border-color: #BFF549; }
+.action-group-horizontal { display: flex; align-items: center; gap: 12px; }
+
+.version-badge {
+  padding: 3px 8px; border-radius: 6px; font-size: 10px; font-weight: 900;
+  text-transform: uppercase; letter-spacing: 0.05em; background: #111; color: #666; border: 1px solid #222;
+}
+.method-badge {
+  display: inline-flex; align-items: center; padding: 4px 10px; border-radius: 6px;
+  font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em;
+}
+.method-badge.ai { background: rgba(167,139,250,0.1); color: #A78BFA; }
+.method-badge.manual { background: rgba(191,245,73,0.1); color: #BFF549; }
+
+.light-theme .search-box-pill { background: #f8f9fa; border-color: rgba(0,0,0,0.1); }
+.light-theme .search-box-pill input { color: #1a1a1a; }
+.light-theme .version-badge { background: #fff; }
+
+@media (max-width: 768px) {
+  .action-group-horizontal { flex-direction: column; align-items: stretch; }
+  .search-box-pill { min-width: 100%; }
+}
 </style>

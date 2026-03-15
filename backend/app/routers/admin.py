@@ -357,3 +357,81 @@ async def delete_user(
     await db.delete(user)
     await db.commit()
     return None
+
+@router.get("/specs")
+async def list_specs(
+    page: int = 1,
+    limit: int = 20,
+    search: Optional[str] = None,
+    admin: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """List all specs with user context and search."""
+    query = select(Spec, User.name, User.email).join(User, Spec.user_id == User.id)
+    
+    if search:
+        query = query.where(
+            and_(
+                (Spec.name.ilike(f"%{search}%")) |
+                (User.name.ilike(f"%{search}%")) |
+                (User.email.ilike(f"%{search}%"))
+            )
+        )
+        
+    query = query.order_by(Spec.uploaded_at.desc()).offset((page - 1) * limit).limit(limit)
+    result = await db.execute(query)
+    rows = result.all()
+    
+    return [
+        {
+            "id": str(r.Spec.id),
+            "name": r.Spec.name,
+            "version": r.Spec.version,
+            "uploaded_at": r.Spec.uploaded_at.isoformat(),
+            "user_name": r.name,
+            "user_email": r.email,
+        }
+        for r in rows
+    ]
+
+
+@router.get("/journeys")
+async def list_journeys(
+    page: int = 1,
+    limit: int = 20,
+    search: Optional[str] = None,
+    method: Optional[str] = None,
+    admin: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """List all journeys with user context, search, and method filter."""
+    query = select(Journey, User.name, User.email, Spec.name.label("spec_name")).join(User, Journey.user_id == User.id).join(Spec, Journey.spec_id == Spec.id)
+    
+    if search:
+        query = query.where(
+            and_(
+                (Journey.name.ilike(f"%{search}%")) |
+                (User.name.ilike(f"%{search}%")) |
+                (User.email.ilike(f"%{search}%"))
+            )
+        )
+    
+    if method:
+        query = query.where(Journey.generation_method == method)
+        
+    query = query.order_by(Journey.created_at.desc()).offset((page - 1) * limit).limit(limit)
+    result = await db.execute(query)
+    rows = result.all()
+    
+    return [
+        {
+            "id": str(r.Journey.id),
+            "name": r.Journey.name,
+            "spec_name": r.spec_name,
+            "method": r.Journey.generation_method,
+            "created_at": r.Journey.created_at.isoformat(),
+            "user_name": r.name,
+            "user_email": r.email,
+        }
+        for r in rows
+    ]
