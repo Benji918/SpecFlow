@@ -40,6 +40,24 @@
           <p class="text-xs text-gray-500 mt-2">
             Supports JSON and YAML formats
           </p>
+
+          <div class="pt-4 border-t border-gray-800/50 mt-4">
+            <button
+              type="button"
+              @click.stop="handleUseSample"
+              :disabled="loadingSample || uploading"
+              class="group relative inline-flex items-center px-4 py-2 text-sm font-medium text-primary hover:text-white transition-all duration-300 rounded-full border border-primary/20 hover:border-primary/50 bg-primary/5 hover:bg-primary/10 overflow-hidden"
+            >
+              <div v-if="loadingSample" class="mr-2 animate-spin">
+                <Loader2 :size="16" />
+              </div>
+              <Sparkles v-else :size="16" class="mr-2 group-hover:rotate-12 transition-transform" />
+              <span>{{ loadingSample ? 'Loading Sample...' : 'Try with sample data' }}</span>
+              
+              <!-- Subtle glow effect on hover -->
+              <div class="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -131,7 +149,7 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useSpecStore } from '@/stores/spec'
 import { useToast } from 'vue-toastification'
-import { Upload, FileText, X, AlertCircle } from 'lucide-vue-next'
+import { Upload, FileText, X, AlertCircle, Sparkles, Loader2 } from 'lucide-vue-next'
 import { load } from 'js-yaml'
 
 const router = useRouter()
@@ -144,6 +162,7 @@ const specName = ref('')
 const uploading = ref(false)
 const uploadProgress = ref(0)
 const validationError = ref(null)
+const loadingSample = ref(false)
 
 function handleDrop(event) {
   dragOver.value = false
@@ -173,6 +192,47 @@ function processFile(file) {
   selectedFile.value = file
   specName.value = file.name.replace(/\.(json|yaml|yml)$/, '')
   validationError.value = null
+}
+
+async function handleUseSample() {
+  if (loadingSample.value || uploading.value) return
+  
+  loadingSample.value = true
+  validationError.value = null
+  
+  try {
+    // Direct link to the Google Drive file provided by the user
+    // Using a CORS proxy to ensure it can be fetched from the client side
+    const driveId = '15Vqn_rxcJBwq-iukmXgQv3V2fmdmET8i'
+    const directUrl = `https://drive.google.com/uc?export=download&id=${driveId}`
+    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(directUrl)}`
+    
+    const response = await fetch(proxyUrl)
+    if (!response.ok) throw new Error('Failed to fetch sample data')
+    
+    // Check if the response is actually a file or an error page (GDrive often returns HTML on error)
+    const contentType = response.headers.get('content-type')
+    if (contentType && contentType.includes('text/html')) {
+       throw new Error('Could not access Google Drive file. It might be private or require a virus scan confirmation.')
+    }
+
+    const blob = await response.blob()
+    
+    // Create a File object from the blob
+    const file = new File([blob], 'mini-assessment-api.yaml', { 
+      type: 'text/yaml' 
+    })
+    
+    processFile(file)
+    toast.info('Sample data loaded! You can now review and upload it.')
+    
+  } catch (error) {
+    console.error('Error fetching sample data:', error)
+    toast.error('Could not load sample data. Please try uploading your own spec.')
+    validationError.value = 'Failed to load sample data. The link might be restricted or temporary blocked by Google.'
+  } finally {
+    loadingSample.value = false
+  }
 }
 
 async function handleUpload() {
