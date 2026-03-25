@@ -46,7 +46,8 @@ export default defineConfig(({ mode }) => ({
     // Preview configuration for testing production build locally
     preview: {
         allowedHosts: [
-            'site--specflow-fe--j29wymgjz5b5.code.run'
+            'site--specflow-fe--j29wymgjz5b5.code.run',
+            'specflow.pro'
         ],
         proxy: {
             '/api': {
