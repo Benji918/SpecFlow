@@ -239,7 +239,7 @@
                   </div>
                 </div>
                 <!-- Scanning Effect -->
-                <div class="absolute top-0 left-0 w-full h-[1.5px] bg-primary/30 shadow-[0_0_20px_rgba(191,245,73,0.6)] animate-[scan_4s_linear_infinite]"></div>
+                <div class="absolute top-0 left-0 w-full h-[1.5px] bg-primary/30 shadow-[0_0_20px_rgba(191,245,73,0.6)] animate-[scan_2s_linear_infinite]"></div>
               </div>
             </div>
           </div>
@@ -323,7 +323,7 @@
                 <!-- Animated Data Stream -->
                 <div class="h-6 flex justify-center items-center relative gap-2">
                    <div class="w-px h-full bg-gradient-to-b from-primary/50 to-transparent relative">
-                      <div class="absolute top-0 -left-[2px] w-[5px] h-[5px] bg-primary rounded-full blur-[1px] animate-[drop_1.5s_infinite]"></div>
+                      <div class="absolute top-0 -left-[2px] w-[5px] h-[5px] bg-primary rounded-full blur-[1px] animate-[drop_0.8s_infinite]"></div>
                    </div>
                    <span class="text-[7px] text-primary/40 font-mono italic">linking_parameter...</span>
                 </div>
