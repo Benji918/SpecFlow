@@ -175,6 +175,174 @@
         </div>
       </div>
     </section>
+    
+    <!-- Journey Discovery & Chaining Pipeline Illustration -->
+    <section class="py-24 relative overflow-hidden bg-black border-y border-white/5">
+      <!-- Background Ambient Glow -->
+      <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-[radial-gradient(circle_at_center,rgba(191,245,73,0.03)_0%,transparent_70%)] pointer-events-none"></div>
+      
+      <div class="max-w-7xl mx-auto px-6 relative z-10">
+        <!-- Header -->
+        <div class="text-center mb-24 space-y-4">
+          <div class="inline-flex items-center space-x-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold uppercase tracking-widest mb-4">
+            <Sparkles :size="12" class="fill-current" />
+            <span>The SpecFlow Method</span>
+          </div>
+          <h2 class="text-5xl lg:text-7xl font-black tracking-tight leading-none uppercase">
+            From Spec to <br/>
+            <span class="text-transparent bg-clip-text bg-gradient-to-r from-primary via-white to-primary">Smart Execution</span>
+          </h2>
+        </div>
+
+        <!-- The 3 Phases -->
+        <div class="grid lg:grid-cols-3 gap-10 relative">
+          <!-- Connection Path (Visual only) -->
+          <div class="hidden lg:block absolute top-[120px] left-[15%] right-[15%] h-[2px] bg-gradient-to-r from-transparent via-primary/20 to-transparent -z-10">
+            <div class="absolute inset-0 bg-primary/40 blur-sm animate-pulse"></div>
+          </div>
+          
+          <!-- Phase 1: AI/Manual Inference -->
+          <div class="group relative bg-[#0A0A0A] border border-white/10 p-8 rounded-[40px] hover:border-primary/40 transition-all duration-700 shadow-3xl hover:shadow-primary/5">
+            <div class="absolute -top-10 -right-10 w-40 h-40 bg-primary/5 blur-3xl rounded-full group-hover:bg-primary/10 transition-all"></div>
+            
+            <div class="relative z-10 flex flex-col h-full">
+              <div class="w-16 h-16 bg-primary rounded-2xl flex items-center justify-center mb-8 shadow-[0_0_30px_rgba(191,245,73,0.3)] group-hover:scale-110 group-hover:rotate-3 transition-all duration-500">
+                <Bot :size="32" class="text-black" />
+              </div>
+              
+              <div class="space-y-3 mb-8">
+                <h3 class="text-xl font-black text-white">1. Intelligent Discovery</h3>
+                <p class="text-gray-400 leading-relaxed text-[13px]">
+                  SpecFlow's <span class="text-white font-bold italic">Inference Engine</span> scans your endpoints to map out every dependency and auto-suggest logical user journeys.
+                </p>
+              </div>
+
+              <!-- Terminal-style UI Component -->
+              <div class="mt-auto relative bg-black/60 rounded-2xl border border-white/10 p-6 font-mono text-[11px] overflow-hidden group/terminal border-t-primary/20 min-h-[180px] flex flex-col">
+                <div class="flex items-center space-x-2 mb-6 border-b border-white/5 pb-3">
+                  <div class="w-2 h-2 rounded-full bg-red-500/50"></div>
+                  <div class="w-2 h-2 rounded-full bg-yellow-500/50"></div>
+                  <div class="w-2 h-2 rounded-full bg-green-500/50"></div>
+                  <span class="text-[9px] text-gray-500 ml-2 tracking-widest uppercase font-bold">inference_engine.log</span>
+                </div>
+                <div class="space-y-2 text-gray-400 flex-1">
+                  <div class="flex items-center space-x-2">
+                    <span class="text-primary font-bold">></span>
+                    <span class="animate-pulse">Analyzing endpoint relationships...</span>
+                  </div>
+                  <div class="pl-5 opacity-50 text-[10px]">✓ Identified 'auth_session' flow across 4 nodes</div>
+                  <div class="pl-5 opacity-50 text-[10px]">✓ Extracting 'order_id' from POST /orders</div>
+                  <div class="flex items-center space-x-2 py-2">
+                    <span class="text-primary font-bold">></span>
+                    <span class="text-white font-black">Success:</span>
+                    <span class="text-primary bg-primary/10 px-1.5 py-0.5 rounded">"E-Commerce Flow" Generated</span>
+                  </div>
+                </div>
+                <!-- Scanning Effect -->
+                <div class="absolute top-0 left-0 w-full h-[1.5px] bg-primary/30 shadow-[0_0_20px_rgba(191,245,73,0.6)] animate-[scan_4s_linear_infinite]"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Phase 2: Flowchart Manner UI -->
+          <div class="group relative bg-[#0A0A0A] border border-white/10 p-8 rounded-[40px] hover:border-primary/40 transition-all duration-700 shadow-3xl lg:translate-y-12">
+            <div class="relative z-10 flex flex-col h-full">
+              <div class="w-16 h-16 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center mb-8 mx-auto group-hover:border-primary/50 transition-colors">
+                <Workflow :size="32" class="text-primary group-hover:animate-spin-slow" />
+              </div>
+              
+              <div class="space-y-3 mb-8 text-center">
+                <h3 class="text-xl font-black text-white">2. Flowchart Control</h3>
+                <p class="text-gray-400 leading-relaxed text-[13px]">
+                  Take full control of the execution order with a flowchart UI. Drag, drop, and link any request to build your ideal test scenario.
+                </p>
+              </div>
+
+              <!-- Flowchart Visual -->
+              <div class="mt-auto relative h-52 bg-[#050505] rounded-2xl border border-white/5 overflow-hidden flex flex-col justify-center items-center shadow-inner">
+                <div class="absolute inset-0 bg-[radial-gradient(#ffffff05_1.5px,transparent_1.5px)] bg-[size:24px_24px]"></div>
+                
+                <div class="relative flex flex-col space-y-6 items-center">
+                  <!-- Top Node -->
+                  <div class="w-32 h-12 bg-white/5 border border-white/10 rounded-xl flex items-center justify-center space-x-3 backdrop-blur-md group-hover:border-primary/20 transition-colors">
+                    <div class="w-2 h-2 rounded-full bg-primary/40 animate-pulse"></div>
+                    <span class="text-[10px] font-black text-gray-300 uppercase tracking-tighter">POST: Login</span>
+                  </div>
+                  
+                  <!-- Connection Line -->
+                  <div class="w-[2px] h-10 bg-gradient-to-b from-primary/50 to-primary/5 relative">
+                    <div class="absolute top-0 -left-[1.5px] w-[5px] h-4 bg-gradient-to-t from-primary to-transparent blur-[1px] rounded-full animate-flow-down"></div>
+                    <!-- Flow indicator label -->
+                    <div class="absolute top-1/2 left-4 -translate-y-1/2 px-2 py-0.5 bg-black/80 border border-white/10 rounded text-[7px] font-mono text-primary/60 whitespace-nowrap">
+                      on_success →
+                    </div>
+                  </div>
+
+                  <!-- Bottom Node -->
+                  <div class="w-32 h-12 bg-primary/10 border-2 border-primary/40 rounded-xl flex items-center justify-center space-x-3 shadow-[0_0_30px_rgba(191,245,73,0.15)] group-hover:scale-105 transition-transform duration-500">
+                    <div class="w-2 h-2 rounded-full bg-primary animate-ping"></div>
+                    <span class="text-[10px] font-black text-white uppercase tracking-tighter">GET: Profile</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Phase 3: Optimized Data Linking -->
+          <div class="group relative bg-[#0A0A0A] border border-white/10 p-8 rounded-[40px] hover:border-primary/40 transition-all duration-700 shadow-3xl">
+            <div class="absolute -bottom-10 -left-10 w-40 h-40 bg-primary/5 blur-3xl rounded-full group-hover:bg-primary/10 transition-all"></div>
+            
+            <div class="relative z-10 flex flex-col h-full">
+              <div class="w-16 h-16 bg-primary/10 border border-primary/20 rounded-2xl flex items-center justify-center mb-8">
+                <Link :size="32" class="text-primary animate-pulse" />
+              </div>
+              
+              <div class="space-y-3 mb-8">
+                <h3 class="text-xl font-black text-white">3. Smart Data Chaining</h3>
+                <p class="text-gray-400 leading-relaxed text-[13px]">
+                  SpecFlow automatically links response fields to subsequent requests. Optimized data transmission without ever lifting a finger.
+                </p>
+              </div>
+
+              <!-- High-Fidelity Chaining Visual -->
+              <div class="mt-auto relative space-y-3 bg-[#050505] p-5 rounded-2xl border border-white/5 overflow-hidden border-b-primary/20">
+                <!-- Source Code -->
+                <div class="bg-white/5 rounded-xl p-3 border border-white/5 group/code cursor-default hover:bg-white/10 transition-colors">
+                  <div class="flex justify-between items-center mb-2">
+                    <span class="text-[8px] text-gray-500 uppercase font-black tracking-widest">RES_STEP1</span>
+                    <div class="flex space-x-1">
+                      <div class="w-1 h-1 rounded-full bg-gray-700"></div>
+                      <div class="w-1 h-1 rounded-full bg-gray-700"></div>
+                    </div>
+                  </div>
+                  <div class="text-[10px] font-mono text-gray-400 truncate">
+                    &lbrace; "token": <span class="text-primary font-bold animate-[pulse_2s_infinite]">"SF_9xK..."</span> &rbrace;
+                  </div>
+                </div>
+
+                <!-- Animated Data Stream -->
+                <div class="h-6 flex justify-center items-center relative gap-2">
+                   <div class="w-px h-full bg-gradient-to-b from-primary/50 to-transparent relative">
+                      <div class="absolute top-0 -left-[2px] w-[5px] h-[5px] bg-primary rounded-full blur-[1px] animate-[drop_1.5s_infinite]"></div>
+                   </div>
+                   <span class="text-[7px] text-primary/40 font-mono italic">linking_parameter...</span>
+                </div>
+
+                <!-- Target Code -->
+                <div class="bg-primary/5 rounded-xl p-3 border border-primary/20 opacity-80 group/code cursor-default hover:opacity-100 transition-opacity">
+                  <div class="flex justify-between items-center mb-2">
+                    <span class="text-[8px] text-primary uppercase font-black tracking-widest">REQ_STEP2</span>
+                  </div>
+                  <div class="text-[10px] font-mono text-gray-500">
+                    HTTP GET <span class="text-white font-bold">&lbrace; auth_token &rbrace;</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
 
     <!-- Video Showcase Section -->
     <section class="py-32 relative overflow-hidden" id="demo">
@@ -707,7 +875,7 @@
             <!-- Subtle Micro-interaction -->
             <div class="pt-4 flex items-center space-x-2 text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">
                <span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
-               <span>Available 24/7 for you</span>
+               <span>Available for you</span>
             </div>
           </div>
 
@@ -751,7 +919,7 @@
 
           <div class="mt-12 pt-8 border-t border-white/5 flex flex-col md:flex-row items-center justify-between gap-6">
              <p class="text-[10px] text-gray-600 font-bold uppercase tracking-widest">
-               &copy; 2026 SpecFlow Inc. All rights reserved.
+               &copy; 2026 SpecFlow. All rights reserved.
              </p>
              <!-- <div class="flex items-center space-x-6 text-[10px] text-gray-600 font-bold uppercase tracking-widest">
                 <a href="#" class="hover:text-white transition-colors">Privacy Policy</a>
@@ -794,7 +962,8 @@ import {
   Circle,
   Loader2,
   Eye,
-  Sparkles
+  Sparkles,
+  Link
 } from 'lucide-vue-next'
 
 // Interactive Node State
@@ -1021,8 +1190,49 @@ function formatTime(seconds) {
   50% { transform: translateY(-10px); }
 }
 
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes scan {
+  from { transform: translateY(-100%); }
+  to { transform: translateY(400%); }
+}
+
+@keyframes flow-down {
+  0% { top: 0%; opacity: 0; }
+  20% { opacity: 1; }
+  80% { opacity: 1; }
+  100% { top: 100%; opacity: 0; }
+}
+
+@keyframes drop {
+  0% { transform: translateY(0); opacity: 0; }
+  20% { opacity: 1; }
+  80% { opacity: 1; }
+  100% { transform: translateY(20px); opacity: 0; }
+}
+
+@keyframes bounce-slow {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(5px); }
+}
+
 .animate-float {
   animation: float 3s ease-in-out infinite;
+}
+
+.animate-spin-slow {
+  animation: spin-slow 12s linear infinite;
+}
+
+.animate-flow-down {
+  animation: flow-down 1s linear infinite;
+}
+
+.animate-bounce-slow {
+  animation: bounce-slow 2s ease-in-out infinite;
 }
 
 /* Custom Scrollbar */
