@@ -12,6 +12,8 @@ class User(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     email = Column(String, unique=True, nullable=False, index=True)
     password_hash = Column(String, nullable=False)
+    sign_up_method = Column(SQLEnum("email", "google", name="sign_up_method"), 
+                            default="email", nullable=True)
     name = Column(String)
     plan = Column(
         SQLEnum("free", "starter", "team", "pro", name="user_plan"),

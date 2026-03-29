@@ -33,8 +33,8 @@ class AsyncEngineWithRetry:
             pool_timeout=60,  # Reduced timeout for faster failure detection
             pool_recycle=1800,  # Recycle connections every 30 minutes
             connect_args={
-                "statement_cache_size": 100,  
-                "prepared_statement_cache_size": 100,  
+                "statement_cache_size": 0,  
+                "prepared_statement_cache_size": 0,  
                 "ssl": ssl_ctx,
                 "command_timeout": 120,
                 "server_settings": {

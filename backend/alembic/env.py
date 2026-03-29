@@ -83,6 +83,16 @@ async def run_async_migrations() -> None:
     )
 
     async with connectable.connect() as connection:
+        # Prevent lock timeouts by clearing hanging 'idle in transaction' connections.
+        # This is a common requirement when using Supavisor with Alembic migrations,
+        # as orphaned GUI sessions or app pool connections will hold DDL locks indefinitely.
+        await connection.execute(text(
+            "SELECT pg_terminate_backend(pid) FROM pg_stat_activity "
+            "WHERE state IN ('idle in transaction', 'idle in transaction (aborted)') "
+            "AND pid <> pg_backend_pid()"
+        ))
+        await connection.commit()
+        
         await connection.run_sync(do_run_migrations)
 
     await connectable.dispose()
