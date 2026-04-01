@@ -5,7 +5,7 @@
       <div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
         <div class="flex items-center space-x-2">
           <div class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center transform rotate-12 group-hover:rotate-0 transition-transform">
-            <Zap :size="20" class="text-black fill-current" />
+            <Zap :size="20" class="text-black fill-current" aria-hidden="true" />
           </div>
           <span class="text-2xl font-black tracking-tighter">
             Spec<span class="text-primary">Flow</span>
@@ -20,8 +20,8 @@
         </div>
 
         <div class="flex items-center space-x-4">
-          <RouterLink to="/login" class="text-sm font-bold text-gray-400 hover:text-white transition-colors">Log in</RouterLink>
-          <RouterLink to="/signup" class="px-5 py-2.5 bg-primary hover:bg-primary-dark text-black rounded-full text-sm font-black transition-all hover:scale-105 active:scale-95 shadow-[0_0_20px_rgba(191,245,73,0.3)]">
+          <RouterLink to="/login" class="text-sm font-bold text-gray-400 hover:text-white transition-colors" aria-label="Login to your SpecFlow account">Log in</RouterLink>
+          <RouterLink to="/signup" class="px-5 py-2.5 bg-primary hover:bg-primary-dark text-black rounded-full text-sm font-black transition-all hover:scale-105 active:scale-95 shadow-[0_0_20px_rgba(191,245,73,0.3)]" aria-label="Get started with SpecFlow for free">
             Get Started
           </RouterLink>
         </div>
@@ -46,7 +46,7 @@
                 Flow Faster.
               </span>
               <!-- Hand-drawn Underline -->
-              <svg class="absolute -bottom-4 left-0 w-full h-4 text-primary opacity-80" viewBox="0 0 300 20" fill="none" preserveAspectRatio="none">
+              <svg class="absolute -bottom-4 left-0 w-full h-4 text-primary opacity-80" viewBox="0 0 300 20" fill="none" preserveAspectRatio="none" aria-hidden="true" role="img">
                 <path d="M5 15C50 5 150 5 295 15" stroke="currentColor" stroke-width="4" stroke-linecap="round" class="underline-path" />
               </svg>
             </span>
@@ -55,11 +55,11 @@
             Turn OpenAPI specs into interactive user journeys. Automate data chaining and gain total visibility into your API flows.
           </p>
           <div class="flex flex-col sm:flex-row items-center gap-4">
-            <RouterLink to="/signup" class="w-full sm:w-auto px-8 py-4 bg-primary text-black rounded-2xl text-lg font-black hover:bg-white transition-all shadow-xl hover:shadow-primary/20 flex items-center justify-center group">
+            <RouterLink to="/signup" class="w-full sm:w-auto px-8 py-4 bg-primary text-black rounded-2xl text-lg font-black hover:bg-white transition-all shadow-xl hover:shadow-primary/20 flex items-center justify-center group" aria-label="Start your free SpecFlow API testing journey">
               Start Free Journey
-              <ArrowRight class="ml-2 group-hover:translate-x-1 transition-transform" />
+              <ArrowRight class="ml-2 group-hover:translate-x-1 transition-transform" aria-hidden="true" />
             </RouterLink>
-            <a href="#demo" class="w-full sm:w-auto px-8 py-4 bg-white/5 border border-white/10 text-white rounded-2xl text-lg font-bold hover:bg-white/10 transition-all text-center">
+            <a href="#demo" class="w-full sm:w-auto px-8 py-4 bg-white/5 border border-white/10 text-white rounded-2xl text-lg font-bold hover:bg-white/10 transition-all text-center" aria-label="Watch the SpecFlow product demo video">
               Watch Demo
             </a>
           </div>
@@ -85,7 +85,7 @@
               </div>
               <div class="flex items-center space-x-4">
                 <div class="flex items-center space-x-1 text-[10px] text-primary/80 font-bold uppercase tracking-widest">
-                  <Zap :size="10" />
+                  <Zap :size="10" aria-hidden="true" />
                   <span>Real-time Sync</span>
                 </div>
               </div>
@@ -124,7 +124,7 @@
                   <div class="text-[8px] uppercase mb-1 font-bold" :class="node.type === 'active' ? 'text-primary' : 'text-gray-500'">Step {{ node.step }}</div>
                   <div class="text-[10px] font-black truncate" :class="node.type === 'active' ? 'text-white' : 'group-hover/node:text-primary transition-colors'">{{ node.label }}</div>
                   
-                  <Zap v-if="node.type === 'active'" :size="12" class="absolute -right-2 -top-2 text-primary animate-float" />
+                  <Zap v-if="node.type === 'active'" :size="12" class="absolute -right-2 -top-2 text-primary animate-float" aria-hidden="true" />
                   
                   <!-- Small visual decoration for the node -->
                   <div v-if="node.id === 'node1'" class="mt-2 flex space-x-1">
@@ -161,7 +161,7 @@
             <div class="mt-8 pt-6 border-t border-white/5 flex items-center justify-between">
               <div class="flex -space-x-2">
                 <div v-for="i in 3" :key="i" class="w-8 h-8 rounded-full border-2 border-gray-900 bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center shadow-inner group/avatar hover:border-primary/30 transition-all">
-                  <Zap :size="10" :class="['text-primary/60 fill-current', i === 2 ? 'opacity-100' : i === 1 ? 'opacity-70' : 'opacity-50']" />
+                  <Zap :size="10" :class="['text-primary/60 fill-current', i === 2 ? 'opacity-100' : i === 1 ? 'opacity-70' : 'opacity-50']" aria-hidden="true" />
                 </div>
               </div>
               <div class="flex flex-col items-end">
@@ -185,7 +185,7 @@
         <!-- Header -->
         <div class="text-center mb-24 space-y-4">
           <div class="inline-flex items-center space-x-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold uppercase tracking-widest mb-4">
-            <Sparkles :size="12" class="fill-current" />
+            <Sparkles :size="12" class="fill-current" aria-hidden="true" />
             <span>The SpecFlow Method</span>
           </div>
           <h2 class="text-5xl lg:text-7xl font-black tracking-tight leading-none uppercase">
@@ -207,7 +207,7 @@
             
             <div class="relative z-10 flex flex-col h-full">
               <div class="w-16 h-16 bg-primary rounded-2xl flex items-center justify-center mb-8 shadow-[0_0_30px_rgba(191,245,73,0.3)] group-hover:scale-110 group-hover:rotate-3 transition-all duration-500">
-                <Bot :size="32" class="text-black" />
+                <Bot :size="32" class="text-black" aria-hidden="true" />
               </div>
               
               <div class="space-y-3 mb-8">
@@ -248,7 +248,7 @@
           <div class="group relative bg-[#0A0A0A] border border-white/10 p-8 rounded-[40px] hover:border-primary/40 transition-all duration-700 shadow-3xl lg:translate-y-12">
             <div class="relative z-10 flex flex-col h-full">
               <div class="w-16 h-16 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center mb-8 mx-auto group-hover:border-primary/50 transition-colors">
-                <Workflow :size="32" class="text-primary group-hover:animate-spin-slow" />
+                <Workflow :size="32" class="text-primary group-hover:animate-spin-slow" aria-hidden="true" />
               </div>
               
               <div class="space-y-3 mb-8 text-center">
@@ -294,7 +294,7 @@
             
             <div class="relative z-10 flex flex-col h-full">
               <div class="w-16 h-16 bg-primary/10 border border-primary/20 rounded-2xl flex items-center justify-center mb-8">
-                <Link :size="32" class="text-primary animate-pulse" />
+                <Link :size="32" class="text-primary animate-pulse" aria-hidden="true" />
               </div>
               
               <div class="space-y-3 mb-8">
@@ -354,7 +354,7 @@
         <!-- Section Header -->
         <div class="text-center mb-16 space-y-4">
           <div class="inline-flex items-center space-x-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold uppercase tracking-widest mb-4">
-            <Play :size="12" class="fill-current" />
+            <Play :size="12" class="fill-current" aria-hidden="true" />
             <span>See It In Action</span>
           </div>
           <h2 class="text-5xl lg:text-7xl font-black tracking-tight leading-none">
@@ -382,12 +382,12 @@
                   <div class="w-3 h-3 rounded-full bg-green-500/80"></div>
                 </div>
                 <div class="px-4 py-1.5 bg-white/5 rounded-full text-xs font-mono text-gray-400 flex items-center space-x-2">
-                  <Lock :size="10" class="text-green-400" />
+                  <Lock :size="10" class="text-green-400" aria-hidden="true" />
                   <span>specflow</span>
                 </div>
               </div>
               <div class="flex items-center space-x-2 text-xs text-primary/80 font-bold uppercase tracking-widest">
-                <Circle :size="8" class="fill-current animate-pulse" />
+                <Circle :size="8" class="fill-current animate-pulse" aria-hidden="true" />
                 <span>Live Demo</span>
               </div>
             </div>
@@ -398,7 +398,7 @@
               <div v-if="videoLoading" class="absolute inset-0 flex flex-col items-center justify-center bg-black z-20">
                 <div class="relative">
                   <div class="w-20 h-20 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
-                  <Zap :size="32" class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-primary fill-current animate-pulse" />
+                  <Zap :size="32" class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-primary fill-current animate-pulse" aria-hidden="true" />
                 </div>
                 <p class="mt-6 text-sm font-bold text-gray-400 uppercase tracking-widest">Loading Demo...</p>
                 <div class="mt-4 w-48 h-1 bg-white/5 rounded-full overflow-hidden">
@@ -408,7 +408,7 @@
 
               <!-- Buffering Indicator -->
               <div v-if="videoBuffering && !videoLoading" class="absolute top-4 right-4 z-30 flex items-center space-x-2 px-3 py-2 bg-black/80 backdrop-blur-md rounded-full border border-white/10">
-                <Loader2 :size="14" class="text-primary animate-spin" />
+                <Loader2 :size="14" class="text-primary animate-spin" aria-hidden="true" />
                 <span class="text-xs font-bold text-gray-400">Buffering...</span>
               </div>
 
@@ -425,6 +425,8 @@
                 @timeupdate="handleTimeUpdate"
                 preload="metadata"
                 playsinline
+                poster="https://images.unsplash.com/photo-1639322537228-f710d846310a?auto=format&fit=crop&q=80&w=1200"
+                aria-label="SpecFlow API Testing Walkthrough Video"
               >
                 <source src="/Specflow recroding.mp4" type="video/mp4" />
                 Your browser does not support the video tag.
@@ -433,11 +435,24 @@
               <!-- Play Overlay (when paused) -->
               <div 
                 v-if="!videoPlaying && !videoLoading" 
-                class="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm cursor-pointer group/play z-10"
+                class="absolute inset-0 flex flex-col items-center justify-center bg-black/40 backdrop-blur-[2px] cursor-pointer group/play z-10"
                 @click="togglePlay"
               >
-                <div class="w-24 h-24 rounded-full bg-primary/90 flex items-center justify-center shadow-[0_0_60px_rgba(191,245,73,0.6)] group-hover/play:scale-110 group-hover/play:bg-primary transition-all">
-                  <Play :size="40" class="text-black fill-current ml-1" />
+                <!-- Stylized Play Button -->
+                <div class="relative mb-6">
+                  <div class="absolute -inset-8 bg-primary/20 blur-3xl rounded-full animate-pulse"></div>
+                  <div class="w-28 h-28 rounded-full bg-primary flex items-center justify-center shadow-[0_0_60px_rgba(191,245,73,0.5)] group-hover/play:scale-110 group-hover/play:shadow-primary/80 transition-all duration-500">
+                    <Play :size="48" class="text-black fill-current ml-1" aria-hidden="true" />
+                  </div>
+                </div>
+                
+                <!-- Overlay Typography -->
+                <div class="text-center space-y-2 transform translate-y-4 group-hover/play:translate-y-0 opacity-0 group-hover/play:opacity-100 transition-all duration-500">
+                   <div class="inline-flex items-center space-x-2 px-3 py-1 bg-white/10 border border-white/20 rounded-full text-[10px] font-black uppercase tracking-widest text-primary">
+                      <Zap :size="10" />
+                      <span>SpecFlow Journey</span>
+                   </div>
+                   <h4 class="text-2xl font-black text-white">Watch Interactive Demo</h4>
                 </div>
               </div>
 
@@ -464,16 +479,16 @@
                       @click="togglePlay"
                       class="w-10 h-10 rounded-full bg-white/10 hover:bg-primary hover:text-black flex items-center justify-center transition-all group/btn"
                     >
-                      <Play v-if="!videoPlaying" :size="18" class="fill-current ml-0.5" />
-                      <Pause v-else :size="18" class="fill-current" />
+                      <Play v-if="!videoPlaying" :size="18" class="fill-current ml-0.5" aria-hidden="true" />
+                      <Pause v-else :size="18" class="fill-current" aria-hidden="true" />
                     </button>
                     
                     <button 
                       @click="toggleMute"
                       class="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-all"
                     >
-                      <Volume2 v-if="!videoMuted" :size="18" />
-                      <VolumeX v-else :size="18" />
+                      <Volume2 v-if="!videoMuted" :size="18" aria-hidden="true" />
+                      <VolumeX v-else :size="18" aria-hidden="true" />
                     </button>
 
                     <div class="text-xs font-mono text-gray-400">
@@ -485,7 +500,7 @@
                     @click="toggleFullscreen"
                     class="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-all"
                   >
-                    <Maximize :size="18" />
+                    <Maximize :size="18" aria-hidden="true" />
                   </button>
                 </div>
               </div>
@@ -494,15 +509,15 @@
             <!-- Video Stats -->
             <div class="mt-6 flex items-center justify-center space-x-8 text-xs">
               <div class="flex items-center space-x-2 text-gray-500">
-                <Eye :size="14" />
+                <Eye :size="14" aria-hidden="true" />
                 <span class="font-bold">Real Product Demo</span>
               </div>
               <div class="flex items-center space-x-2 text-gray-500">
-                <Clock :size="14" />
+                <Clock :size="14" aria-hidden="true" />
                 <span class="font-bold">{{ formatTime(duration) }} Full Walkthrough</span>
               </div>
               <div class="flex items-center space-x-2 text-primary">
-                <Sparkles :size="14" />
+                <Sparkles :size="14" aria-hidden="true" />
                 <span class="font-bold">No Fluff, Pure Value</span>
               </div>
             </div>
@@ -530,7 +545,7 @@
         <XCircle :size="300" />
       </div>
       <div class="absolute bottom-0 right-0 p-20 text-primary/5 rotate-12 pointer-events-none">
-        <Zap :size="300" />
+        <Zap :size="300" aria-hidden="true" />
       </div>
 
       <div class="max-w-7xl mx-auto px-6 relative z-10">
@@ -548,7 +563,7 @@
                <div class="flex items-center justify-between mb-10">
                  <h3 class="text-2xl font-bold text-gray-400 group-hover:text-white transition-colors">Manual Chaos</h3>
                  <div class="p-3 bg-red-500/10 rounded-2xl">
-                   <AlertCircle :size="32" class="text-red-500" />
+                   <AlertCircle :size="32" class="text-red-500" aria-hidden="true" />
                  </div>
                </div>
                <ul class="space-y-6">
@@ -591,7 +606,7 @@
                <div class="flex items-center justify-between mb-10 relative z-10">
                  <h3 class="text-3xl font-black text-primary">SpecFlow Confidence</h3>
                  <div class="p-3 bg-primary/10 rounded-2xl group-hover:scale-110 transition-transform duration-500">
-                   <Zap :size="32" class="text-primary fill-current" />
+                   <Zap :size="32" class="text-primary fill-current" aria-hidden="true" />
                  </div>
                </div>
                <ul class="space-y-6 relative z-10">
@@ -636,8 +651,8 @@
               <h2 class="text-5xl font-black tracking-tighter">Everything you need to <br/> scale API confidence.</h2>
               <p class="text-gray-400 max-w-lg">We've built all the core features to transform your OpenAPI specs into professional-grade test suites.</p>
            </div>
-           <RouterLink to="/signup" class="px-8 py-4 bg-white/5 border border-white/10 rounded-2xl hover:bg-white/10 transition-all font-bold group">
-             Explore all features <ArrowRight :size="18" class="inline ml-2 group-hover:translate-x-1 transition-transform" />
+           <RouterLink to="/signup" class="px-8 py-4 bg-white/5 border border-white/10 rounded-2xl hover:bg-white/10 transition-all font-bold group" aria-label="Explore all advanced features of SpecFlow">
+             See how it works <ArrowRight :size="18" class="inline ml-2 group-hover:translate-x-1 transition-transform" aria-hidden="true" />
            </RouterLink>
         </div>
 
@@ -645,7 +660,7 @@
           <!-- Feature 1 -->
           <div class="card-feature group">
             <div class="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mb-6 group-hover:bg-primary group-hover:text-black transition-all">
-               <Bot :size="24" />
+               <Bot :size="24" aria-hidden="true" />
             </div>
             <h4 class="text-xl font-bold mb-3 tracking-tight">AI Journey Inference</h4>
             <p class="text-gray-400 text-sm leading-relaxed">
@@ -851,7 +866,7 @@
             <div class="relative">
               <div class="absolute inset-0 bg-primary blur-3xl opacity-20 scale-150 animate-pulse"></div>
               <div class="relative w-24 h-24 rounded-[32px] bg-primary/20 flex items-center justify-center text-primary group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 shadow-[0_0_40px_rgba(191,245,73,0.2)] border border-primary/30">
-                <Mail :size="48" class="animate-float" />
+                <Mail :size="48" class="animate-float" aria-hidden="true" />
               </div>
             </div>
 
@@ -866,10 +881,11 @@
             <a 
               href="mailto:benjamin_kodi@outlook.com" 
               class="group/btn relative inline-flex items-center justify-center px-10 py-6 bg-primary text-black font-black rounded-3xl hover:bg-white transition-all duration-300 shadow-[0_20px_50px_rgba(191,245,73,0.4)] hover:shadow-primary/60 hover:-translate-y-1 active:scale-95"
+              aria-label="Send an email to SpecFlow founder benjamin_kodi@outlook.com"
             >
               <div class="absolute inset-0 bg-white opacity-0 group-hover/btn:opacity-20 transition-opacity rounded-3xl"></div>
-              <span class="text-xl">benjamin_kodi@outlook.com</span>
-              <ArrowRight class="ml-4 w-6 h-6 group-hover/btn:translate-x-2 transition-transform duration-300" />
+              <span class="text-xl">Email the Founder</span>
+              <ArrowRight class="ml-4 w-6 h-6 group-hover/btn:translate-x-2 transition-transform duration-300" aria-hidden="true" />
             </a>
 
             <!-- Subtle Micro-interaction -->
@@ -891,7 +907,7 @@
        <div class="max-w-7xl mx-auto px-6">
           <div class="flex flex-col md:flex-row items-center justify-between gap-10">
              <div class="flex items-center space-x-2">
-                <Zap :size="24" class="text-primary fill-current" />
+                <Zap :size="24" class="text-primary fill-current" aria-hidden="true" />
                 <span class="text-2xl font-black tracking-tighter">SpecFlow</span>
              </div>
              
@@ -903,16 +919,16 @@
              </div>
 
              <div class="flex items-center space-x-4">
-                <a href="https://x.com/code_benji" class="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center hover:bg-primary hover:text-black transition-all group" target="_blank">
+                <a href="https://x.com/code_benji" class="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center hover:bg-primary hover:text-black transition-all group" target="_blank" aria-label="Follow SpecFlow on X (formerly Twitter)">
                    <svg viewBox="0 0 24 24" class="w-[18px] h-[18px] group-hover:fill-current fill-white transition-colors" aria-hidden="true">
                       <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"></path>
                    </svg>
                 </a>
-                <a href="https://github.com/Benji918" class="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center hover:bg-primary hover:text-black transition-all group" target="_blank">
-                   <Github :size="18" class="group-hover:fill-current" />
+                <a href="https://github.com/Benji918" class="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center hover:bg-primary hover:text-black transition-all group" target="_blank" aria-label="View SpecFlow source code on GitHub">
+                   <Github :size="18" class="group-hover:fill-current" aria-hidden="true" />
                 </a>
-                <a href="https://www.linkedin.com/in/ugobenjamin/" class="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center hover:bg-primary hover:text-black transition-all group" target="_blank">
-                   <Linkedin :size="18" class="group-hover:fill-current" />
+                <a href="https://www.linkedin.com/in/ugobenjamin/" class="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center hover:bg-primary hover:text-black transition-all group" target="_blank" aria-label="Connect with SpecFlow on LinkedIn">
+                   <Linkedin :size="18" class="group-hover:fill-current" aria-hidden="true" />
                 </a>
              </div>
           </div>
