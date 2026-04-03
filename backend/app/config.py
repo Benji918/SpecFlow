@@ -38,6 +38,10 @@ class Settings(BaseSettings):
     NGROK_ENABLED: bool = os.getenv("NGROK_ENABLED", "False").lower() == "true"
     NGROK_AUTH_TOKEN: str = os.getenv("NGROK_AUTH_TOKEN", "")
     NGROK_REGION: str = os.getenv("NGROK_REGION", "us")
+    
+    # Google
+    GOOGLE_CLIENT_ID: str = os.getenv("GOOGLE_CLIENT_ID", "")
+    GOOGLE_CLIENT_SECRET: str = os.getenv("GOOGLE_CLIENT_SECRET", "")
 
     @property
     def cors_origins_list(self) -> List[str]:

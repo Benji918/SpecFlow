@@ -28,9 +28,6 @@ def get_cookie_settings():
         "samesite": "lax" if settings.DEBUG else "none",
     }
     
-    print(settings.DEBUG)
-    print(settings.REDIS_URL)
-    print(settings.CORS_ORIGINS)
     
     return cookie_config
 

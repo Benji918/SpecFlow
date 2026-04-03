@@ -1,15 +1,17 @@
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
+from starlette.middleware.sessions import SessionMiddleware
 import time
 import logging
+from functools import lru_cache
+from app.config import settings
 
 # Disable uvicorn access logger
 logging.getLogger("uvicorn.access").disabled = True
 logger = logging.getLogger("uvicorn")
 
-from app.config import settings
-from app.routers import auth, specs, journeys, execution, admin, ngrok
+from app.routers import auth, specs, journeys, execution, admin, ngrok, google_auth
 
 # Create FastAPI app
 app = FastAPI(
@@ -18,6 +20,11 @@ app = FastAPI(
     version="0.1.0",
     debug=settings.DEBUG,
 )
+
+@lru_cache
+def get_settings():
+    return settings
+
 
 @app.middleware("http")
 async def add_process_time_header(request: Request, call_next):
@@ -39,7 +46,8 @@ async def add_process_time_header(request: Request, call_next):
     response.headers["X-Response-Time"] = f"{process_time:.4f}s"
     return response
 
-# Configure CORS
+# Configure Middlewares
+app.add_middleware(SessionMiddleware, secret_key=settings.JWT_SECRET_KEY)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins_list,
@@ -57,6 +65,7 @@ app.include_router(journeys.router)
 app.include_router(execution.router)
 app.include_router(admin.router)
 app.include_router(ngrok.router)
+app.include_router(google_auth.router)
 
 @app.on_event("startup")
 def startup_event():

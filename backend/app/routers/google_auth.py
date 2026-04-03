@@ -1,0 +1,116 @@
+from datetime import timedelta
+from typing import Annotated
+from fastapi import Depends, Request, APIRouter, BackgroundTasks
+from fastapi.responses import RedirectResponse
+from authlib.integrations.starlette_client import OAuth
+import os
+from app.services.auth import create_access_token
+from app.config import settings, Settings
+from functools import lru_cache
+import logging
+from app.database import get_db
+from app.models.user import User
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+
+logger = logging.getLogger(__name__)
+
+router = APIRouter(prefix="/api/google-auth", tags=["google-auth"])
+
+@lru_cache
+def get_settings():
+    return settings
+
+oauth = OAuth()
+oauth.register(
+    name="google",
+    client_id=settings.GOOGLE_CLIENT_ID,
+    client_secret=settings.GOOGLE_CLIENT_SECRET,
+    access_token_url="https://oauth2.googleapis.com/token",
+    authorize_url="https://accounts.google.com/o/oauth2/v2/auth",
+    userinfo_endpoint="https://www.googleapis.com/oauth2/v2/userinfo",
+    api_base_url= "https://www.googleapis.com/oauth2/v3/",
+    client_kwargs={"scope": "openid email profile"},
+    server_metadata_url= 'https://accounts.google.com/.well-known/openid-configuration'
+)
+
+# Redirect user to Google for authentication
+@router.get("/google")
+async def auth_google(request: Request):
+    base_url = f"{request.url.scheme}://{request.url.netloc}"
+    redirect_url = f"{base_url}/api/google-auth/callback"
+    return await oauth.google.authorize_redirect(request, redirect_uri=redirect_url)
+
+
+# Handle the OAuth callback from Google
+@router.get("/callback")
+async def google_callback(
+    request: Request, 
+    background_tasks: BackgroundTasks,
+    db: AsyncSession = Depends(get_db)
+):
+    try:
+        user_created = False
+        token = await oauth.google.authorize_access_token(request)
+        user_info = token.get("userinfo") or {}
+
+        # Extract user details
+        email = user_info.get("email") 
+        name = user_info.get("name")
+
+        if not email:
+            return {"error": "Email not provided by Google"}
+
+        # Quick check for existing user to get ID if possible
+        result = await db.execute(select(User).where(User.email == email))
+        user = result.scalar_one_or_none()
+        
+        # Use ID if user exists, otherwise fallback to email (the background task will create them)
+        sub = str(user.id) if user else email
+        if not user:
+            user_created = True
+
+        # Sync user to DB in background
+        background_tasks.add_task(create_user_from_google, email, name)
+
+        access_token = create_access_token(
+            data={"sub": sub}, 
+            expires_delta=timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES),
+            auth_method="google"
+        )
+
+        return {"access_token": access_token, "google_token": token, "user_created": user_created}
+    except Exception as e:
+        import traceback
+        print("Error:", traceback.format_exc())  
+        return {"error": str(e)}
+
+async def create_user_from_google(email: str, name: str):
+    """Background task to sync Google user to local database."""
+    from app.database import AsyncSessionLocal
+    from app.models.user import User
+    from app.services.auth import get_password_hash
+    from sqlalchemy import select
+    import uuid
+    
+    async with AsyncSessionLocal() as db:
+        try:
+            # Check if user already exists
+            result = await db.execute(select(User).where(User.email == email))
+            user = result.scalar_one_or_none()
+            
+            if not user:
+                # Create new user for first-time Google sign-in
+                user = User(
+                    email=email,
+                    name=name,
+                    sign_up_method="google",
+                    # Google users don't have a password, so hash a random UUID
+                    password_hash=get_password_hash(str(uuid.uuid4()))
+                )
+                db.add(user)
+                await db.commit()
+                await db.refresh(user)
+        except Exception as e:
+            logger.error(f"Error creating user from Google in background: {e}")
+            await db.rollback()

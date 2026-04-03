@@ -7,7 +7,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from typing import Optional, Union
-
+import uuid
 from app.config import settings
 from app.database import get_db
 from app.models.user import User
@@ -30,7 +30,8 @@ def get_password_hash(password: str) -> str:
 
 
 def create_access_token(
-    data: dict, expires_delta: Optional[timedelta] = None
+    data: dict, expires_delta: Optional[timedelta] = None,
+    auth_method: str = "email"
 ) -> str:
     """Create a JWT access token."""
     to_encode = data.copy()
@@ -42,7 +43,7 @@ def create_access_token(
             minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES
         )
     
-    to_encode.update({"exp": expire})
+    to_encode.update({"exp": expire, "auth_method": auth_method})
     encoded_jwt = jwt.encode(
         to_encode, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM
     )
@@ -97,7 +98,21 @@ async def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
     
-    result = await db.execute(select(User).where(User.id == user_id))
+    # Support both UUID (normal users) and email (newly authenticated OAuth users)
+    is_uuid = False
+    try:
+        if isinstance(user_id, str):
+            uuid.UUID(user_id)
+            is_uuid = True
+    except (ValueError, TypeError, AttributeError):
+        is_uuid = False
+
+    if is_uuid:
+        result = await db.execute(select(User).where(User.id == user_id))
+    else:
+        # Try finding by email (for newly created OAuth users whose ID we don't put in token yet)
+        result = await db.execute(select(User).where(User.email == user_id))
+    
     user = result.scalar_one_or_none()
     
     if user is None:
