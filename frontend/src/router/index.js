@@ -65,6 +65,7 @@ const router = createRouter({
 // Navigation guard - optimized to skip API calls for public routes
 router.beforeEach(async (to, from, next) => {
     const authStore = useAuthStore()
+    
 
     // Public routes that don't need authentication check
     const publicRoutes = ['/login', '/signup', '/']
