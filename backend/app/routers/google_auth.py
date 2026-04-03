@@ -121,7 +121,15 @@ async def google_callback(
     except Exception as e:
         import traceback
         logger.error(f"Google login failed: {traceback.format_exc()}")
-        return RedirectResponse(url=f"/login?error={str(e)}")
+        
+        # Determine frontend base URL for error redirect
+        frontend_base = "http://localhost:5173"
+        if not settings.DEBUG:
+            frontend_base = "https://specflow.pro" 
+            if settings.cors_origins_list:
+                 frontend_base = settings.cors_origins_list[0]
+                 
+        return RedirectResponse(url=f"{frontend_base}/login?error={str(e)}")
 
 async def create_user_from_google(email: str, name: str):
     """Background task to sync Google user to local database."""
