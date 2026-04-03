@@ -47,5 +47,11 @@ class Settings(BaseSettings):
     def cors_origins_list(self) -> List[str]:
         return [origin.strip() for origin in self.CORS_ORIGINS.split(",")]
 
+    @property
+    def frontend_url(self) -> str:
+        if self.DEBUG:
+            return "http://localhost:5173"
+        return "https://specflow.pro"
+
 
 settings = Settings()

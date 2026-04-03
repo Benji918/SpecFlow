@@ -92,15 +92,7 @@ async def google_callback(
             auth_method="google"
         )
 
-        # Redirect back to frontend dashboard
-        # Handle production vs local URLs
-        frontend_base = "http://localhost:5173"
-        if not settings.DEBUG:
-            # Assuming production URL from CORS or specific setting
-            frontend_base = "https://specflow.pro" # fallback
-            # Try to get from CORS_ORIGINS
-            if settings.cors_origins_list:
-                 frontend_base = settings.cors_origins_list[0]
+        frontend_base = settings.frontend_url
 
         redirect_url = f"{frontend_base}/dashboard?auth_success=true&is_new={str(user_created).lower()}"
         response = RedirectResponse(url=redirect_url)
@@ -121,13 +113,8 @@ async def google_callback(
     except Exception as e:
         import traceback
         logger.error(f"Google login failed: {traceback.format_exc()}")
-        
-        # Determine frontend base URL for error redirect
-        frontend_base = "http://localhost:5173"
-        if not settings.DEBUG:
-            frontend_base = "https://specflow.pro" 
-            if settings.cors_origins_list:
-                 frontend_base = settings.cors_origins_list[0]
+ 
+        frontend_base = settings.frontend_url
                  
         return RedirectResponse(url=f"{frontend_base}/login?error={str(e)}")
 
