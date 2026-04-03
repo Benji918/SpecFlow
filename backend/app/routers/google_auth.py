@@ -42,7 +42,13 @@ async def auth_google(request: Request):
     If user already has a valid token cookie, we could redirect to dashboard,
     but standard practice is to proceed with OAuth as an explicit action.
     """
-    base_url = f"{request.url.scheme}://{request.url.netloc}"
+    # Use X-Forwarded-Proto if behind a proxy, otherwise fallback to request scheme
+    scheme = request.headers.get("X-Forwarded-Proto", request.url.scheme)
+    # Ensure scheme is https if not local
+    if "backend.specflow.pro" in request.url.netloc:
+        scheme = "https"
+        
+    base_url = f"{scheme}://{request.url.netloc}"
     redirect_url = f"{base_url}/api/google-auth/callback"
     return await oauth.google.authorize_redirect(request, redirect_uri=redirect_url)
 
