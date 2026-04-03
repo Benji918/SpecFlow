@@ -301,6 +301,10 @@ async function handleSignup() {
 }
 
 function handleGoogleLogin() {
-  toast.info('Google login feature is coming soon!')
+  if (authStore.isAuthenticated) {
+    router.push('/dashboard')
+    return
+  }
+  authStore.loginWithGoogle()
 }
 </script>

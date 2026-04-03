@@ -52,6 +52,14 @@ export const useAuthStore = defineStore('auth', () => {
         }
     }
 
+    async function loginWithGoogle() {
+        // Redirect to the backend endpoint that initiates Google OAuth
+        // This will eventually redirect back to /dashboard
+        const backendUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+        console.log(backendUrl)
+        window.location.href = `${backendUrl}/api/google-auth/google`
+    }
+
     async function fetchCurrentUser() {
         try {
             // Use /me endpoint - cookie will be sent automatically
@@ -93,6 +101,7 @@ export const useAuthStore = defineStore('auth', () => {
         isAuthenticated,
         register,
         login,
+        loginWithGoogle,
         logout,
         fetchCurrentUser,
         refreshToken,

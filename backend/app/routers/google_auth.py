@@ -1,6 +1,6 @@
 from datetime import timedelta
 from typing import Annotated
-from fastapi import Depends, Request, APIRouter, BackgroundTasks
+from fastapi import Depends, Request, APIRouter, BackgroundTasks, Response
 from fastapi.responses import RedirectResponse
 from authlib.integrations.starlette_client import OAuth
 import os
@@ -37,6 +37,11 @@ oauth.register(
 # Redirect user to Google for authentication
 @router.get("/google")
 async def auth_google(request: Request):
+    """
+    Initiates Google OAuth flow. 
+    If user already has a valid token cookie, we could redirect to dashboard,
+    but standard practice is to proceed with OAuth as an explicit action.
+    """
     base_url = f"{request.url.scheme}://{request.url.netloc}"
     redirect_url = f"{base_url}/api/google-auth/callback"
     return await oauth.google.authorize_redirect(request, redirect_uri=redirect_url)
@@ -61,11 +66,11 @@ async def google_callback(
         if not email:
             return {"error": "Email not provided by Google"}
 
-        # Quick check for existing user to get ID if possible
+        # Quick check for existing user
         result = await db.execute(select(User).where(User.email == email))
         user = result.scalar_one_or_none()
         
-        # Use ID if user exists, otherwise fallback to email (the background task will create them)
+        # Determine the stable identifier
         sub = str(user.id) if user else email
         if not user:
             user_created = True
@@ -73,17 +78,44 @@ async def google_callback(
         # Sync user to DB in background
         background_tasks.add_task(create_user_from_google, email, name)
 
+        # Create access token valid for 1 week
+        token_expires = timedelta(days=7)
         access_token = create_access_token(
             data={"sub": sub}, 
-            expires_delta=timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES),
+            expires_delta=token_expires,
             auth_method="google"
         )
 
-        return {"access_token": access_token, "google_token": token, "user_created": user_created}
+        # Redirect back to frontend dashboard
+        # Handle production vs local URLs
+        frontend_base = "http://localhost:5173"
+        if not settings.DEBUG:
+            # Assuming production URL from CORS or specific setting
+            frontend_base = "https://specflow.pro" # fallback
+            # Try to get from CORS_ORIGINS
+            if settings.cors_origins_list:
+                 frontend_base = settings.cors_origins_list[0]
+
+        redirect_url = f"{frontend_base}/dashboard?auth_success=true&is_new={str(user_created).lower()}"
+        response = RedirectResponse(url=redirect_url)
+
+        # Set HttpOnly cookie for 1 week
+        cookie_max_age = int(token_expires.total_seconds())
+        response.set_cookie(
+            key="access_token",
+            value=access_token,
+            httponly=True,
+            max_age=cookie_max_age,
+            expires=cookie_max_age,
+            secure=True if not settings.DEBUG else False,
+            samesite="lax" if settings.DEBUG else "none",
+        )
+
+        return response
     except Exception as e:
         import traceback
-        print("Error:", traceback.format_exc())  
-        return {"error": str(e)}
+        logger.error(f"Google login failed: {traceback.format_exc()}")
+        return RedirectResponse(url=f"/login?error={str(e)}")
 
 async def create_user_from_google(email: str, name: str):
     """Background task to sync Google user to local database."""
