@@ -35,9 +35,29 @@
       
       <div class="max-w-7xl mx-auto px-6 grid lg:grid-cols-2 gap-16 items-center">
         <div class="space-y-8 relative z-10">
-          <div class="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-primary text-xs font-bold uppercase tracking-widest">
-            <span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
-            <span>Next-Gen API Testing</span>
+          <div class="group relative inline-flex items-center cursor-default py-2">
+            <!-- Ghost Thread Background -->
+            <div class="absolute -inset-x-8 inset-y-0 bg-gradient-to-r from-transparent via-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-1000 scale-x-0 group-hover:scale-x-100 transform origin-center"></div>
+            
+            <div class="flex items-center space-x-5 relative z-10">
+              <!-- Focal Point -->
+              <div class="relative w-1.5 h-1.5">
+                <div class="absolute -inset-2 bg-primary/20 rounded-full animate-ping opacity-0 group-hover:opacity-100"></div>
+                <div class="w-1.5 h-1.5 rounded-full bg-primary shadow-[0_0_12px_rgba(191,245,73,1)]"></div>
+              </div>
+              
+              <!-- Ultra-Minimal Typography with Pulsing Thread -->
+              <div class="flex items-center text-[9px] uppercase font-black tracking-[0.4em] text-white/30">
+                <span class="group-hover:text-white transition-colors duration-500">Next-Gen</span>
+                <div class="w-12 h-[1.5px] mx-4 bg-white/5 relative overflow-hidden rounded-full">
+                  <!-- Constant Pulse -->
+                  <div class="absolute inset-0 bg-primary/20 animate-pulse"></div>
+                  <!-- Back and Forth Glow -->
+                  <div class="absolute top-0 bottom-0 w-8 bg-gradient-to-r from-transparent via-primary to-transparent badge-thread-glow"></div>
+                </div>
+                <span class="text-primary/60 group-hover:text-primary transition-colors duration-500">API testing</span>
+              </div>
+            </div>
           </div>
           <h1 class="text-6xl lg:text-8xl font-black leading-[0.9] tracking-tighter">
             Test Smarter. <br/>
@@ -184,9 +204,12 @@
       <div class="max-w-7xl mx-auto px-6 relative z-10">
         <!-- Header -->
         <div class="text-center mb-24 space-y-4">
-          <div class="inline-flex items-center space-x-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold uppercase tracking-widest mb-4">
-            <Sparkles :size="12" class="fill-current" aria-hidden="true" />
-            <span>The SpecFlow Method</span>
+          <div class="inline-flex items-center space-x-4 group cursor-default">
+            <div class="w-8 h-[1px] bg-primary/30 group-hover:w-12 transition-all duration-700"></div>
+            <span class="text-[10px] font-black uppercase tracking-[0.4em] text-primary group-hover:text-white transition-colors">The SpecFlow Method</span>
+            <div class="w-2 h-2 rounded-full border border-primary/50 flex items-center justify-center">
+              <div class="w-0.5 h-0.5 bg-primary rounded-full animate-pulse"></div>
+            </div>
           </div>
           <h2 class="text-5xl lg:text-7xl font-black tracking-tight leading-none uppercase">
             From Spec to <br/>
@@ -353,9 +376,12 @@
       <div class="max-w-7xl mx-auto px-6 relative z-10">
         <!-- Section Header -->
         <div class="text-center mb-16 space-y-4">
-          <div class="inline-flex items-center space-x-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold uppercase tracking-widest mb-4">
-            <Play :size="12" class="fill-current" aria-hidden="true" />
-            <span>See It In Action</span>
+          <div class="inline-flex items-center space-x-4 group cursor-default">
+            <div class="flex space-x-1">
+              <div v-for="i in 3" :key="i" class="w-1 h-3 bg-primary/20 rounded-full group-hover:bg-primary transition-all duration-500" :style="{animationDelay: i*0.1 + 's'}"></div>
+            </div>
+            <span class="text-[10px] font-black uppercase tracking-[0.4em] text-primary group-hover:text-white transition-colors">See It In Action</span>
+            <div class="w-8 h-[1px] bg-primary/30 group-hover:w-12 transition-all duration-700"></div>
           </div>
           <h2 class="text-5xl lg:text-7xl font-black tracking-tight leading-none">
             Watch SpecFlow <br/>
@@ -1192,6 +1218,24 @@ function formatTime(seconds) {
 @keyframes drawUnderline {
   from { stroke-dashoffset: 350; }
   to { stroke-dashoffset: 0; }
+}
+
+@keyframes gh-shimmer {
+  0% { transform: translateX(-100%); opacity: 0; }
+  50% { opacity: 0.5; }
+  100% { transform: translateX(100%); opacity: 0; }
+}
+
+@keyframes ping-pong {
+  0% { transform: translateX(-100%); opacity: 0; }
+  10% { opacity: 1; }
+  50% { transform: translateX(150%); opacity: 1; }
+  90% { opacity: 1; }
+  100% { transform: translateX(-100%); opacity: 0; }
+}
+
+.badge-thread-glow {
+  animation: ping-pong 2s linear infinite;
 }
 
 .underline-path {
