@@ -12,15 +12,15 @@
           </span>
         </div>
         
-        <div class="hidden md:flex items-center space-x-10 text-sm font-medium text-gray-400">
-          <a href="#home" class="hover:text-primary transition-colors">Home</a>
-          <a href="#features" class="hover:text-primary transition-colors">Features</a>
-          <!-- <a href="#pricing" class="hover:text-primary transition-colors">Pricing</a> -->
-          <a href="#contact" class="hover:text-primary transition-colors">Contact</a>
+        <div class="hidden md:flex items-center space-x-12 text-[10px] uppercase font-black tracking-[0.3em] text-white">
+          <a href="#home" class="hover:text-primary hover:tracking-[0.35em] transition-all duration-300">Home</a>
+          <a href="#features" class="hover:text-primary hover:tracking-[0.35em] transition-all duration-300">Features</a>
+          <!-- <a href="#pricing" class="hover:text-primary hover:tracking-[0.35em] transition-all duration-300">Pricing</a> -->
+          <a href="#contact" class="hover:text-primary hover:tracking-[0.35em] transition-all duration-300">Contact</a>
         </div>
 
         <div class="flex items-center space-x-4">
-          <RouterLink to="/login" class="text-sm font-bold text-gray-400 hover:text-white transition-colors" aria-label="Login to your SpecFlow account">Log in</RouterLink>
+          <RouterLink to="/login" class="text-sm font-bold text-white transition-colors" aria-label="Login to your SpecFlow account">Log in</RouterLink>
           <RouterLink to="/signup" class="px-5 py-2.5 bg-primary hover:bg-primary-dark text-black rounded-full text-sm font-black transition-all hover:scale-105 active:scale-95 shadow-[0_0_20px_rgba(191,245,73,0.3)]" aria-label="Get started with SpecFlow for free">
             Get Started
           </RouterLink>
@@ -37,25 +37,25 @@
         <div class="space-y-8 relative z-10">
           <div class="group relative inline-flex items-center cursor-default py-2">
             <!-- Ghost Thread Background -->
-            <div class="absolute -inset-x-8 inset-y-0 bg-gradient-to-r from-transparent via-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-1000 scale-x-0 group-hover:scale-x-100 transform origin-center"></div>
+            <div class="absolute -inset-x-8 inset-y-0 bg-gradient-to-r from-transparent via-primary/5 to-transparent opacity-100 scale-x-100 transform origin-center"></div>
             
             <div class="flex items-center space-x-5 relative z-10">
               <!-- Focal Point -->
               <div class="relative w-1.5 h-1.5">
-                <div class="absolute -inset-2 bg-primary/20 rounded-full animate-ping opacity-0 group-hover:opacity-100"></div>
+                <div class="absolute -inset-2 bg-primary/20 rounded-full animate-ping opacity-100"></div>
                 <div class="w-1.5 h-1.5 rounded-full bg-primary shadow-[0_0_12px_rgba(191,245,73,1)]"></div>
               </div>
               
               <!-- Ultra-Minimal Typography with Pulsing Thread -->
-              <div class="flex items-center text-[9px] uppercase font-black tracking-[0.4em] text-white/30">
-                <span class="group-hover:text-white transition-colors duration-500">Next-Gen</span>
+              <div class="flex items-center text-[9px] uppercase font-black tracking-[0.4em] text-white">
+                <span class="transition-colors duration-500">Next-Gen</span>
                 <div class="w-12 h-[1.5px] mx-4 bg-white/5 relative overflow-hidden rounded-full">
                   <!-- Constant Pulse -->
                   <div class="absolute inset-0 bg-primary/20 animate-pulse"></div>
                   <!-- Back and Forth Glow -->
                   <div class="absolute top-0 bottom-0 w-8 bg-gradient-to-r from-transparent via-primary to-transparent badge-thread-glow"></div>
                 </div>
-                <span class="text-primary/60 group-hover:text-primary transition-colors duration-500">API testing</span>
+                <span class="text-primary transition-colors duration-500">API testing</span>
               </div>
             </div>
           </div>
@@ -837,7 +837,7 @@
         <div class="space-y-8">
           <h2 class="text-5xl font-black tracking-tighter">Ready to sync? <br/> <span class="text-primary">Get in touch.</span></h2>
           <p class="text-gray-400 text-lg leading-relaxed">
-            Have questions about integrating SpecFlow into your CI/CD pipeline or custom enterprise needs? We're here to help.
+            Have a specific vision or simply want to dive deeper? Reach out and let's discuss how SpecFlow can elevate your API testing experience.
           </p>
           <!-- <div class="space-y-4"> -->
              <div class="flex items-center space-x-4">
@@ -894,13 +894,6 @@
               <div class="relative w-24 h-24 rounded-[32px] bg-primary/20 flex items-center justify-center text-primary group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 shadow-[0_0_40px_rgba(191,245,73,0.2)] border border-primary/30">
                 <Mail :size="48" class="animate-float" aria-hidden="true" />
               </div>
-            </div>
-
-            <div class="space-y-4">
-              <h3 class="text-4xl font-black text-white tracking-tight">Direct Access</h3>
-              <p class="text-gray-400 max-w-sm mx-auto text-lg leading-relaxed">
-                Skip the bureaucracy. Get a direct line to the founder for priority support, partnership inquiries, or custom enterprise solutions.
-              </p>
             </div>
 
             <!-- Mailto Link Button -->
