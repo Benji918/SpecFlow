@@ -201,21 +201,10 @@ async function handleUseSample() {
   validationError.value = null
   
   try {
-    // Direct link to the Google Drive file provided by the user
-    // Using a CORS proxy to ensure it can be fetched from the client side
-    const driveId = '15Vqn_rxcJBwq-iukmXgQv3V2fmdmET8i'
-    const directUrl = `https://drive.google.com/uc?export=download&id=${driveId}`
-    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(directUrl)}`
-    
-    const response = await fetch(proxyUrl)
+    // Fetch from local public assets
+    const response = await fetch('/mini-assessment-api.yaml')
     if (!response.ok) throw new Error('Failed to fetch sample data')
     
-    // Check if the response is actually a file or an error page (GDrive often returns HTML on error)
-    const contentType = response.headers.get('content-type')
-    if (contentType && contentType.includes('text/html')) {
-       throw new Error('Could not access Google Drive file. It might be private or require a virus scan confirmation.')
-    }
-
     const blob = await response.blob()
     
     // Create a File object from the blob
@@ -229,7 +218,7 @@ async function handleUseSample() {
   } catch (error) {
     console.error('Error fetching sample data:', error)
     toast.error('Could not load sample data. Please try uploading your own spec.')
-    validationError.value = 'Failed to load sample data. The link might be restricted or temporary blocked by Google.'
+    validationError.value = 'Failed to load sample data from local assets.'
   } finally {
     loadingSample.value = false
   }

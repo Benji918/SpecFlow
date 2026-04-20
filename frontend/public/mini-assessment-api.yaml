@@ -1,0 +1,2033 @@
+openapi: 3.0.3
+info:
+  title: Mini Assessment Engine API
+  version: 1.0.0
+  description: API for managing academic assessments with automated grading
+paths:
+  /api/v1/courses/courses/:
+    get:
+      operationId: courses_courses_list
+      description: ViewSet for Course CRUD operations.
+      parameters:
+      - in: query
+        name: is_active
+        schema:
+          type: boolean
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - courses
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedCourseList'
+          description: ''
+    post:
+      operationId: courses_courses_create
+      description: ViewSet for Course CRUD operations.
+      tags:
+      - courses
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CourseRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CourseRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CourseRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Course'
+          description: ''
+  /api/v1/courses/courses/{id}/:
+    get:
+      operationId: courses_courses_retrieve
+      description: ViewSet for Course CRUD operations.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this course.
+        required: true
+      tags:
+      - courses
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Course'
+          description: ''
+    put:
+      operationId: courses_courses_update
+      description: ViewSet for Course CRUD operations.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this course.
+        required: true
+      tags:
+      - courses
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CourseRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CourseRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CourseRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Course'
+          description: ''
+    patch:
+      operationId: courses_courses_partial_update
+      description: ViewSet for Course CRUD operations.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this course.
+        required: true
+      tags:
+      - courses
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedCourseRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedCourseRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedCourseRequest'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Course'
+          description: ''
+    delete:
+      operationId: courses_courses_destroy
+      description: ViewSet for Course CRUD operations.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this course.
+        required: true
+      tags:
+      - courses
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/courses/courses/{id}/enroll/:
+    post:
+      operationId: courses_courses_enroll_create
+      description: Endpoint for students to enroll in a course.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this course.
+        required: true
+      tags:
+      - courses
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CourseRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CourseRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CourseRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Course'
+          description: ''
+  /api/v1/courses/enrollments/:
+    get:
+      operationId: courses_enrollments_list
+      description: ViewSet for viewing enrollments.
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - courses
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedEnrollmentList'
+          description: ''
+  /api/v1/courses/enrollments/{id}/:
+    get:
+      operationId: courses_enrollments_retrieve
+      description: ViewSet for viewing enrollments.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - courses
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Enrollment'
+          description: ''
+  /api/v1/exams/exams/:
+    get:
+      operationId: exams_exams_list
+      description: ViewSet for Exam CRUD operations.
+      parameters:
+      - in: query
+        name: course
+        schema:
+          type: integer
+      - in: query
+        name: is_published
+        schema:
+          type: boolean
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - exams
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedExamListList'
+          description: ''
+    post:
+      operationId: exams_exams_create
+      description: ViewSet for Exam CRUD operations.
+      tags:
+      - exams
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExamRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ExamRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ExamRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Exam'
+          description: ''
+  /api/v1/exams/exams/{id}/:
+    get:
+      operationId: exams_exams_retrieve
+      description: ViewSet for Exam CRUD operations.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this exam.
+        required: true
+      tags:
+      - exams
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Exam'
+          description: ''
+    put:
+      operationId: exams_exams_update
+      description: ViewSet for Exam CRUD operations.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this exam.
+        required: true
+      tags:
+      - exams
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExamRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ExamRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ExamRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Exam'
+          description: ''
+    patch:
+      operationId: exams_exams_partial_update
+      description: ViewSet for Exam CRUD operations.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this exam.
+        required: true
+      tags:
+      - exams
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedExamRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedExamRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedExamRequest'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Exam'
+          description: ''
+    delete:
+      operationId: exams_exams_destroy
+      description: ViewSet for Exam CRUD operations.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this exam.
+        required: true
+      tags:
+      - exams
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/exams/exams/{id}/start/:
+    get:
+      operationId: exams_exams_start_retrieve
+      description: Endpoint to start an exam (returns questions without answers).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this exam.
+        required: true
+      tags:
+      - exams
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Exam'
+          description: ''
+  /api/v1/exams/questions/:
+    get:
+      operationId: exams_questions_list
+      description: ViewSet for Question CRUD operations.
+      parameters:
+      - in: query
+        name: exam
+        schema:
+          type: integer
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: question_type
+        schema:
+          type: string
+          enum:
+          - essay
+          - paragraph
+          - short_answer
+        description: |-
+          * `essay` - Essay
+          * `short_answer` - Short Answer
+          * `paragraph` - Paragraph
+      tags:
+      - exams
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedQuestionList'
+          description: ''
+    post:
+      operationId: exams_questions_create
+      description: ViewSet for Question CRUD operations.
+      tags:
+      - exams
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QuestionRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/QuestionRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/QuestionRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Question'
+          description: ''
+  /api/v1/exams/questions/{id}/:
+    get:
+      operationId: exams_questions_retrieve
+      description: ViewSet for Question CRUD operations.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this question.
+        required: true
+      tags:
+      - exams
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Question'
+          description: ''
+    put:
+      operationId: exams_questions_update
+      description: ViewSet for Question CRUD operations.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this question.
+        required: true
+      tags:
+      - exams
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QuestionRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/QuestionRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/QuestionRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Question'
+          description: ''
+    patch:
+      operationId: exams_questions_partial_update
+      description: ViewSet for Question CRUD operations.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this question.
+        required: true
+      tags:
+      - exams
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedQuestionRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedQuestionRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedQuestionRequest'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Question'
+          description: ''
+    delete:
+      operationId: exams_questions_destroy
+      description: ViewSet for Question CRUD operations.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this question.
+        required: true
+      tags:
+      - exams
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/submissions/:
+    get:
+      operationId: submissions_list
+      description: ViewSet for Submission operations with secure student access.
+      parameters:
+      - in: query
+        name: exam
+        schema:
+          type: integer
+      - in: query
+        name: is_graded
+        schema:
+          type: boolean
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - graded
+          - in_progress
+          - submitted
+        description: |-
+          * `in_progress` - In Progress
+          * `submitted` - Submitted
+          * `graded` - Graded
+      tags:
+      - submissions
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedSubmissionListList'
+          description: ''
+    post:
+      operationId: submissions_create
+      description: ViewSet for Submission operations with secure student access.
+      tags:
+      - submissions
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubmissionRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SubmissionRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SubmissionRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Submission'
+          description: ''
+  /api/v1/submissions/{id}/:
+    get:
+      operationId: submissions_retrieve
+      description: ViewSet for Submission operations with secure student access.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this submission.
+        required: true
+      tags:
+      - submissions
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Submission'
+          description: ''
+    put:
+      operationId: submissions_update
+      description: ViewSet for Submission operations with secure student access.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this submission.
+        required: true
+      tags:
+      - submissions
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubmissionRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SubmissionRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SubmissionRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Submission'
+          description: ''
+    patch:
+      operationId: submissions_partial_update
+      description: ViewSet for Submission operations with secure student access.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this submission.
+        required: true
+      tags:
+      - submissions
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedSubmissionRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedSubmissionRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedSubmissionRequest'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Submission'
+          description: ''
+  /api/v1/submissions/{id}/results/:
+    get:
+      operationId: submissions_results_retrieve
+      description: Endpoint to retrieve submission results.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this submission.
+        required: true
+      tags:
+      - submissions
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Submission'
+          description: ''
+  /api/v1/submissions/submit_exam/:
+    post:
+      operationId: submissions_submit_exam_create
+      description: Secure endpoint for students to submit exam answers.
+      tags:
+      - submissions
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubmissionCreateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SubmissionCreateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SubmissionCreateRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubmissionCreate'
+          description: ''
+  /api/v1/users/login/:
+    post:
+      operationId: users_login_create
+      description: |-
+        Takes a set of user credentials and returns an access and refresh JSON web
+        token pair to prove the authentication of those credentials.
+      tags:
+      - users
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPairRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPairRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPairRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenObtainPair'
+          description: ''
+  /api/v1/users/logout/:
+    post:
+      operationId: users_logout_create
+      description: Enhanced logout view
+      parameters:
+      - in: query
+        name: refresh
+        schema:
+          type: string
+        description: Refresh token.
+        required: true
+      tags:
+      - users
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/users/profile/:
+    get:
+      operationId: users_profile_retrieve
+      description: API endpoint for retrieving and updating user profile.
+      tags:
+      - users
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+    put:
+      operationId: users_profile_update
+      description: API endpoint for retrieving and updating user profile.
+      tags:
+      - users
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+    patch:
+      operationId: users_profile_partial_update
+      description: API endpoint for retrieving and updating user profile.
+      tags:
+      - users
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedUserRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedUserRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedUserRequest'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+  /api/v1/users/register/:
+    post:
+      operationId: users_register_create
+      description: API endpoint for user registration.
+      tags:
+      - users
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRegistrationRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UserRegistrationRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserRegistrationRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserRegistration'
+          description: ''
+  /api/v1/users/token/refresh/:
+    post:
+      operationId: users_token_refresh_create
+      description: |-
+        Takes a refresh type JSON web token and returns an access type JSON web
+        token if the refresh token is valid.
+      tags:
+      - users
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenRefreshRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenRefreshRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenRefreshRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenRefresh'
+          description: ''
+components:
+  schemas:
+    Answer:
+      type: object
+      description: Serializer for Answer model.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        submission:
+          type: integer
+        question:
+          type: integer
+        question_details:
+          allOf:
+          - $ref: '#/components/schemas/QuestionList'
+          readOnly: true
+        answer_text:
+          type: string
+        marks_obtained:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,4}(?:\.\d{0,2})?$
+          readOnly: true
+        marks_allocated:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,4}(?:\.\d{0,2})?$
+          readOnly: true
+        feedback:
+          type: string
+          readOnly: true
+        answered_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - answer_text
+      - answered_at
+      - feedback
+      - id
+      - marks_allocated
+      - marks_obtained
+      - question
+      - question_details
+      - submission
+    AnswerItem:
+      type: object
+      properties:
+        question_id:
+          type: integer
+        answer_text:
+          type: string
+      required:
+      - answer_text
+      - question_id
+    AnswerItemRequest:
+      type: object
+      properties:
+        question_id:
+          type: integer
+        answer_text:
+          type: string
+          minLength: 1
+      required:
+      - answer_text
+      - question_id
+    AnswerRequest:
+      type: object
+      description: Serializer for Answer model.
+      properties:
+        submission:
+          type: integer
+        question:
+          type: integer
+        answer_text:
+          type: string
+          minLength: 1
+      required:
+      - answer_text
+      - question
+      - submission
+    Course:
+      type: object
+      description: Serializer for Course model.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        code:
+          type: string
+          maxLength: 20
+        title:
+          type: string
+          maxLength: 200
+        description:
+          type: string
+        created_by:
+          type: integer
+          nullable: true
+        created_by_details:
+          allOf:
+          - $ref: '#/components/schemas/User'
+          readOnly: true
+        is_active:
+          type: boolean
+        total_students:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - code
+      - created_at
+      - created_by_details
+      - id
+      - title
+      - total_students
+      - updated_at
+    CourseRequest:
+      type: object
+      description: Serializer for Course model.
+      properties:
+        code:
+          type: string
+          minLength: 1
+          maxLength: 20
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        description:
+          type: string
+        created_by:
+          type: integer
+          nullable: true
+        is_active:
+          type: boolean
+      required:
+      - code
+      - title
+    Enrollment:
+      type: object
+      description: Serializer for Enrollment model.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        student:
+          type: integer
+        student_details:
+          allOf:
+          - $ref: '#/components/schemas/User'
+          readOnly: true
+        course:
+          type: integer
+        course_details:
+          allOf:
+          - $ref: '#/components/schemas/Course'
+          readOnly: true
+        status:
+          $ref: '#/components/schemas/EnrollmentStatusEnum'
+        enrolled_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - course
+      - course_details
+      - enrolled_at
+      - id
+      - student
+      - student_details
+    EnrollmentStatusEnum:
+      enum:
+      - active
+      - completed
+      - dropped
+      type: string
+      description: |-
+        * `active` - Active
+        * `completed` - Completed
+        * `dropped` - Dropped
+    Exam:
+      type: object
+      description: Serializer for Exam model.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        course:
+          type: integer
+        title:
+          type: string
+          maxLength: 200
+        description:
+          type: string
+        duration_minutes:
+          type: integer
+          minimum: 1
+        start_time:
+          type: string
+          format: date-time
+        end_time:
+          type: string
+          format: date-time
+        total_marks:
+          type: integer
+        passing_marks:
+          type: integer
+        metadata: {}
+        is_published:
+          type: boolean
+        questions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Question'
+          readOnly: true
+        questions_count:
+          type: string
+          readOnly: true
+        is_active:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - course
+      - created_at
+      - duration_minutes
+      - end_time
+      - id
+      - is_active
+      - questions
+      - questions_count
+      - start_time
+      - title
+      - updated_at
+    ExamList:
+      type: object
+      description: Simplified serializer for listing exams.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        course:
+          type: integer
+        course_code:
+          type: string
+          readOnly: true
+        title:
+          type: string
+          maxLength: 200
+        duration_minutes:
+          type: integer
+          minimum: 1
+        start_time:
+          type: string
+          format: date-time
+        end_time:
+          type: string
+          format: date-time
+        total_marks:
+          type: integer
+        questions_count:
+          type: string
+          readOnly: true
+        is_published:
+          type: boolean
+      required:
+      - course
+      - course_code
+      - duration_minutes
+      - end_time
+      - id
+      - questions_count
+      - start_time
+      - title
+    ExamRequest:
+      type: object
+      description: Serializer for Exam model.
+      properties:
+        course:
+          type: integer
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        description:
+          type: string
+        duration_minutes:
+          type: integer
+          minimum: 1
+        start_time:
+          type: string
+          format: date-time
+        end_time:
+          type: string
+          format: date-time
+        total_marks:
+          type: integer
+        passing_marks:
+          type: integer
+        metadata: {}
+        is_published:
+          type: boolean
+      required:
+      - course
+      - duration_minutes
+      - end_time
+      - start_time
+      - title
+    PaginatedCourseList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Course'
+    PaginatedEnrollmentList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Enrollment'
+    PaginatedExamListList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExamList'
+    PaginatedQuestionList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Question'
+    PaginatedSubmissionListList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/SubmissionList'
+    PatchedCourseRequest:
+      type: object
+      description: Serializer for Course model.
+      properties:
+        code:
+          type: string
+          minLength: 1
+          maxLength: 20
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        description:
+          type: string
+        created_by:
+          type: integer
+          nullable: true
+        is_active:
+          type: boolean
+    PatchedExamRequest:
+      type: object
+      description: Serializer for Exam model.
+      properties:
+        course:
+          type: integer
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        description:
+          type: string
+        duration_minutes:
+          type: integer
+          minimum: 1
+        start_time:
+          type: string
+          format: date-time
+        end_time:
+          type: string
+          format: date-time
+        total_marks:
+          type: integer
+        passing_marks:
+          type: integer
+        metadata: {}
+        is_published:
+          type: boolean
+    PatchedQuestionRequest:
+      type: object
+      description: Serializer for Question model.
+      properties:
+        exam:
+          type: integer
+        question_type:
+          $ref: '#/components/schemas/QuestionTypeEnum'
+        question_text:
+          type: string
+          minLength: 1
+        expected_answer:
+          type: string
+          minLength: 1
+          description: Model answer or key points
+        keywords:
+          description: List of keywords for grading
+        marks:
+          type: integer
+          minimum: 1
+        metadata: {}
+    PatchedSubmissionRequest:
+      type: object
+      description: Serializer for Submission model.
+      properties:
+        exam:
+          type: integer
+    PatchedUserRequest:
+      type: object
+      description: Serializer for user details.
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+          title: Email address
+          maxLength: 254
+        username:
+          type: string
+          minLength: 1
+          maxLength: 150
+        first_name:
+          type: string
+          minLength: 1
+          maxLength: 150
+        last_name:
+          type: string
+          minLength: 1
+          maxLength: 150
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+    Question:
+      type: object
+      description: Serializer for Question model.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        exam:
+          type: integer
+        question_type:
+          $ref: '#/components/schemas/QuestionTypeEnum'
+        question_text:
+          type: string
+        expected_answer:
+          type: string
+          description: Model answer or key points
+        keywords:
+          description: List of keywords for grading
+        marks:
+          type: integer
+          minimum: 1
+        metadata: {}
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - exam
+      - expected_answer
+      - id
+      - marks
+      - question_text
+    QuestionList:
+      type: object
+      description: Simplified serializer for listing questions (hides answers).
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        question_type:
+          $ref: '#/components/schemas/QuestionTypeEnum'
+        question_text:
+          type: string
+        marks:
+          type: integer
+          minimum: 1
+      required:
+      - id
+      - marks
+      - question_text
+    QuestionListRequest:
+      type: object
+      description: Simplified serializer for listing questions (hides answers).
+      properties:
+        question_type:
+          $ref: '#/components/schemas/QuestionTypeEnum'
+        question_text:
+          type: string
+          minLength: 1
+        marks:
+          type: integer
+          minimum: 1
+      required:
+      - marks
+      - question_text
+    QuestionRequest:
+      type: object
+      description: Serializer for Question model.
+      properties:
+        exam:
+          type: integer
+        question_type:
+          $ref: '#/components/schemas/QuestionTypeEnum'
+        question_text:
+          type: string
+          minLength: 1
+        expected_answer:
+          type: string
+          minLength: 1
+          description: Model answer or key points
+        keywords:
+          description: List of keywords for grading
+        marks:
+          type: integer
+          minimum: 1
+        metadata: {}
+      required:
+      - exam
+      - expected_answer
+      - marks
+      - question_text
+    QuestionTypeEnum:
+      enum:
+      - essay
+      - short_answer
+      - paragraph
+      type: string
+      description: |-
+        * `essay` - Essay
+        * `short_answer` - Short Answer
+        * `paragraph` - Paragraph
+    RoleEnum:
+      enum:
+      - student
+      - teacher
+      - admin
+      type: string
+      description: |-
+        * `student` - Student
+        * `teacher` - Teacher
+        * `admin` - Admin
+    Status7e4Enum:
+      enum:
+      - in_progress
+      - submitted
+      - graded
+      type: string
+      description: |-
+        * `in_progress` - In Progress
+        * `submitted` - Submitted
+        * `graded` - Graded
+    Submission:
+      type: object
+      description: Serializer for Submission model.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        student:
+          type: integer
+          readOnly: true
+        student_name:
+          type: string
+          readOnly: true
+        exam:
+          type: integer
+        exam_title:
+          type: string
+          readOnly: true
+        started_at:
+          type: string
+          format: date-time
+          readOnly: true
+        submitted_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/Status7e4Enum'
+          readOnly: true
+        obtained_marks:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,4}(?:\.\d{0,2})?$
+          readOnly: true
+        total_marks:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,4}(?:\.\d{0,2})?$
+          readOnly: true
+        percentage:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,2})?$
+          readOnly: true
+        is_graded:
+          type: boolean
+          readOnly: true
+        graded_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        answers:
+          type: array
+          items:
+            $ref: '#/components/schemas/Answer'
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - answers
+      - created_at
+      - exam
+      - exam_title
+      - graded_at
+      - id
+      - is_graded
+      - obtained_marks
+      - percentage
+      - started_at
+      - status
+      - student
+      - student_name
+      - submitted_at
+      - total_marks
+    SubmissionCreate:
+      type: object
+      properties:
+        exam:
+          type: integer
+        answers:
+          type: array
+          items:
+            $ref: '#/components/schemas/AnswerItem'
+      required:
+      - answers
+      - exam
+    SubmissionCreateRequest:
+      type: object
+      properties:
+        exam:
+          type: integer
+        answers:
+          type: array
+          items:
+            $ref: '#/components/schemas/AnswerItemRequest'
+      required:
+      - answers
+      - exam
+    SubmissionList:
+      type: object
+      description: Simplified serializer for listing submissions.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        student:
+          type: integer
+        student_name:
+          type: string
+          readOnly: true
+        exam:
+          type: integer
+        exam_title:
+          type: string
+          readOnly: true
+        submitted_at:
+          type: string
+          format: date-time
+          nullable: true
+        status:
+          $ref: '#/components/schemas/Status7e4Enum'
+        obtained_marks:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,4}(?:\.\d{0,2})?$
+        total_marks:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,4}(?:\.\d{0,2})?$
+        percentage:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,2})?$
+        is_graded:
+          type: boolean
+          readOnly: true
+      required:
+      - exam
+      - exam_title
+      - id
+      - student
+      - student_name
+    SubmissionRequest:
+      type: object
+      description: Serializer for Submission model.
+      properties:
+        exam:
+          type: integer
+      required:
+      - exam
+    TokenObtainPair:
+      type: object
+      properties:
+        access:
+          type: string
+          readOnly: true
+        refresh:
+          type: string
+          readOnly: true
+      required:
+      - access
+      - refresh
+    TokenObtainPairRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          writeOnly: true
+          minLength: 1
+        password:
+          type: string
+          writeOnly: true
+          minLength: 1
+      required:
+      - email
+      - password
+    TokenRefresh:
+      type: object
+      properties:
+        access:
+          type: string
+          readOnly: true
+        refresh:
+          type: string
+      required:
+      - access
+      - refresh
+    TokenRefreshRequest:
+      type: object
+      properties:
+        refresh:
+          type: string
+          minLength: 1
+      required:
+      - refresh
+    User:
+      type: object
+      description: Serializer for user details.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        email:
+          type: string
+          format: email
+          title: Email address
+          maxLength: 254
+        username:
+          type: string
+          maxLength: 150
+        first_name:
+          type: string
+          maxLength: 150
+        last_name:
+          type: string
+          maxLength: 150
+        full_name:
+          type: string
+          readOnly: true
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - email
+      - first_name
+      - full_name
+      - id
+      - last_name
+      - username
+    UserRegistration:
+      type: object
+      description: Serializer for user registration with password validation.
+      properties:
+        email:
+          type: string
+          format: email
+          title: Email address
+          maxLength: 254
+        username:
+          type: string
+          maxLength: 150
+        first_name:
+          type: string
+          maxLength: 150
+        last_name:
+          type: string
+          maxLength: 150
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+      required:
+      - email
+      - first_name
+      - last_name
+      - username
+    UserRegistrationRequest:
+      type: object
+      description: Serializer for user registration with password validation.
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+          title: Email address
+          maxLength: 254
+        username:
+          type: string
+          minLength: 1
+          maxLength: 150
+        first_name:
+          type: string
+          minLength: 1
+          maxLength: 150
+        last_name:
+          type: string
+          minLength: 1
+          maxLength: 150
+        password:
+          type: string
+          writeOnly: true
+          minLength: 1
+        password2:
+          type: string
+          writeOnly: true
+          minLength: 1
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+      required:
+      - email
+      - first_name
+      - last_name
+      - password
+      - password2
+      - username
+    UserRequest:
+      type: object
+      description: Serializer for user details.
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+          title: Email address
+          maxLength: 254
+        username:
+          type: string
+          minLength: 1
+          maxLength: 150
+        first_name:
+          type: string
+          minLength: 1
+          maxLength: 150
+        last_name:
+          type: string
+          minLength: 1
+          maxLength: 150
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+      required:
+      - email
+      - first_name
+      - last_name
+      - username
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: sessionid
+    jwtAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
