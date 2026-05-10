@@ -16,7 +16,7 @@ from app.schemas.journey import (
     GenerateJourneysRequest,
     BulkDeleteRequest,
 )
-from app.services.auth import get_current_user, verify_token
+from app.services.auth import get_current_user, verify_token, get_user_from_token_payload
 from app.services.spec_parser import SpecParser, EndpointInfo
 from app.services.journey_generator import JourneyGenerator
 from app.services.cache import cache_service
@@ -30,76 +30,6 @@ def get_journey_cache_key(user_id: uuid.UUID, journey_id: Optional[uuid.UUID] = 
     return f"journeys:{user_id}"
 
 
-# @router.post(
-#     "/specs/{spec_id}/generate-journeys",
-#     response_model=List[JourneyResponse],
-#     status_code=status.HTTP_201_CREATED,
-# )
-# async def generate_journeys(
-#     spec_id: uuid.UUID,
-#     request: GenerateJourneysRequest,
-#     current_user: User = Depends(get_current_user),
-#     db: AsyncSession = Depends(get_db),
-# ):
-#     """Generate journeys from a spec using AI."""
-#     # Verify spec ownership
-#     result = await db.execute(
-#         select(Spec).where(Spec.id == spec_id, Spec.user_id == current_user.id)
-#     )
-#     spec = result.scalar_one_or_none()
-    
-#     if not spec:
-#         raise HTTPException(
-#             status_code=status.HTTP_404_NOT_FOUND,
-#             detail="Spec not found",
-#         )
-    
-#     # Parse spec to get endpoints
-#     parser = SpecParser(spec.content)
-#     endpoints = parser.extract_endpoints()
-    
-#     if request.strategy == "ai":
-#         # Generate journeys using AI
-#         generator = JourneyGenerator()
-#         try:
-#             journey_data_list = await generator.generate_journeys(endpoints)
-#         except Exception as e:
-#             raise HTTPException(
-#                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-#                 detail=f"AI journey generation failed: {str(e)}",
-#             )
-#     else:
-#         # Manual strategy - create a basic journey
-#         journey_data_list = [
-#             {
-#                 "name": "Manual Journey",
-#                 "description": "Manually created journey",
-#                 "nodes": [],
-#                 "edges": [],
-#             }
-#         ]
-    
-#     # Save journeys to database
-#     created_journeys = []
-#     for journey_data in journey_data_list:
-#         journey = Journey(
-#             user_id=current_user.id,
-#             spec_id=spec_id,
-#             name=journey_data["name"],
-#             nodes=journey_data["nodes"],
-#             edges=journey_data["edges"],
-#             generation_method=request.strategy,
-#         )
-#         db.add(journey)
-#         created_journeys.append(journey)
-    
-#     await db.commit()
-    
-#     # Refresh all journeys
-#     # Invalidate list cache
-#     cache_service.delete(get_journey_cache_key(current_user.id))
-    
-#     return [JourneyResponse.model_validate(j) for j in created_journeys]
 
 @router.websocket("/ws/specs/{spec_id}/generate-journeys")
 async def websocket_generate_journeys(websocket: WebSocket, spec_id: uuid.UUID):
@@ -119,7 +49,6 @@ async def websocket_generate_journeys(websocket: WebSocket, spec_id: uuid.UUID):
             for cookie in cookie_header.split(";"):
                 if "access_token" in cookie:
                     token = cookie.split("=")[1].strip()
-                    print(token)
                     break
         
         # Get strategy from client message
@@ -129,7 +58,6 @@ async def websocket_generate_journeys(websocket: WebSocket, spec_id: uuid.UUID):
             # If no token from cookie, try getting from message
             if not token and auth_data.get("token"):
                 token = auth_data.get("token")
-                print(token)
         except:
             strategy = "ai"
         
@@ -137,9 +65,7 @@ async def websocket_generate_journeys(websocket: WebSocket, spec_id: uuid.UUID):
             try:
                 # Authenticate
                 payload = verify_token(token)
-                user_id = payload.get("sub")
-                result = await db.execute(select(User).where(User.id == user_id))
-                current_user = result.scalar_one_or_none()
+                current_user = await get_user_from_token_payload(payload, db)
                 
                 if not current_user:
                     await websocket.send_json({"type": "error", "message": "Auth failed"})

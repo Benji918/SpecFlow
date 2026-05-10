@@ -70,17 +70,12 @@ app.include_router(google_auth.router)
 @app.on_event("startup")
 def startup_event():
     """Ensure no old ngrok processes are running on startup."""
-    from pyngrok import ngrok
-    if settings.NGROK_ENABLED:
-        logger.info("Cleaning up old ngrok processes...")
-        ngrok.kill()
+    ...
 
 @app.on_event("shutdown")
 def shutdown_event():
     """Ensure ngrok processes are killed on shutdown."""
-    from pyngrok import ngrok
-    logger.info("Shutting down ngrok tunnels...")
-    ngrok.kill()
+    ...
 
 
 @app.get("/api/health")

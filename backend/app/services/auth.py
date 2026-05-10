@@ -90,13 +90,11 @@ async def get_current_user(
     
     payload = verify_token(token)
     
+async def get_user_from_token_payload(payload: dict, db: AsyncSession) -> Optional[User]:
+    """Get user from decoded token payload, supporting both UUID and email."""
     user_id: str = payload.get("sub")
     if user_id is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Could not validate credentials",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+        return None
     
     # Support both UUID (normal users) and email (newly authenticated OAuth users)
     is_uuid = False
@@ -113,7 +111,34 @@ async def get_current_user(
         # Try finding by email (for newly created OAuth users whose ID we don't put in token yet)
         result = await db.execute(select(User).where(User.email == user_id))
     
-    user = result.scalar_one_or_none()
+    return result.scalar_one_or_none()
+
+
+async def get_current_user(
+    request: HTTPConnection,
+    db: AsyncSession = Depends(get_db),
+) -> User:
+    """Get the current authenticated user from JWT token (header or cookie)."""
+    token = None
+    
+    # Try to get from Authorization header
+    auth_header = request.headers.get("Authorization")
+    if auth_header and auth_header.startswith("Bearer "):
+        token = auth_header.split(" ")[1]
+    
+    # Try to get from cookie if not in header
+    if not token:
+        token = request.cookies.get("access_token")
+    
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    payload = verify_token(token)
+    user = await get_user_from_token_payload(payload, db)
     
     if user is None:
         raise HTTPException(
