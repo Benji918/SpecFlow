@@ -299,7 +299,7 @@
                   </div>
                 </div>
 
-                <div class="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-all translate-x-4 group-hover:translate-x-0 flex items-center space-x-2">
+                <div class="flex-shrink-0 transition-all flex items-center space-x-2">
                   <button 
                     @click="addEndpointToSelection(endpoint)"
                     class="p-2.5 rounded-xl transition-all shadow-lg"
