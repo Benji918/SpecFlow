@@ -1,10 +1,44 @@
 <template>
-  <div class="min-h-screen flex items-center justify-center px-4">
-    <div class="w-full max-w-md">
+  <div class="min-h-screen flex items-center justify-center px-4 relative overflow-hidden bg-background">
+    <!-- Premium Interactive Brand Background -->
+    <div class="absolute inset-0 overflow-hidden pointer-events-none z-0">
+      <!-- Grid Overlay (subtle tech grid) -->
+      <div class="absolute inset-0 bg-[radial-gradient(rgba(191,245,73,0.06)_1.5px,transparent_1.5px)] bg-[size:32px_32px] opacity-70"></div>
+      
+      <!-- Glowing ambient blobs (high-energy lime green brand glows) -->
+      <div class="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] rounded-full bg-primary/10 blur-[130px] animate-pulse" style="animation-duration: 8s;"></div>
+      <div class="absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] rounded-full bg-primary/5 blur-[160px] animate-pulse" style="animation-duration: 14s;"></div>
+      <div class="absolute top-[40%] left-[50%] -translate-x-1/2 w-[300px] h-[300px] rounded-full bg-primary/[0.03] blur-[100px] animate-pulse" style="animation-duration: 11s;"></div>
+      
+      <!-- Tech line borders for structure -->
+      <div class="absolute top-0 left-1/4 w-[1px] h-full bg-white/[0.02]"></div>
+      <div class="absolute top-0 right-1/4 w-[1px] h-full bg-white/[0.02]"></div>
+      
+      <!-- Rotating Watermark Logo (Bottom Right) -->
+      <div class="absolute right-[-120px] bottom-[-120px] md:right-[-60px] md:bottom-[-60px] opacity-[0.035] text-primary select-none transform rotate-12 transition-transform duration-1000 hover:rotate-[30deg]">
+        <svg width="500" height="500" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- Rotated outer dashed square matching logo concept -->
+          <rect x="10" y="10" width="80" height="80" rx="18" stroke="currentColor" stroke-width="2.5" stroke-dasharray="6 4" class="animate-[spin_180s_linear_infinite]" />
+          <!-- Inner Lightning Bolt watermark -->
+          <path d="M55 15 L20 55 H51 L48 85 L80 40 H49 Z" fill="currentColor" />
+        </svg>
+      </div>
+
+      <!-- Rotating Watermark Logo (Top Left) -->
+      <div class="absolute left-[-150px] top-[15%] opacity-[0.025] text-primary select-none transform -rotate-12 hidden lg:block">
+        <svg width="350" height="350" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="10" y="10" width="80" height="80" rx="18" stroke="currentColor" stroke-width="2.5" stroke-dasharray="4 6" class="animate-[spin_120s_linear_infinite_reverse]" />
+          <path d="M55 15 L20 55 H51 L48 85 L80 40 H49 Z" fill="currentColor" />
+        </svg>
+      </div>
+    </div>
+
+    <!-- Content Card -->
+    <div class="w-full max-w-md relative z-10 my-8">
       <!-- Logo/Title -->
       <div class="text-center mb-8">
-        <RouterLink to="/" class="inline-flex items-center space-x-2 mb-4 hover:opacity-80 transition-opacity">
-          <div class="w-12 h-12 bg-primary rounded-lg flex items-center justify-center transform rotate-12 transition-transform hover:rotate-0">
+        <RouterLink to="/" class="inline-flex items-center space-x-2 mb-4 hover:opacity-90 transition-opacity">
+          <div class="w-12 h-12 bg-primary rounded-lg flex items-center justify-center transform rotate-12 transition-transform hover:rotate-0 shadow-lg shadow-primary/20">
             <Zap :size="28" class="text-black fill-current" />
           </div>
           <span class="text-5xl font-black tracking-tighter">
@@ -14,13 +48,13 @@
         <p class="text-gray-400 text-lg">Create your account</p>
       </div>
 
-      <!-- Signup Card -->
-      <div class="card p-4 sm:p-6 overflow-hidden">
+      <!-- Signup Card (Upgraded to premium Glassmorphism) -->
+      <div class="card-glass border border-white/[0.08] shadow-2xl hover:border-primary/20 transition-all duration-500 p-4 sm:p-6 overflow-hidden">
         <!-- Social Login (Primary) -->
         <button
           type="button"
           @click="handleGoogleLogin"
-          class="btn-primary w-full flex items-center justify-center space-x-3 mb-6"
+          class="btn-primary w-full flex items-center justify-center space-x-3 mb-6 hover:shadow-primary/30 transition-all duration-300"
         >
           <div class="w-5 h-5 bg-white rounded-full flex items-center justify-center p-0.5">
             <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" class="w-full h-full">
