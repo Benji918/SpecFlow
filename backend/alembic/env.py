@@ -24,6 +24,7 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
+
 # Use DIRECT_DATABASE_URL for migrations (bypasses PgBouncer)
 # PgBouncer cannot handle DDL statements like ALTER TABLE reliably
 db_url = settings.DIRECT_DATABASE_URL or settings.DATABASE_URL
