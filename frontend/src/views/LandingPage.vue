@@ -420,116 +420,14 @@
 
             <!-- Video Player -->
             <div class="relative aspect-video bg-black rounded-3xl overflow-hidden shadow-2xl">
-              <!-- Loading State -->
-              <div v-if="videoLoading" class="absolute inset-0 flex flex-col items-center justify-center bg-black z-20">
-                <div class="relative">
-                  <div class="w-20 h-20 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
-                  <Zap :size="32" class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-primary fill-current animate-pulse" aria-hidden="true" />
-                </div>
-                <p class="mt-6 text-sm font-bold text-gray-400 uppercase tracking-widest">Loading Demo...</p>
-                <div class="mt-4 w-48 h-1 bg-white/5 rounded-full overflow-hidden">
-                  <div class="h-full bg-primary animate-[loading_2s_ease-in-out_infinite]" :style="{width: videoProgress + '%'}"></div>
-                </div>
-              </div>
-
-              <!-- Buffering Indicator -->
-              <div v-if="videoBuffering && !videoLoading" class="absolute top-4 right-4 z-30 flex items-center space-x-2 px-3 py-2 bg-black/80 backdrop-blur-md rounded-full border border-white/10">
-                <Loader2 :size="14" class="text-primary animate-spin" aria-hidden="true" />
-                <span class="text-xs font-bold text-gray-400">Buffering...</span>
-              </div>
-
-              <!-- Video Element -->
-              <video
-                ref="demoVideo"
-                class="w-full h-full object-cover"
-                @loadstart="handleVideoLoadStart"
-                @loadeddata="handleVideoLoaded"
-                @waiting="videoBuffering = true"
-                @playing="videoBuffering = false"
-                @canplay="videoBuffering = false"
-                @ended="handleVideoEnded"
-                @timeupdate="handleTimeUpdate"
-                preload="metadata"
-                playsinline
-                poster="https://images.unsplash.com/photo-1639322537228-f710d846310a?auto=format&fit=crop&q=80&w=1200"
-                aria-label="SpecFlow API Testing Walkthrough Video"
-              >
-                <source src="/Specflow recroding.mp4" type="video/mp4" />
-                Your browser does not support the video tag.
-              </video>
-
-              <!-- Play Overlay (when paused) -->
-              <div 
-                v-if="!videoPlaying && !videoLoading" 
-                class="absolute inset-0 flex flex-col items-center justify-center bg-black/40 backdrop-blur-[2px] cursor-pointer group/play z-10"
-                @click="togglePlay"
-              >
-                <!-- Stylized Play Button -->
-                <div class="relative mb-6">
-                  <div class="absolute -inset-8 bg-primary/20 blur-3xl rounded-full animate-pulse"></div>
-                  <div class="w-28 h-28 rounded-full bg-primary flex items-center justify-center shadow-[0_0_60px_rgba(191,245,73,0.5)] group-hover/play:scale-110 group-hover/play:shadow-primary/80 transition-all duration-500">
-                    <Play :size="48" class="text-black fill-current ml-1" aria-hidden="true" />
-                  </div>
-                </div>
-                
-                <!-- Overlay Typography -->
-                <div class="text-center space-y-2 transform translate-y-4 group-hover/play:translate-y-0 opacity-0 group-hover/play:opacity-100 transition-all duration-500">
-                   <div class="inline-flex items-center space-x-2 px-3 py-1 bg-white/10 border border-white/20 rounded-full text-[10px] font-black uppercase tracking-widest text-primary">
-                      <Zap :size="10" />
-                      <span>SpecFlow Journey</span>
-                   </div>
-                   <h4 class="text-2xl font-black text-white">Watch Interactive Demo</h4>
-                </div>
-              </div>
-
-              <!-- Custom Controls -->
-              <div 
-                v-if="!videoLoading"
-                class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/60 to-transparent p-6 opacity-0 group-hover:opacity-100 transition-opacity z-20"
-              >
-                <!-- Progress Bar -->
-                <div class="mb-4">
-                  <div 
-                    class="h-1.5 bg-white/20 rounded-full overflow-hidden cursor-pointer group/progress"
-                    @click="seekVideo"
-                    ref="progressBar"
-                  >
-                    <div class="h-full bg-primary rounded-full transition-all group-hover/progress:h-2" :style="{width: videoProgress + '%'}"></div>
-                  </div>
-                </div>
-
-                <!-- Control Buttons -->
-                <div class="flex items-center justify-between">
-                  <div class="flex items-center space-x-4">
-                    <button 
-                      @click="togglePlay"
-                      class="w-10 h-10 rounded-full bg-white/10 hover:bg-primary hover:text-black flex items-center justify-center transition-all group/btn"
-                    >
-                      <Play v-if="!videoPlaying" :size="18" class="fill-current ml-0.5" aria-hidden="true" />
-                      <Pause v-else :size="18" class="fill-current" aria-hidden="true" />
-                    </button>
-                    
-                    <button 
-                      @click="toggleMute"
-                      class="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-all"
-                    >
-                      <Volume2 v-if="!videoMuted" :size="18" aria-hidden="true" />
-                      <VolumeX v-else :size="18" aria-hidden="true" />
-                    </button>
-
-                    <div class="text-xs font-mono text-gray-400">
-                      {{ formatTime(currentTime) }} / {{ formatTime(duration) }}
-                    </div>
-                  </div>
-
-                  <button 
-                    @click="toggleFullscreen"
-                    class="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-all"
-                  >
-                    <Maximize :size="18" aria-hidden="true" />
-                  </button>
-                </div>
-              </div>
+              <!-- YouTube Embed -->
+              <iframe
+                src="https://www.youtube.com/embed/c2BW405NSmo?autoplay=0&rel=0&modestbranding=1"
+                class="w-full h-full border-0"
+                allow="autoplay; encrypted-media; picture-in-picture"
+                allowfullscreen
+                title="SpecFlow Interactive Demo"
+              ></iframe>
             </div>
 
             <!-- Video Stats -->
@@ -967,7 +865,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref } from 'vue'
 import {
   Zap,
   ArrowRight,
@@ -988,14 +886,8 @@ import {
   Linkedin,
   Mail,
   MapPin,
-  Play,
-  Pause,
-  Volume2,
-  VolumeX,
-  Maximize,
   Lock,
   Circle,
-  Loader2,
   Eye,
   Sparkles,
   Link
@@ -1045,140 +937,8 @@ function handleDragEnd() {
   draggingNode.value = null
 }
 
-// Video Player State
-const demoVideo = ref(null)
-const progressBar = ref(null)
-const videoLoading = ref(true)
-const videoBuffering = ref(false)
-const videoPlaying = ref(false)
-const videoMuted = ref(false)
-const videoProgress = ref(0)
-const currentTime = ref(0)
-const duration = ref(0)
-
-// Aggressively cache the demo video using Cache API
-const VIDEO_URL = '/Specflow recroding.mp4'
-const CACHE_NAME = 'specflow-video-cache-v1'
-
-async function cacheVideo() {
-  if ('caches' in window) {
-    try {
-      // Open or create the cache
-      const cache = await caches.open(CACHE_NAME)
-      
-      // Check if already cached
-      const cachedResponse = await cache.match(VIDEO_URL)
-      if (cachedResponse) {
-        console.log('Video already cached')
-        return
-      }
-      
-      // Fetch and cache the video
-      console.log('Caching video...')
-      const response = await fetch(VIDEO_URL, { mode: 'cors' })
-      
-      if (response.ok) {
-        await cache.put(VIDEO_URL, response.clone())
-        console.log('Video cached successfully')
-      }
-    } catch (error) {
-      console.log('Video caching skipped:', error.message)
-    }
-  }
-}
-
-// Preload video from cache if available
-async function preloadVideoFromCache() {
-  if ('caches' in window) {
-    try {
-      const cache = await caches.open(CACHE_NAME)
-      const cachedResponse = await cache.match(VIDEO_URL)
-      
-      if (cachedResponse) {
-        console.log('Video found in cache, using cached version')
-        // Create a blob URL from the cached response
-        const blob = await cachedResponse.blob()
-        const cachedUrl = URL.createObjectURL(blob)
-        
-        // Update the video source if element exists
-        if (demoVideo.value) {
-          demoVideo.value.src = cachedUrl
-          demoVideo.value.load()
-        }
-      } else {
-        // Cache for next time
-        cacheVideo()
-      }
-    } catch (error) {
-      console.log('Video preload skipped:', error.message)
-    }
-  }
-}
-
-// Run on mount
-onMounted(() => {
-  preloadVideoFromCache()
-})
-
-function handleVideoLoadStart() {
-  videoLoading.value = true
-  videoProgress.value = 0
-}
-
-function handleVideoLoaded() {
-  videoLoading.value = false
-  if (demoVideo.value) {
-    duration.value = demoVideo.value.duration
-  }
-}
-
-function handleVideoEnded() {
-  videoPlaying.value = false
-  videoProgress.value = 0
-  if (demoVideo.value) {
-    demoVideo.value.currentTime = 0
-  }
-}
-
-function handleTimeUpdate() {
-  if (!demoVideo.value) return
-  currentTime.value = demoVideo.value.currentTime
-  videoProgress.value = (demoVideo.value.currentTime / demoVideo.value.duration) * 100
-}
-
-function togglePlay() {
-  if (!demoVideo.value) return
-  if (videoPlaying.value) {
-    demoVideo.value.pause()
-    videoPlaying.value = false
-  } else {
-    demoVideo.value.play()
-    videoPlaying.value = true
-  }
-}
-
-function toggleMute() {
-  if (!demoVideo.value) return
-  demoVideo.value.muted = !demoVideo.value.muted
-  videoMuted.value = demoVideo.value.muted
-}
-
-function toggleFullscreen() {
-  if (!demoVideo.value) return
-  if (demoVideo.value.requestFullscreen) {
-    demoVideo.value.requestFullscreen()
-  } else if (demoVideo.value.webkitRequestFullscreen) {
-    demoVideo.value.webkitRequestFullscreen()
-  }
-}
-
-function seekVideo(event) {
-  if (!demoVideo.value || !progressBar.value) return
-  const rect = progressBar.value.getBoundingClientRect()
-  const clickX = event.clientX - rect.left
-  const percentage = clickX / rect.width
-  demoVideo.value.currentTime = percentage * demoVideo.value.duration
-}
+// Video duration for display (in seconds)
+const duration = ref(180) // 3 minutes
 
 function formatTime(seconds) {
   if (!seconds || isNaN(seconds)) return '0:00'
@@ -1186,6 +946,7 @@ function formatTime(seconds) {
   const secs = Math.floor(seconds % 60)
   return `${mins}:${secs.toString().padStart(2, '0')}`
 }
+
 </script>
 
 <style scoped>

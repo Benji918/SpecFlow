@@ -34,7 +34,7 @@
     </div>
 
     <!-- Content Card -->
-    <div class="w-full max-w-md relative z-10 my-8">
+    <div class="w-full max-w-lg relative z-10 my-8 mx-4 sm:mx-auto">
       <!-- Logo/Title -->
       <div class="text-center mb-8">
         <RouterLink to="/" class="inline-flex items-center space-x-2 mb-4 hover:opacity-90 transition-opacity">
