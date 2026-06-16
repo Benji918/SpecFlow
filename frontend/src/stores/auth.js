@@ -73,6 +73,23 @@ export const useAuthStore = defineStore('auth', () => {
         }
     }
 
+    async function deleteCurrentAccount(userId) {
+        try {
+            const response = await apiClient.delete(`/api/auth/delete/${userId}`)
+            // Backend returns 204 No Content on success — treat 2xx as success
+            if (response && (response.status === 200 || response.status === 204)) {
+                user.value = null
+                return { success: true }
+            }
+            return { success: false, error: 'Unexpected response from server' }
+        } catch (error) {
+            return {
+                success: false,
+                error: error.response?.data?.detail || 'Failed to delete account',
+            }
+        }
+    }
+
     function logout() {
         // Clear state immediately
         user.value = null
@@ -104,6 +121,7 @@ export const useAuthStore = defineStore('auth', () => {
         loginWithGoogle,
         logout,
         fetchCurrentUser,
+        deleteCurrentAccount,
         refreshToken,
     }
 })

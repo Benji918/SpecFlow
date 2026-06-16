@@ -17,6 +17,9 @@
             <ShieldCheck :size="16" class="text-primary" />
             <span>Admin Panel</span>
           </RouterLink>
+          <button @click="confirmDeleteAccount" class="text-sm py-2 px-4 border rounded-full border-red-600 text-red-500 hover:bg-red-600 hover:text-white transition-colors">
+            Delete Account
+          </button>
           <button @click="handleLogout" class="btn-secondary text-sm py-2 px-4">
             Logout
           </button>
@@ -123,6 +126,22 @@
         </div>
       </div>
     </main>
+
+    <!-- Delete Account Confirmation Modal -->
+    <div v-if="showDeleteModal" class="fixed inset-0 z-50 flex items-center justify-center">
+      <div class="absolute inset-0 bg-black/50" @click="cancelDelete"></div>
+      <div class="bg-surface/90 backdrop-blur-md border border-gray-800 rounded-lg p-6 w-full max-w-lg z-10">
+        <h3 class="text-xl font-semibold text-white mb-2">Delete account</h3>
+        <p class="text-gray-400 mb-6">This will permanently delete your account and all associated data. This action cannot be undone. Are you sure you want to continue?</p>
+        <div class="flex justify-end space-x-3">
+          <button @click="cancelDelete" class="btn-secondary py-2 px-4">Cancel</button>
+          <button @click="performDeleteAccount" :disabled="deleteInProgress" class="py-2 px-4 bg-red-600 text-white rounded-full hover:bg-red-700 disabled:opacity-60">
+            <span v-if="!deleteInProgress">Yes, delete my account</span>
+            <span v-else>Deleting…</span>
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -150,6 +169,8 @@ const toast = useToast()
 
 const showUploader = ref(false)
 const loading = ref(true)
+const showDeleteModal = ref(false)
+const deleteInProgress = ref(false)
 
 onMounted(async () => {
   // Fetch current user in background to ensure we have late-breaking data
@@ -183,6 +204,31 @@ async function handleDeleteSpec(specId) {
 
 function handleLogout() {
   authStore.logout()
+}
+
+function confirmDeleteAccount() {
+  showDeleteModal.value = true
+}
+
+function cancelDelete() {
+  showDeleteModal.value = false
+}
+
+async function performDeleteAccount() {
+  if (!authStore.user?.id) return
+  deleteInProgress.value = true
+
+  const res = await authStore.deleteCurrentAccount(authStore.user.id)
+  deleteInProgress.value = false
+  showDeleteModal.value = false
+
+  if (res?.success) {
+    toast.success('Account deleted')
+    // Redirect to login/landing
+    window.location.href = '/login?account_deleted'
+  } else {
+    toast.error(res?.error || 'Failed to delete account')
+  }
 }
 
 function formatDate(dateString) {
