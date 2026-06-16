@@ -1,3 +1,4 @@
+import uuid
 from fastapi import APIRouter, Depends, HTTPException, status, Response, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -135,3 +136,32 @@ async def refresh_token(response: Response, current_user: User = Depends(get_cur
     )
     
     return {"message": "Token refreshed"}
+
+@router.delete("/delete")
+async def delete_user(response: Response, 
+                      user_id: uuid.UUID,
+                      current_user: User = Depends(get_current_user), 
+                      db: AsyncSession = Depends(get_db)):
+    """Delete user by ID."""
+    # Check if user is authorized to delete
+    if current_user.id != user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to delete this user",
+        )
+    
+    # Delete user
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
+    
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found",
+        )
+    
+    await db.delete(user)
+    await db.commit()
+    response.delete_cookie(key="access_token")
+    
+    return {"message": "User deleted successfully"}
