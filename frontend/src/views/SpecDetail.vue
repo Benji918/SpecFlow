@@ -84,7 +84,7 @@
           </div>
 
           <!-- Endpoints Summary -->
-          <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div class="grid grid-cols-3 md:grid-cols-5 gap-4">
             <div
               v-for="method in methodStats"
               :key="method.name"
@@ -969,10 +969,10 @@ function resetFilters() {
 const methodStats = computed(() => {
   if (!spec.value?.endpoints) return []
 
-  const methods = ['GET', 'POST', 'PUT', 'DELETE']
+  const methods = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH']
   return methods.map((method) => ({
     name: method,
-    count: spec.value.endpoints.filter((e) => e.method === method).length,
+    count: spec.value.endpoints.filter((e) => e.method?.toUpperCase() === method).length,
     color: getMethodColor(method).replace('bg-', 'text-'),
   }))
 })
